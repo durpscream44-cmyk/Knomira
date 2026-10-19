@@ -21,43 +21,12 @@ Ingnomia is a pure hobby project, and true free-to-play. With "free" spelled as 
 
 ## How do I get set up for development? ##
 
-The following steps describe how to compile the code locally and get the game running on Windows and Linux.
+For the Windows developer build, follow [BUILDING.md](BUILDING.md). It documents
+the current Qt6/C++23, Steamworks, NoesisGUI and OpenAL dependencies derived from
+CMake and CI. The previous Qt5/SFML setup commands do not match this source.
 
-Note! Building on Mac is currently not possible. Certain features in the renderer require OpenGL4.3.
-
-### Dependencies ###
-
-#### Windows specific ####
-* Microsoft Visual Studio 2019, the community edition is free
-* Qt [vs addin](http://download.qt.io/official_releases/vsaddin/2.5.2/) (optional)
-#### All Platforms ####
-* OpenGL 4.3 - Mac is not a supported compilation platform since it has deprecated OpenGL
-* Qt 5.14.1 or newer
-* [Noesis Gui](https://www.noesisengine.com/developers/downloads.php) 3.0.12\
-  For using Noesis in a local development build, you need to get a [trial license](https://www.noesisengine.com/trial/).
-* [Steam SDK](https://partner.steamgames.com/doc/sdk)
-* [SFML 2.5.1](https://www.sfml-dev.org/download/sfml/2.5.1/)
-* CMake 3.16 or newer
-
-### Build ###
-
-```bash
-cp -r "<EXISTING_INGOMIA_INSTALLATION>/content/tilesheet" content/
-
-cmake -S . -B "<BUILD_DIR>" \
--DQt5_DIR="<QTINSTALLDIR>/<ARCH>/lib/cmake/Qt5" \
--DSTEAM_SDK_ROOT="<STEAMSDKDIR>/sdk" \
--DNOESIS_ROOT="<NOESISDIR>" \
--DNOESIS_LICENSE_NAME="<NOESIS_TRIAL_LICENSE_NAME>" \
--DNOESIS_LICENSE_KEY="<NOESIS_TRIAL_LICENSE_KEY>"
--DSFML_DIR="<SFMLDIR>/lib/cmake/SFML"
-```
-
-If no errors have occured, proceed by building the project with the chosen build system or open the generated project in an IDE of your choice.
-
-```bash
-cmake --build "<BUILD_DIR>"
-```
+T01 build validation is currently blocked; see [the build status](docs/T01_STATUS.md).
+Linux and macOS builds have not been validated by this workflow.
 
 ### Building the documentation ###
 
