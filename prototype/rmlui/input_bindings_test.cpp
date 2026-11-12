@@ -42,6 +42,18 @@ int main(int argc, char** argv) {
                original.padMatches("menu_prev", QSet<QString>{"X"}),
                "New bindings must trigger the action")) return 9;
 
+    // The table's always-visible readouts use these exact label helpers.
+    // Verify that a changed binding has a readable value independent of the
+    // capture dialog and that an empty slot has a distinct placeholder.
+    if (!Check(!Profile::keyLabel(original.actions()[0].keys[0]).isEmpty() &&
+               Profile::keyLabel(original.actions()[0].keys[0]) != "Unbound",
+               "Changed primary keyboard binding must have a visible label")) return 20;
+    if (!Check(Profile::padLabel(original.actions()[0].pads[0]) == "Xbox X",
+               "Changed primary Xbox binding must have a visible label")) return 21;
+    if (!Check(Profile::keyLabel(0) == "Unbound" &&
+               Profile::padLabel(QString()) == "Unbound",
+               "Unassigned slots must have a visible fallback label")) return 22;
+
     QTemporaryDir temp;
     if (!Check(temp.isValid(), "temporary config folder")) return 10;
     const QString fileName = temp.path() + "/controls.json";
