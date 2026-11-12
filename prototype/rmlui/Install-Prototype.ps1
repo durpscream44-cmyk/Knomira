@@ -18,7 +18,7 @@ $branch = if ($GameShell) { $gameShellBranch } elseif ($QtHost) { 'feature/rmlui
 $workflow = if ($GameShell) { 'noesis-free-shell.yml' } elseif ($QtHost) { 'rmlui-qt-host.yml' } else { 'rmlui-prototype.yml' }
 $artifactName = if ($GameShell) { 'knomira-game-shell-windows-debug' } elseif ($QtHost) { 'knomira-rmlui-qt-host-windows-debug' } else { 'knomira-rmlui-prototype-windows-debug' }
 $exeName = if ($GameShell) { 'knomira_game_shell.exe' } elseif ($QtHost) { 'knomira_rmlui_qt_host.exe' } else { 'knomira_rmlui_prototype.exe' }
-$folderName = if ($GameShell) { 'desktop-test-game-shell' } elseif ($QtHost) { 'desktop-test-qt' } else { 'desktop-test' }
+$folderName = if ($GameShell -and $gameShellBranch -eq 'feature/remappable-controls') { 'desktop-test-controls' } elseif ($GameShell) { 'desktop-test-game-shell' } elseif ($QtHost) { 'desktop-test-qt' } else { 'desktop-test' }
 $root = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 $parent = Join-Path $root 'build\rmlui-prototype'
 $destination = Join-Path $parent $folderName
@@ -72,6 +72,12 @@ if ($GameShell) {
     & git -C $root merge-base --is-ancestor $minimumShellCommit $builtSha
     if ($LASTEXITCODE -ne 0) {
         throw "The latest successful game shell build ($builtSha) predates the save browser. Check the game-shell workflow."
+    }
+    if ($gameShellBranch -eq 'feature/remappable-controls') {
+        $checkedOutSha = (& git -C $root rev-parse HEAD).Trim()
+        if ($LASTEXITCODE -ne 0 -or $builtSha -ne $checkedOutSha) {
+            throw "The latest successful remappable-controls build is for $builtSha, but this checkout is $checkedOutSha. Check the branch workflow before installing."
+        }
     }
 }
 
