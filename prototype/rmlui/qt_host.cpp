@@ -659,6 +659,9 @@ protected:
     }
 
     void mousePressEvent(QMouseEvent* event) override {
+#ifdef KNOMIRA_GAME_SHELL
+        pendingScrollToFocus_ = false; // Never auto-scroll under a mouse click.
+#endif
         if (context_) {
             const double scale = devicePixelRatio();
             context_->ProcessMouseMove(
@@ -674,6 +677,13 @@ protected:
 
     void mouseReleaseEvent(QMouseEvent* event) override {
         if (context_) {
+            // RmlUi's click requires down/up over the same element. Update
+            // cursor coordinates even when Qt did not emit a move in between.
+            const double scale = devicePixelRatio();
+            context_->ProcessMouseMove(
+                int(std::lround(event->position().x() * scale)),
+                int(std::lround(event->position().y() * scale)),
+                Modifiers(event->modifiers()));
             const int button = MouseButton(event->button());
             if (button >= 0)
                 context_->ProcessMouseButtonUp(button, Modifiers(event->modifiers()));
@@ -1015,6 +1025,9 @@ private:
             back->AddEventListener("click", &events_);
         for (const char* id : {"exit_cancel", "exit_yes",
                                "controls_reset", "controls_back",
+                               "controls_tab_menu", "controls_tab_world",
+                               "controls_tab_panels", "controls_tab_system",
+                               "controls_device_keyboard", "controls_device_xbox",
                                "capture_clear", "capture_cancel"}) {
             if (auto* option = document_->GetElementById(id))
                 option->AddEventListener("click", &events_);
@@ -1097,6 +1110,31 @@ void MenuEvents::ProcessEvent(Rml::Event& event) {
     Rml::Element* element = event.GetCurrentElement();
     if (!element) return;
     const Rml::String& id = element->GetId();
+
+#ifdef KNOMIRA_GAME_SHELL
+    // Mouse activation uses mousedown to avoid the RmlUi click requirement
+    // (press+release over the same element). This fixes rows that previously
+    // scrolled into view but did not enter the capture dialog.
+    // Xbox activation still calls Click(), so both methods work.
+    if (event.GetType() == "mousedown") {
+        if (id.rfind("control_", 0) == 0 &&
+            event.GetParameter<int>("button", -1) == 0 &&
+            !window_->IsCapturing()) {
+            window_->SelectFromClick(id);
+            window_->BeginCapture(id);
+            event.StopPropagation();
+        }
+        return;
+    }
+    if (event.GetType() != "click") return;
+    if (window_->IsCapturing()) {
+        // The modal owns input. Underlying controls must not activate.
+        if (id == "capture_cancel") window_->CancelCapture();
+        else if (id == "capture_clear") window_->ClearCapture();
+        return;
+    }
+#endif
+
     window_->SelectFromClick(id);
     if (id == "quit") {
 #ifdef KNOMIRA_GAME_SHELL
@@ -1127,8 +1165,11 @@ void MenuEvents::ProcessEvent(Rml::Event& event) {
         window_->CancelCapture();
     } else if (id == "capture_clear") {
         window_->ClearCapture();
+    } else if (id.rfind("controls_tab_", 0) == 0 ||
+               id.rfind("controls_device_", 0) == 0) {
+        window_->ChangeSettingsView(id);
     } else if (id.rfind("control_", 0) == 0) {
-        window_->BeginCapture(id);
+        window_->BeginCapture(id); // Controller/keyboard activation (Click).
     } else if (id == "exit_yes") {
         window_->close();
     } else if (id.rfind("save_entry_", 0) == 0) {
