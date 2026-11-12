@@ -1,19 +1,21 @@
 # Install the latest successful RmlUi prototype build into this Knomira checkout.
-# Usage: .\prototype\rmlui\Install-Prototype.ps1 [-NoLaunch]
+# Usage: .\prototype\rmlui\Install-Prototype.ps1 [-NoLaunch] [-QtHost]
 # Requires GitHub CLI (gh), authenticated to GitHub.
 [CmdletBinding()]
 param(
-    [switch]$NoLaunch
+    [switch]$NoLaunch,
+    [switch]$QtHost
 )
 
 $ErrorActionPreference = 'Stop'
 $repository = 'durpscream44-cmyk/Knomira'
-$branch = 'feature/rmlui-menu-prototype'
-$workflow = 'rmlui-prototype.yml'
-$artifactName = 'knomira-rmlui-prototype-windows-debug'
+$branch = if ($QtHost) { 'feature/rmlui-qt-host' } else { 'feature/rmlui-menu-prototype' }
+$workflow = if ($QtHost) { 'rmlui-qt-host.yml' } else { 'rmlui-prototype.yml' }
+$artifactName = if ($QtHost) { 'knomira-rmlui-qt-host-windows-debug' } else { 'knomira-rmlui-prototype-windows-debug' }
+$exeName = if ($QtHost) { 'knomira_rmlui_qt_host.exe' } else { $exeName }
 $root = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 $parent = Join-Path $root 'build\rmlui-prototype'
-$destination = Join-Path $parent 'desktop-test'
+$destination = Join-Path $parent $(if ($QtHost) { 'desktop-test-qt' } else { 'desktop-test' })
 
 if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
     throw 'GitHub CLI (gh) is required. Install it with: winget install --id GitHub.cli -e'
