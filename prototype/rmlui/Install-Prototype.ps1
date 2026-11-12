@@ -10,7 +10,11 @@ param(
 $ErrorActionPreference = 'Stop'
 if ($QtHost -and $GameShell) { throw 'Choose either -QtHost or -GameShell, not both.' }
 $repository = 'durpscream44-cmyk/Knomira'
-$branch = if ($GameShell) { 'feature/noesis-free-shell' } elseif ($QtHost) { 'feature/rmlui-qt-host' } else { 'feature/rmlui-menu-prototype' }
+# Use the feature branch artifact for the opt-in remappable-controls test,
+# leaving the user's verified noesis-free-shell branch/build untouched.
+$currentBranch = (& git -C (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path branch --show-current).Trim()
+$gameShellBranch = if ($currentBranch -eq 'feature/remappable-controls') { 'feature/remappable-controls' } else { 'feature/noesis-free-shell' }
+$branch = if ($GameShell) { $gameShellBranch } elseif ($QtHost) { 'feature/rmlui-qt-host' } else { 'feature/rmlui-menu-prototype' }
 $workflow = if ($GameShell) { 'noesis-free-shell.yml' } elseif ($QtHost) { 'rmlui-qt-host.yml' } else { 'rmlui-prototype.yml' }
 $artifactName = if ($GameShell) { 'knomira-game-shell-windows-debug' } elseif ($QtHost) { 'knomira-rmlui-qt-host-windows-debug' } else { 'knomira-rmlui-prototype-windows-debug' }
 $exeName = if ($GameShell) { 'knomira_game_shell.exe' } elseif ($QtHost) { 'knomira_rmlui_qt_host.exe' } else { 'knomira_rmlui_prototype.exe' }
