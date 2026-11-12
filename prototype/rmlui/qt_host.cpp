@@ -743,6 +743,9 @@ private:
             controllerIndex_ = XUSER_MAX_COUNT;
             previousButtons_ = 0;
             heldDirection_ = 0;
+#ifdef KNOMIRA_GAME_SHELL
+            lastPadTokens_.clear();
+#endif
             if (now < nextScanMs_) return;
             nextScanMs_ = now + 250; // Cheap polling when no gamepad exists.
             for (DWORD i = 0; i < XUSER_MAX_COUNT; ++i) {
@@ -761,14 +764,68 @@ private:
         const WORD pressed = static_cast<WORD>(buttons & ~previousButtons_);
         previousButtons_ = buttons;
 
-        // XInput stick thresholds are intentionally higher than hardware drift.
+#ifdef KNOMIRA_GAME_SHELL
+        // Convert physical XInput state into logical tokens. These exact names
+        // are persisted in controls.json and shared with future world actions.
+        QSet<QString> held;
+        auto add = [&held](bool on, const char* token) {
+            if (on) held.insert(QString::fromLatin1(token));
+        };
+        add((buttons & XINPUT_GAMEPAD_DPAD_UP) != 0, "DPadUp");
+        add((buttons & XINPUT_GAMEPAD_DPAD_DOWN) != 0, "DPadDown");
+        add((buttons & XINPUT_GAMEPAD_DPAD_LEFT) != 0, "DPadLeft");
+        add((buttons & XINPUT_GAMEPAD_DPAD_RIGHT) != 0, "DPadRight");
+        add((buttons & XINPUT_GAMEPAD_A) != 0, "A");
+        add((buttons & XINPUT_GAMEPAD_B) != 0, "B");
+        add((buttons & XINPUT_GAMEPAD_X) != 0, "X");
+        add((buttons & XINPUT_GAMEPAD_Y) != 0, "Y");
+        add((buttons & XINPUT_GAMEPAD_LEFT_SHOULDER) != 0, "LB");
+        add((buttons & XINPUT_GAMEPAD_RIGHT_SHOULDER) != 0, "RB");
+        add((buttons & XINPUT_GAMEPAD_BACK) != 0, "Back");
+        add((buttons & XINPUT_GAMEPAD_START) != 0, "Start");
+        add((buttons & XINPUT_GAMEPAD_LEFT_THUMB) != 0, "LThumb");
+        add((buttons & XINPUT_GAMEPAD_RIGHT_THUMB) != 0, "RThumb");
+        constexpr SHORT stickThreshold = 16000; // Exceeds normal stick drift.
+        add(state.Gamepad.sThumbLY > stickThreshold, "LSUp");
+        add(state.Gamepad.sThumbLY < -stickThreshold, "LSDown");
+        add(state.Gamepad.sThumbLX < -stickThreshold, "LSLeft");
+        add(state.Gamepad.sThumbLX > stickThreshold, "LSRight");
+        add(state.Gamepad.sThumbRY > stickThreshold, "RSUp");
+        add(state.Gamepad.sThumbRY < -stickThreshold, "RSDown");
+        add(state.Gamepad.sThumbRX < -stickThreshold, "RSLeft");
+        add(state.Gamepad.sThumbRX > stickThreshold, "RSRight");
+        add(state.Gamepad.bLeftTrigger > 140, "LT");
+        add(state.Gamepad.bRightTrigger > 140, "RT");
+
+        QSet<QString> justPressed = held;
+        for (const QString& old : lastPadTokens_) justPressed.remove(old);
+        lastPadTokens_ = held;
+
+        if (captureAction_ >= 0) {
+            if (captureController_) {
+                // Use deterministic order if a player presses multiple inputs.
+                for (const QString& token : KnomiraInput::Profile::availablePadTokens()) {
+                    if (justPressed.contains(token)) {
+                        ApplyCapturedPad(token);
+                        break;
+                    }
+                }
+            }
+            return;
+        }
+
+        int direction = 0;
+        if (controls_.padMatches("menu_prev", held)) direction = -1;
+        else if (controls_.padMatches("menu_next", held)) direction = 1;
+#else
+        // Unmodified Qt host prototype keeps its verified fixed XInput controls.
         constexpr SHORT stickThreshold = 16000;
         int direction = 0;
         if ((buttons & XINPUT_GAMEPAD_DPAD_UP) || state.Gamepad.sThumbLY > stickThreshold)
             direction = -1;
         else if ((buttons & XINPUT_GAMEPAD_DPAD_DOWN) || state.Gamepad.sThumbLY < -stickThreshold)
             direction = 1;
-
+#endif
         if (direction == 0) {
             heldDirection_ = 0;
         } else if (direction != heldDirection_) {
@@ -780,13 +837,20 @@ private:
             Navigate(direction);
         }
 
-        if (pressed & XINPUT_GAMEPAD_A) {
+#ifdef KNOMIRA_GAME_SHELL
+        if (controls_.padMatches("menu_accept", justPressed)) {
             ActivateSelected();
-            // The window may close on Exit. Do not touch its UI again in this tick.
             return;
         }
-        if (pressed & XINPUT_GAMEPAD_B)
+        if (controls_.padMatches("menu_back", justPressed))
             BackToMenu();
+#else
+        if (pressed & XINPUT_GAMEPAD_A) {
+            ActivateSelected();
+            return;
+        }
+        if (pressed & XINPUT_GAMEPAD_B) BackToMenu();
+#endif
 #endif
     }
 
