@@ -25,6 +25,7 @@
 
 #include "license.h"
 #include "mainwindowrenderer.h"
+#include "noesiskeyconverter.h"
 #ifdef KNOMIRA_RMLUI_EXPERIMENT
 #include "../../prototype/rmlui/engine_overlay.h"
 #include <QCoreApplication>
@@ -263,7 +264,7 @@ void MainWindow::onFullScreen( bool value )
 void MainWindow::keyPressEvent( QKeyEvent* event )
 {
 	int qtKey = event->key();
-	auto noesisKey = Global::keyConvert( (Qt::Key)qtKey );
+	auto noesisKey = NoesisKeyConverter::fromQt( (Qt::Key)qtKey );
 	//qDebug() << "keyPressEvent" << event->key() << " " << event->text() << noesisKey;
 
 	bool ret = false;
@@ -366,7 +367,7 @@ void MainWindow::keyPressEvent( QKeyEvent* event )
 /// @param event Incoming Qt key event.
 void MainWindow::keyReleaseEvent( QKeyEvent* event )
 {
-	auto noesisKey = Global::keyConvert( (Qt::Key)event->key() );
+	auto noesisKey = NoesisKeyConverter::fromQt( (Qt::Key)event->key() );
 	//qDebug() << "keyReleaseEvent" << event->key() << " " << event->text() << noesisKey;
 	if ( m_view->KeyUp( noesisKey ) )
 	{
