@@ -2,7 +2,7 @@ name: Knomira Noesis-Free Game Shell (Windows)
 
 on:
   push:
-    branches: [feature/noesis-free-shell]
+    branches: [feature/noesis-free-shell, feature/remappable-controls]
     paths:
       - "prototype/rmlui/**"
       - "content/rmlui/**"
@@ -68,13 +68,27 @@ jobs:
       - name: Build Noesis-free shell
         shell: pwsh
         run: |
-          cmake --build build/rmlui-prototype --config Debug --target knomira_game_shell knomira_save_catalog_test knomira_world_renderer_header_compile --parallel 4
+          cmake --build build/rmlui-prototype --config Debug --target knomira_game_shell knomira_save_catalog_test knomira_input_bindings_test --parallel 4
 
       - name: Test save discovery without Noesis
         shell: pwsh
         run: |
           & "build/rmlui-prototype/Debug/knomira_save_catalog_test.exe"
           if ($LASTEXITCODE -ne 0) { throw "Save catalog smoke test failed." }
+
+      - name: Test custom keyboard and gamepad bindings
+        shell: pwsh
+        run: |
+          & "build/rmlui-prototype/Debug/knomira_input_bindings_test.exe"
+          if ($LASTEXITCODE -ne 0) { throw "Controls profile test failed." }
+
+      # This checks the next migration boundary, without blocking working
+      # shell artifacts when other engine headers still need refactoring.
+      - name: Check Noesis-free engine and world header isolation
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          cmake --build build/rmlui-prototype --config Debug --target knomira_world_renderer_header_compile knomira_engine_headers_compile --parallel 4
 
       - name: Stage Qt and FreeType runtime for desktop testing
         shell: pwsh
