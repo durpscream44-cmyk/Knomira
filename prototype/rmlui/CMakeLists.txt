@@ -29,7 +29,7 @@ target_link_libraries(knomira_rmlui_prototype PRIVATE
     rmlui_backend_GLFW_GL3
 )
 target_compile_definitions(knomira_rmlui_prototype PRIVATE
-    KNOMIRA_PROTOTYPE_DOCUMENT="${CMAKE_CURRENT_SOURCE_DIR}/main_menu.rml"
+    KNOMIRA_PROTOTYPE_DOCUMENT=\"${CMAKE_CURRENT_SOURCE_DIR}/main_menu.rml\"
 )
 if(MSVC)
     target_compile_options(knomira_rmlui_prototype PRIVATE /W4)
