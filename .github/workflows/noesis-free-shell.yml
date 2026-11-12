@@ -1,0 +1,97 @@
+name: Knomira Noesis-Free Game Shell (Windows)
+
+on:
+  push:
+    branches: [feature/noesis-free-shell]
+    paths:
+      - "prototype/rmlui/**"
+      - "content/rmlui/**"
+      - "src/gui/mainwindow.*"
+      - "CMakeLists.txt"
+      - ".github/workflows/noesis-free-shell.yml"
+  pull_request:
+    paths:
+      - "prototype/rmlui/**"
+      - ".github/workflows/noesis-free-shell.yml"
+  workflow_dispatch:
+
+jobs:
+  installer-syntax-check:
+    name: Validate PowerShell installer syntax
+    runs-on: windows-2022
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Parse Install-Prototype.ps1 with Windows PowerShell 5.1
+        shell: powershell
+        run: |
+          $tokens = $null
+          $parseErrors = $null
+          $path = Join-Path $env:GITHUB_WORKSPACE 'prototype\rmlui\Install-Prototype.ps1'
+          [System.Management.Automation.Language.Parser]::ParseFile($path, [ref]$tokens, [ref]$parseErrors) | Out-Null
+          if ($parseErrors.Count -gt 0) {
+            $parseErrors | Format-List | Out-String | Write-Host
+            throw "Install-Prototype.ps1 has PowerShell syntax errors."
+          }
+          Write-Host "Installer PowerShell 5.1 syntax is valid."
+
+  game-shell-build:
+    name: Build Noesis-free game shell
+    runs-on: windows-2022
+    timeout-minutes: 50
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Qt 6 for MSVC 2022 x64
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.8.3'
+          arch: win64_msvc2022_64
+          cache: true
+
+      - name: Prepare vcpkg dependencies
+        shell: pwsh
+        run: |
+          git clone --depth 1 https://github.com/microsoft/vcpkg.git "$env:RUNNER_TEMP/vcpkg"
+          & "$env:RUNNER_TEMP/vcpkg/bootstrap-vcpkg.bat" -disableMetrics
+          & "$env:RUNNER_TEMP/vcpkg/vcpkg.exe" install "glfw3:x64-windows" "freetype:x64-windows"
+
+      - name: Configure Noesis-free shell target
+        shell: pwsh
+        run: |
+          cmake -S prototype/rmlui -B build/rmlui-prototype -G "Visual Studio 17 2022" -A x64 "-DCMAKE_TOOLCHAIN_FILE=$env:RUNNER_TEMP/vcpkg/scripts/buildsystems/vcpkg.cmake" "-DCMAKE_PREFIX_PATH=$env:QT_ROOT_DIR" -DKNOMIRA_BUILD_GAME_SHELL=ON
+
+      - name: Build Noesis-free shell
+        shell: pwsh
+        run: |
+          cmake --build build/rmlui-prototype --config Debug --target knomira_game_shell --parallel 4
+
+      - name: Stage Qt and FreeType runtime for desktop testing
+        shell: pwsh
+        run: |
+          $package = "build/rmlui-prototype/Debug"
+          $exe = "$package/knomira_game_shell.exe"
+          if (!(Test-Path $exe)) { throw "Qt-hosted prototype exe missing." }
+          if (!(Test-Path "$package/game_shell.rml")) { throw "Main menu document missing." }
+          & "$env:QT_ROOT_DIR/bin/windeployqt.exe" --debug --no-translations $exe
+          if ($LASTEXITCODE -ne 0) { throw "Qt runtime deployment failed." }
+          $vcpkgBin = "$env:RUNNER_TEMP/vcpkg/installed/x64-windows/debug/bin"
+          if (Test-Path $vcpkgBin) {
+            Get-ChildItem $vcpkgBin -Filter "*.dll" | Copy-Item -Destination $package -Force
+          }
+
+      - name: Upload Qt prototype desktop-test files
+        uses: actions/upload-artifact@v4
+        with:
+          name: knomira-game-shell-windows-debug
+          path: |
+            build/rmlui-prototype/Debug/*.exe
+            build/rmlui-prototype/Debug/*.dll
+            build/rmlui-prototype/Debug/main_menu.rml
+            build/rmlui-prototype/Debug/platforms/**
+            build/rmlui-prototype/Debug/styles/**
+            build/rmlui-prototype/Debug/generic/**
+            build/rmlui-prototype/Debug/iconengines/**
+            build/rmlui-prototype/Debug/tls/**
+          if-no-files-found: error
