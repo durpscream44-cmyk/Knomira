@@ -702,7 +702,9 @@ protected:
             // event dispatch. Keep other menu buttons using normal RmlUi.
             if (event->button() == Qt::LeftButton && showingSettings_ &&
                 captureAction_ < 0) {
-                context_->Update(); // Ensure fresh hit-test geometry after tab changes.
+                // Render() already refreshes the RmlUi layout every frame
+                // with the GL context current. Do not invoke Update() from
+                // input handling without a current GL context.
                 const Rml::Vector2f pointer{
                     float(std::lround(event->position().x() * scale)),
                     float(std::lround(event->position().y() * scale))};
