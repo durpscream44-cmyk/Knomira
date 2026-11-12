@@ -13,6 +13,25 @@ on:
   workflow_dispatch:
 
 jobs:
+  installer-syntax-check:
+    name: Validate PowerShell installer syntax
+    runs-on: windows-2022
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Parse Install-Prototype.ps1 with Windows PowerShell 5.1
+        shell: powershell
+        run: |
+          $tokens = $null
+          $parseErrors = $null
+          $path = Join-Path $env:GITHUB_WORKSPACE 'prototype\rmlui\Install-Prototype.ps1'
+          [System.Management.Automation.Language.Parser]::ParseFile($path, [ref]$tokens, [ref]$parseErrors) | Out-Null
+          if ($parseErrors.Count -gt 0) {
+            $parseErrors | Format-List | Out-String | Write-Host
+            throw "Install-Prototype.ps1 has PowerShell syntax errors."
+          }
+          Write-Host "Installer PowerShell 5.1 syntax is valid."
+
   qt-rmlui-build:
     name: Build Qt QWindow + RmlUi host
     runs-on: windows-2022
