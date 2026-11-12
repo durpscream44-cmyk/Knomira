@@ -40,3 +40,29 @@ if(MSVC)
 else()
     target_compile_options(knomira_rmlui_prototype PRIVATE -Wall -Wextra)
 endif()
+
+# Opt-in next-stage test: host RmlUi in a real Qt QWindow/QOpenGLContext.
+# This verifies the game's windowing approach without altering the game.
+option(KNOMIRA_BUILD_QT_HOST "Build Qt-hosted RmlUi integration proof of concept" OFF)
+if(KNOMIRA_BUILD_QT_HOST)
+    find_package(Qt6 6.5 REQUIRED COMPONENTS Core Gui)
+    add_executable(knomira_rmlui_qt_host
+        qt_host.cpp
+        "${rmlui_SOURCE_DIR}/Backends/RmlUi_Renderer_GL3.cpp"
+    )
+    target_include_directories(knomira_rmlui_qt_host PRIVATE
+        "${rmlui_SOURCE_DIR}/Backends"
+    )
+    target_link_libraries(knomira_rmlui_qt_host PRIVATE
+        RmlUi::RmlUi Qt6::Core Qt6::Gui
+    )
+    add_custom_command(TARGET knomira_rmlui_qt_host POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${CMAKE_CURRENT_SOURCE_DIR}/main_menu.rml"
+            "$<TARGET_FILE_DIR:knomira_rmlui_qt_host>/main_menu.rml"
+        VERBATIM
+    )
+    if(MSVC)
+        target_compile_options(knomira_rmlui_qt_host PRIVATE /W4)
+    endif()
+endif()
