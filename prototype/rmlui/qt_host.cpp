@@ -283,7 +283,8 @@ public:
             const auto selected = std::find(settingsButtonIds_.begin(), settingsButtonIds_.end(), std::string(id));
             if (selected != settingsButtonIds_.end()) {
                 selectedButton_ = int(selected - settingsButtonIds_.begin());
-                FocusSelected();
+                // Mouse already focuses the clicked element. Calling FocusSelected
+                // here would auto-scroll while the click is still in progress.
             }
             return;
         }
@@ -451,7 +452,10 @@ public:
         // Keyboard/Xbox navigation calls FocusSelected() independently.
     }
 
+    bool IsCapturing() const { return captureAction_ >= 0; }
+
     void BeginCapture(const Rml::String& id) {
+        if (!showingSettings_ || captureAction_ >= 0) return;
         const QStringList parts = QString::fromStdString(id).split('_');
         if (parts.size() != 4 || parts[0] != "control") return;
         bool indexOk = false, slotOk = false;
@@ -463,17 +467,38 @@ public:
         captureAction_ = index;
         captureSlot_ = slot;
         captureController_ = (parts[1] == "p");
-        if (auto* panel = document_->GetElementById("binding_capture"))
-            panel->SetProperty("display", "block");
-        if (auto* prompt = document_->GetElementById("capture_prompt")) {
-            const QString message = QStringLiteral("Remapping %1 (%2 %3). Press a %4 input.")
-                .arg(controls_.actions()[index].label)
-                .arg(captureController_ ? QStringLiteral("Controller") : QStringLiteral("Keyboard"))
-                .arg(slot + 1)
-                .arg(captureController_ ? QStringLiteral("gamepad") : QStringLiteral("keyboard"));
-            prompt->SetInnerRML(message.toHtmlEscaped().toUtf8().toStdString());
+        pendingScrollToFocus_ = false; // Do not move the clicked binding.
+        const auto& action = controls_.actions()[index];
+        const QString current = captureController_
+            ? KnomiraInput::Profile::padLabel(action.pads[slot])
+            : KnomiraInput::Profile::keyLabel(action.keys[slot]);
+        const QString device = captureController_ ? "Xbox controller" : "keyboard";
+        if (auto* title = document_->GetElementById("capture_action_name"))
+            title->SetInnerRML(action.label.toHtmlEscaped().toUtf8().toStdString());
+        if (auto* previous = document_->GetElementById("capture_current")) {
+            const QString caption = QStringLiteral("%1 / %2 binding: %3")
+                .arg(device, slot == 0 ? QStringLiteral("Primary") : QStringLiteral("Alternate"), current);
+            previous->SetInnerRML(caption.toHtmlEscaped().toUtf8().toStdString());
         }
-        SetStatus("Press an input to rebind. Escape cancels keyboard capture. Clear / Cancel also available.");
+        if (auto* prompt = document_->GetElementById("capture_prompt")) {
+            const QString caption = captureController_
+                ? QStringLiteral("Press the Xbox button, trigger or stick direction you want to use.")
+                : QStringLiteral("Press the key or combination you want to use.");
+            prompt->SetInnerRML(caption.toHtmlEscaped().toUtf8().toStdString());
+        }
+        if (auto* error = document_->GetElementById("capture_error"))
+            error->SetInnerRML("");
+        if (auto* modal = document_->GetElementById("binding_capture"))
+            modal->SetProperty("display", "block");
+        SetStatus("Listening for a new input. Use Cancel Change or Escape to keep the old binding.");
+        requestUpdate();
+    }
+
+    void ReportCaptureError(const QString& reason) {
+        const QByteArray escaped = reason.toHtmlEscaped().toUtf8();
+        if (auto* warning = document_->GetElementById("capture_error"))
+            warning->SetInnerRML(escaped.constData());
+        SetStatusText(reason);
     }
 
     void CancelCapture() {
@@ -492,7 +517,7 @@ public:
         if (captureAction_ < 0 || captureController_) return;
         QString issue;
         if (!controls_.bindKey(captureAction_, captureSlot_, code, &issue)) {
-            SetStatusText("Cannot assign keyboard input: " + issue);
+            ReportCaptureError("That keyboard shortcut cannot be used: " + issue);
             return;
         }
         FinishCapture();
@@ -502,7 +527,7 @@ public:
         if (captureAction_ < 0 || !captureController_) return;
         QString issue;
         if (!controls_.bindPad(captureAction_, captureSlot_, token, &issue)) {
-            SetStatusText("Cannot assign controller input: " + issue);
+            ReportCaptureError("That controller input cannot be used: " + issue);
             return;
         }
         FinishCapture();
@@ -527,6 +552,7 @@ public:
         else
             SetStatusText("Binding saved for " + actionLabel + ".");
         RebuildSettings();
+        FocusSelected(); // Only after capture completes, not during mouse-down.
     }
 
     void ResetControls() {
@@ -1040,6 +1066,8 @@ private:
     bool showingSaves_ = false;
     bool confirmingExit_ = false;
     bool showingSettings_ = false;
+    int settingsCategory_ = 0; // Menu, World, Panels, System
+    bool settingsGamepad_ = false; // Keyboard or Xbox columns
     KnomiraInput::Profile controls_;
     std::vector<std::string> settingsButtonIds_;
     int captureAction_ = -1;
