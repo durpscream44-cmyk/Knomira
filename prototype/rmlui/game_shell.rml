@@ -1,0 +1,53 @@
+<rml>
+<head>
+  <title>Knomira | Noesis-Free Shell</title>
+  <style>
+    body { margin: 0; background-color: #151f24; color: #e6dfca; font-family: "Segoe UI"; font-size: 18px; }
+    #screen { width: 100%; height: 100%; display: flex; flex-direction: column;
+              align-items: center; justify-content: center; }
+    .panel { width: 640px; padding: 38px; background-color: #28343a;
+             border: 3px solid #b5935b; }
+    .eyebrow { color: #d0aa72; font-size: 15px; letter-spacing: 2px; }
+    h1 { font-size: 60px; color: #f2e4c4; margin: 6px 0px 12px 0px; }
+    h2 { font-size: 29px; color: #f2e4c4; margin: 8px 0px 16px 0px; }
+    .subtitle { color: #adbbb7; margin-bottom: 26px; }
+    button { display: block; width: 100%; min-height: 52px; margin-bottom: 10px;
+             padding: 7px; border: 2px solid #92794f; background-color: #384a4b;
+             color: #f4e8cd; font-family: "Segoe UI"; font-size: 19px;
+             text-align: center; }
+    button:hover { background-color: #526462; border-color: #dcc084; }
+    button:focus { background-color: #586750; border-color: #fff0ac; }
+    button:focus-visible { background-color: #586750; border-color: #fff0ac; }
+    button:active { background-color: #6d785e; }
+    #save_browser { display: none; }
+    #save_list { height: 260px; overflow-y: auto; margin-bottom: 12px; padding: 9px;
+                 background-color: #192629; }
+    #save_list button { text-align: left; font-size: 16px; min-height: 42px; }
+    #status { width: 640px; margin-top: 14px; padding: 15px;
+              border: 1px solid #6b775f; background-color: #192629;
+              color: #b5c6c4; font-size: 15px; }
+    #footer { margin-top: 15px; color: #899b98; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <div id="screen">
+    <div id="menu_panel" class="panel">
+      <p class="eyebrow">THE WORLD IS WAITING</p>
+      <h1>KNOMIRA</h1>
+      <p class="subtitle">Noesis-free engine bootstrap — Phase 4</p>
+      <button id="new_game">New Game (not connected)</button>
+      <button id="load_game">Browse Existing Saves</button>
+      <button id="settings">Settings (not connected)</button>
+      <button id="quit">Exit</button>
+    </div>
+    <div id="save_browser" class="panel">
+      <p class="eyebrow">ORIGINAL INGNOMIA SAVES</p>
+      <h2>Saved Kingdoms</h2>
+      <div id="save_list"></div>
+      <button id="save_back">Back to Main Menu</button>
+    </div>
+    <div id="status">Use keyboard or Xbox controller to navigate.</div>
+    <p id="footer">Read-only testing. Your game files are never modified.</p>
+  </div>
+</body>
+</rml>
