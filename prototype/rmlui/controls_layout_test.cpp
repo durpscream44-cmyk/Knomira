@@ -6,6 +6,9 @@
 #include <RmlUi/Core/Element.h>
 #include <RmlUi/Core/ElementDocument.h>
 #include <RmlUi/Core/RenderInterface.h>
+#include "controls_hit_test.h"
+
+#include <cmath>
 
 #include <cstdio>
 #include <string>
@@ -75,13 +78,13 @@ int main(int argc, char** argv) {
                         "<p class='binding-name'>Previous menu item</p>"
                         "<p class='binding-detail'>ACTIVE IN MENU</p>"
                       "</div>"
-                      "<div id='test_primary' class='binding-slot'>"
+                      "<div id='binding_slot_control_p_0_0' class='binding-slot'>"
                         "<p id='test_primary_value' class='binding-value'>D-pad Up</p>"
-                        "<button id='test_primary_button' class='bind-button'>Change</button>"
+                        "<button id='control_p_0_0' class='bind-button'>Change</button>"
                       "</div>"
-                      "<div id='test_alternate' class='binding-slot'>"
-                        "<p class='binding-value'>Left stick Up</p>"
-                        "<button id='test_alternate_button' class='bind-button'>Change</button>"
+                      "<div id='binding_slot_control_p_0_1' class='binding-slot'>"
+                        "<p id='test_alternate_value' class='binding-value'>Left stick Up</p>"
+                        "<button id='control_p_0_1' class='bind-button'>Change</button>"
                       "</div>"
                     "</div>");
                 doc->Show();
@@ -106,15 +109,15 @@ int main(int argc, char** argv) {
                 checkSize("bindings_list", 950.f);
                 checkSize("test_row", 900.f);
                 checkSize("test_info", 270.f);
-                checkSize("test_primary", 270.f);
-                checkSize("test_alternate", 270.f);
+                checkSize("binding_slot_control_p_0_0", 270.f);
+                checkSize("binding_slot_control_p_0_1", 270.f);
                 checkSize("test_primary_value", 170.f);
-                checkSize("test_primary_button", 85.f);
-                checkSize("test_alternate_button", 85.f);
+                checkSize("control_p_0_0", 85.f);
+                checkSize("control_p_0_1", 85.f);
 
                 if (auto* info = element("test_info")) {
-                    auto* primary = element("test_primary");
-                    auto* alternate = element("test_alternate");
+                    auto* primary = element("binding_slot_control_p_0_0");
+                    auto* alternate = element("binding_slot_control_p_0_1");
                     if (!primary || !alternate ||
                         left(primary) + 1.f < right(info) ||
                         left(alternate) + 1.f < right(primary)) {
@@ -122,6 +125,35 @@ int main(int argc, char** argv) {
                         status = 7;
                     }
                 }
+                // Regression: Qt's direct mouse path uses RmlUi's hovered
+                // element to open the capture dialog BEFORE default focus.
+                // Test both the visible value and the Change button for each
+                // slot. Controller/keyboard synthetic clicks remain separate.
+                auto hitTest = [&](const char* elementId, const char* expected) {
+                    Rml::Element* button = element(elementId);
+                    if (!button) {
+                        status = 9;
+                        return;
+                    }
+                    const auto offset = button->GetAbsoluteOffset(Rml::BoxArea::Border);
+                    const int px = int(std::lround(offset.x + button->GetOffsetWidth() / 2.f));
+                    const int py = int(std::lround(offset.y + button->GetOffsetHeight() / 2.f));
+                    context->ProcessMouseMove(px, py, 0);
+                    const std::string id =
+                        KnomiraInput::FindBindingIdAtHover(context->GetHoverElement());
+                    std::printf("RmlUi mouse at %s (%d,%d): %s\n",
+                                elementId, px, py, id.c_str());
+                    if (id != expected) {
+                        std::fprintf(stderr, "Mouse at %s did not resolve binding %s\n",
+                                     elementId, expected);
+                        status = 10;
+                    }
+                };
+                hitTest("test_primary_value", "control_p_0_0");
+                hitTest("control_p_0_0", "control_p_0_0");
+                hitTest("test_alternate_value", "control_p_0_1");
+                hitTest("control_p_0_1", "control_p_0_1");
+
                 auto* hint = element("settings_hint");
                 auto* label = doc->GetElementById("settings_hint") ? element("settings_hint") : nullptr;
                 auto* category = element("controls_tab_menu");
