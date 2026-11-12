@@ -37,12 +37,20 @@ QString padPretty(const QString& token) {
 
 bool validate(const QVector<Action>& actions, QString* error) {
     for (const auto& action : actions) {
-        // Escape is always an emergency route back to the menu, even if the
-        // user's configured Back binding changes. Don't offer a dead mapping.
-        if (action.group == "Menu" && action.id != "menu_back" &&
-            (action.keys[0] == Qt::Key_Escape || action.keys[1] == Qt::Key_Escape)) {
-            if (error) *error = "Escape is reserved as the menu recovery shortcut.";
-            return false;
+        // Escape and Tab are always recoverable navigation shortcuts.
+        // Do not offer key chords that the shell can never dispatch.
+        if (action.group == "Menu") {
+            constexpr int modifierMask = int(Qt::SHIFT | Qt::CTRL | Qt::ALT | Qt::META);
+            for (int index = 0; index < 2; ++index) {
+                const int base = action.keys[index] & ~modifierMask;
+                // The default Back action keeps Escape as its binding.
+                if (base == Qt::Key_Tab ||
+                    (base == Qt::Key_Escape && action.id != "menu_back") ||
+                    (base == Qt::Key_Escape && action.keys[index] != Qt::Key_Escape)) {
+                    if (error) *error = "Tab and modified Escape are reserved for safe menu navigation.";
+                    return false;
+                }
+            }
         }
         for (int slot = 0; slot < 2; ++slot) {
             const auto& token = action.pads[slot];
