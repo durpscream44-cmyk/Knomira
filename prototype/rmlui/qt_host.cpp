@@ -434,8 +434,9 @@ public:
                 // once in Initialise. Only generated fields need listeners.
                 if (id.rfind("control_", 0) != 0) continue;
                 if (auto* button = document_->GetElementById(id)) {
-                    button->AddEventListener("mousedown", &events_); // mouse: capture immediately
-                    button->AddEventListener("click", &events_);     // Xbox: Click() route
+                    // Mouse input is resolved directly in mousePressEvent,
+                    // before RmlUi moves focus or scrolls the list.
+                    button->AddEventListener("click", &events_); // Xbox/keyboard Click()
                 }
             }
         }
@@ -702,12 +703,13 @@ protected:
             if (event->button() == Qt::LeftButton && showingSettings_ &&
                 captureAction_ < 0) {
                 context_->Update(); // Ensure fresh hit-test geometry after tab changes.
-                context_->ProcessMouseMove(
-                    int(std::lround(event->position().x() * scale)),
-                    int(std::lround(event->position().y() * scale)),
-                    Modifiers(event->modifiers()));
+                const Rml::Vector2f pointer(
+                    float(std::lround(event->position().x() * scale)),
+                    float(std::lround(event->position().y() * scale)));
+                // Use RmlUi's direct geometry hit-test, not its mouse hover
+                // events. Those can change focus and initiate scrolling.
                 const std::string binding = KnomiraInput::FindBindingIdAtHover(
-                    context_->GetHoverElement());
+                    context_->GetElementAtPoint(pointer));
                 if (!binding.empty()) {
                     SelectFromClick(binding);
                     BeginCapture(binding);
@@ -1181,20 +1183,9 @@ void MenuEvents::ProcessEvent(Rml::Event& event) {
     const Rml::String& id = element->GetId();
 
 #ifdef KNOMIRA_GAME_SHELL
-    // Mouse activation uses mousedown to avoid the RmlUi click requirement
-    // (press+release over the same element). This fixes rows that previously
-    // scrolled into view but did not enter the capture dialog.
-    // Xbox activation still calls Click(), so both methods work.
-    if (event.GetType() == "mousedown") {
-        if (id.rfind("control_", 0) == 0 &&
-            event.GetParameter<int>("button", -1) == 0 &&
-            !window_->IsCapturing()) {
-            window_->SelectFromClick(id);
-            window_->BeginCapture(id);
-            event.StopPropagation();
-        }
-        return;
-    }
+    // Native mouse input selects bindings directly from geometry in
+    // QtMenuWindow::mousePressEvent. Only synthetic/keyboard/controller Click()
+    // events are handled here; these never depend on pointer focus.
     if (event.GetType() != "click") return;
     if (window_->IsCapturing()) {
         // The modal owns input. Underlying controls must not activate.
