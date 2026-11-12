@@ -37,6 +37,13 @@ QString padPretty(const QString& token) {
 
 bool validate(const QVector<Action>& actions, QString* error) {
     for (const auto& action : actions) {
+        // Escape is always an emergency route back to the menu, even if the
+        // user's configured Back binding changes. Don't offer a dead mapping.
+        if (action.group == "Menu" && action.id != "menu_back" &&
+            (action.keys[0] == Qt::Key_Escape || action.keys[1] == Qt::Key_Escape)) {
+            if (error) *error = "Escape is reserved as the menu recovery shortcut.";
+            return false;
+        }
         for (int slot = 0; slot < 2; ++slot) {
             const auto& token = action.pads[slot];
             if (!token.isEmpty() && !kPadTokens.contains(token)) {
