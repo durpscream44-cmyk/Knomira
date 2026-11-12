@@ -39,9 +39,24 @@ jobs:
         run: |
           cmake --build build/rmlui-prototype --config Debug --target knomira_rmlui_prototype --parallel 4
 
-      - name: Upload binary for local smoke test
+      - name: Bundle runtime dependencies for desktop testing
+        shell: pwsh
+        run: |
+          $package = "build/rmlui-prototype/Debug"
+          $dllFolder = "$env:RUNNER_TEMP/vcpkg/installed/x64-windows/debug/bin"
+          if (Test-Path $dllFolder) {
+            Get-ChildItem $dllFolder -Filter "*.dll" | Copy-Item -Destination $package -Force
+          }
+          if (!(Test-Path "$package/main_menu.rml")) {
+            throw "The menu document was not copied to the executable directory."
+          }
+
+      - name: Upload desktop-test package
         uses: actions/upload-artifact@v4
         with:
           name: knomira-rmlui-prototype-windows-debug
-          path: build/rmlui-prototype/Debug/knomira_rmlui_prototype.exe
+          path: |
+            build/rmlui-prototype/Debug/knomira_rmlui_prototype.exe
+            build/rmlui-prototype/Debug/main_menu.rml
+            build/rmlui-prototype/Debug/*.dll
           if-no-files-found: error
