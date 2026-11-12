@@ -24,8 +24,12 @@ QString ingnomiaSaveRoot() {
 }
 
 QVector<KnomiraSaveEntry> findIngnomiaSaves() {
+    return findIngnomiaSavesInRoot(ingnomiaSaveRoot());
+}
+
+QVector<KnomiraSaveEntry> findIngnomiaSavesInRoot(const QString& saveRoot) {
     QVector<KnomiraSaveEntry> saves;
-    const QDir root(ingnomiaSaveRoot());
+    const QDir root(saveRoot);
     if (!root.exists())
         return saves;
 
