@@ -607,6 +607,47 @@ protected:
     }
 
     void keyPressEvent(QKeyEvent* event) override {
+#ifdef KNOMIRA_GAME_SHELL
+        if (captureAction_ >= 0) {
+            if (!event->isAutoRepeat()) {
+                if (event->key() == Qt::Key_Escape) {
+                    CancelCapture();
+                } else if (!captureController_) {
+                    switch (event->key()) {
+                    case Qt::Key_Shift:
+                    case Qt::Key_Control:
+                    case Qt::Key_Alt:
+                    case Qt::Key_Meta:
+                        break; // Wait for a complete chord.
+                    default:
+                        ApplyCapturedKey(KnomiraInput::Profile::normalizeKey(
+                            event->key(), int(event->modifiers())));
+                        break;
+                    }
+                }
+            }
+            event->accept();
+            return;
+        }
+        if (!event->isAutoRepeat()) {
+            const int chord = KnomiraInput::Profile::normalizeKey(
+                event->key(), int(event->modifiers()));
+            if (controls_.keyMatches("menu_prev", chord)) Navigate(-1);
+            else if (controls_.keyMatches("menu_next", chord)) Navigate(1);
+            else if (controls_.keyMatches("menu_accept", chord)) ActivateSelected();
+            else if (controls_.keyMatches("menu_back", chord)) BackToMenu();
+            else if (event->key() == Qt::Key_Tab || event->key() == Qt::Key_Backtab)
+                Navigate((event->key() == Qt::Key_Backtab ||
+                          (event->modifiers() & Qt::ShiftModifier)) ? -1 : 1);
+            else if (event->key() == Qt::Key_Escape) BackToMenu(); // recovery shortcut
+            else {
+                event->ignore();
+                return;
+            }
+        }
+        event->accept();
+        return;
+#else
         if (!event->isAutoRepeat()) {
             switch (event->key()) {
             case Qt::Key_Tab:
@@ -652,6 +693,7 @@ protected:
             }
         }
         requestUpdate();
+#endif
     }
 
     void keyReleaseEvent(QKeyEvent* event) override {
@@ -814,7 +856,9 @@ private:
 #ifdef KNOMIRA_GAME_SHELL
         if (auto* back = document_->GetElementById("save_back"))
             back->AddEventListener("click", &events_);
-        for (const char* id : {"exit_cancel", "exit_yes"}) {
+        for (const char* id : {"exit_cancel", "exit_yes",
+                               "controls_reset", "controls_back",
+                               "capture_clear", "capture_cancel"}) {
             if (auto* option = document_->GetElementById(id))
                 option->AddEventListener("click", &events_);
         }
@@ -899,10 +943,22 @@ void MenuEvents::ProcessEvent(Rml::Event& event) {
         window_->SetStatus("Qt host: Load Game clicked; saves not connected.");
 #endif
     } else if (id == "settings") {
-        window_->SetStatus("Settings: engine settings adapter not connected yet.");
 #ifdef KNOMIRA_GAME_SHELL
-    } else if (id == "save_back" || id == "exit_cancel") {
+        window_->ShowSettings();
+#else
+        window_->SetStatus("Settings: engine settings adapter not connected yet.");
+#endif
+#ifdef KNOMIRA_GAME_SHELL
+    } else if (id == "save_back" || id == "exit_cancel" || id == "controls_back") {
         window_->BackToMenu();
+    } else if (id == "controls_reset") {
+        window_->ResetControls();
+    } else if (id == "capture_cancel") {
+        window_->CancelCapture();
+    } else if (id == "capture_clear") {
+        window_->ClearCapture();
+    } else if (id.rfind("control_", 0) == 0) {
+        window_->BeginCapture(id);
     } else if (id == "exit_yes") {
         window_->close();
     } else if (id.rfind("save_entry_", 0) == 0) {
@@ -917,6 +973,10 @@ void MenuEvents::ProcessEvent(Rml::Event& event) {
 
 int main(int argc, char** argv) {
     QGuiApplication application(argc, argv);
+#ifdef KNOMIRA_GAME_SHELL
+    QCoreApplication::setOrganizationName(QStringLiteral("Knomira"));
+    QCoreApplication::setApplicationName(QStringLiteral("Knomira"));
+#endif
     QtMenuWindow window;
     window.show();
     return application.exec();
