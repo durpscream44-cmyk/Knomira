@@ -27,6 +27,7 @@
 #ifdef KNOMIRA_GAME_SHELL
 #include "save_catalog.h"
 #include "input_bindings.h"
+#include "controls_hit_test.h"
 #include <QSet>
 #include <vector>
 #include <algorithm>
@@ -417,7 +418,7 @@ public:
                     // After FinishCapture(), RebuildSettings() refreshes both
                     // this readout and the active action's input behavior.
                     const QString shown = unbound ? QStringLiteral("Not assigned") : label;
-                    markup += "<div class='binding-slot'>";
+                    markup += "<div class='binding-slot' id='binding_slot_" + id + "'>";
                     markup += "<p class='binding-value";
                     if (unbound) markup += " unbound";
                     markup += "'>" + shown.toHtmlEscaped().toUtf8().toStdString() + "</p>";
@@ -689,6 +690,34 @@ protected:
 #endif
         if (context_) {
             const double scale = devicePixelRatio();
+#ifdef KNOMIRA_GAME_SHELL
+            // RmlUi normally focuses (and can scroll) an element before its
+            // mousedown event is delivered. A number of controls can therefore
+            // move out from under the pointer before their click fires.
+            //
+            // A direct left-click on a binding value OR its Change button
+            // should always open the intended capture dialog. Resolve the
+            // hovered target first, without relying on RmlUi's focus/click
+            // event dispatch. Keep other menu buttons using normal RmlUi.
+            if (event->button() == Qt::LeftButton && showingSettings_ &&
+                captureAction_ < 0) {
+                context_->Update(); // Ensure fresh hit-test geometry after tab changes.
+                context_->ProcessMouseMove(
+                    int(std::lround(event->position().x() * scale)),
+                    int(std::lround(event->position().y() * scale)),
+                    Modifiers(event->modifiers()));
+                const std::string binding = KnomiraInput::FindBindingIdAtHover(
+                    context_->GetHoverElement());
+                if (!binding.empty()) {
+                    SelectFromClick(binding);
+                    BeginCapture(binding);
+                    swallowBindingMouseRelease_ = true;
+                    event->accept();
+                    requestUpdate();
+                    return; // Do not trigger RmlUi mouse focus/auto-scroll.
+                }
+            }
+#endif
             context_->ProcessMouseMove(
                 int(std::lround(event->position().x() * scale)),
                 int(std::lround(event->position().y() * scale)),
@@ -701,6 +730,16 @@ protected:
     }
 
     void mouseReleaseEvent(QMouseEvent* event) override {
+#ifdef KNOMIRA_GAME_SHELL
+        if (event->button() == Qt::LeftButton && swallowBindingMouseRelease_) {
+            // The corresponding down was handled directly. Do not forward an
+            // orphaned up to the new capture dialog (Clear/Cancel buttons).
+            swallowBindingMouseRelease_ = false;
+            event->accept();
+            requestUpdate();
+            return;
+        }
+#endif
         if (context_) {
             // RmlUi's click requires down/up over the same element. Update
             // cursor coordinates even when Qt did not emit a move in between.
@@ -1116,6 +1155,7 @@ private:
     int captureSlot_ = -1;
     bool captureController_ = false;
     bool pendingScrollToFocus_ = false;
+    bool swallowBindingMouseRelease_ = false;
     QSet<QString> lastPadTokens_;
 #endif
 #ifdef _WIN32
