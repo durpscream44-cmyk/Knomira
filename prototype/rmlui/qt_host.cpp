@@ -703,9 +703,9 @@ protected:
             if (event->button() == Qt::LeftButton && showingSettings_ &&
                 captureAction_ < 0) {
                 context_->Update(); // Ensure fresh hit-test geometry after tab changes.
-                const Rml::Vector2f pointer(
+                const Rml::Vector2f pointer{
                     float(std::lround(event->position().x() * scale)),
-                    float(std::lround(event->position().y() * scale)));
+                    float(std::lround(event->position().y() * scale))};
                 // Use RmlUi's direct geometry hit-test, not its mouse hover
                 // events. Those can change focus and initiate scrolling.
                 const std::string binding = KnomiraInput::FindBindingIdAtHover(
