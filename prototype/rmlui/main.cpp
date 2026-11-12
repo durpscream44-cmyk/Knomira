@@ -57,7 +57,7 @@ bool LoadFont() {
 
 } // namespace
 
-int main() {
+int main(int argc, char** argv) {
     constexpr int width = 1280;
     constexpr int height = 800;
     if (!Backend::Initialize("Knomira | RmlUi Prototype", width, height, true)) {
@@ -81,9 +81,15 @@ int main() {
         return 1;
     }
 
-    Rml::ElementDocument* document = context->LoadDocument(KNOMIRA_PROTOTYPE_DOCUMENT);
+    // Use the executable's directory instead of the CI machine's source path.
+    // CMake copies main_menu.rml next to this executable after building.
+    const std::filesystem::path executable = std::filesystem::absolute(
+        argc > 0 && argv[0] && argv[0][0] ? argv[0] : "knomira_rmlui_prototype");
+    const std::filesystem::path menu_file = executable.parent_path() / "main_menu.rml";
+    const Rml::String menu_path = menu_file.generic_string();
+    Rml::ElementDocument* document = context->LoadDocument(menu_path);
     if (!document) {
-        std::cerr << "Failed to load menu: " << KNOMIRA_PROTOTYPE_DOCUMENT << "\n";
+        std::cerr << "Failed to load menu: " << menu_path << "\n";
         Rml::Shutdown();
         Backend::Shutdown();
         return 1;
