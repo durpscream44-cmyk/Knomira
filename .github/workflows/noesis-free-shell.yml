@@ -68,7 +68,7 @@ jobs:
       - name: Build Noesis-free shell
         shell: pwsh
         run: |
-          cmake --build build/rmlui-prototype --config Debug --target knomira_game_shell knomira_save_catalog_test knomira_input_bindings_test --parallel 4
+          cmake --build build/rmlui-prototype --config Debug --target knomira_game_shell knomira_save_catalog_test knomira_input_bindings_test knomira_rmlui_layout_test --parallel 4
 
       - name: Test save discovery without Noesis
         shell: pwsh
@@ -89,6 +89,12 @@ jobs:
         continue-on-error: true
         run: |
           cmake --build build/rmlui-prototype --config Debug --target knomira_world_renderer_header_compile knomira_engine_headers_compile --parallel 4
+
+      - name: Test actual RmlUi bindings layout geometry
+        shell: pwsh
+        run: |
+          & "build/rmlui-prototype/Debug/knomira_rmlui_layout_test.exe" "prototype/rmlui/game_shell.rml"
+          if ($LASTEXITCODE -ne 0) { throw "RmlUi controls layout collapsed or overlaps." }
 
       - name: Validate readable control-menu document and action IDs
         shell: pwsh
