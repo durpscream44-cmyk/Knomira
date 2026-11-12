@@ -39,6 +39,24 @@
                   border-color: #53666b; }
     .tab-button.tab-selected { background-color: #665338; color: #fff4d9;
                                border-color: #f4c77d; }
+    /* Category navigation uses explicit wide buttons, not flex:1.
+       RmlUi may size flex:auto items to text width, bunching all four left. */
+    .category-label { margin: 2px 0px 8px 0px; color: #d8c4a3;
+                      font-size: 14px; letter-spacing: 1px; }
+    .category-strip { display: flex; flex-direction: row; width: 100%;
+                      justify-content: space-between; margin-bottom: 18px; }
+    button.category-button { display: block; flex-grow: 0; flex-shrink: 0;
+                             width: 220px; min-width: 220px; min-height: 64px;
+                             padding: 12px 8px; margin: 0px; border: 2px solid #779196;
+                             background-color: #314854; color: #f6ecda;
+                             font-size: 21px; font-weight: bold; text-align: center; }
+    button.category-button:hover { background-color: #4c6570;
+                                   border-color: #f4ce88; }
+    button.category-button:focus { border-color: #fff0ac;
+                                   background-color: #526c6b; }
+    button.category-button.tab-selected { background-color: #79613c;
+                                         border: 3px solid #f5cc84;
+                                         color: #fff5df; }
     .tab-device { font-size: 17px; min-height: 47px; }
     .table-header { display: flex; flex-direction: row; padding: 10px 14px;
                     background-color: #17262c; border-bottom: 2px solid #8f7959; }
@@ -120,11 +138,12 @@
         <div id="settings_state">Changes save automatically</div>
       </div>
       <p id="settings_hint">Choose a category and device, then select a binding to change it.</p>
-      <div class="tab-strip">
-        <button class="tab-button" id="controls_tab_menu">Menu</button>
-        <button class="tab-button" id="controls_tab_world">World</button>
-        <button class="tab-button" id="controls_tab_panels">Panels</button>
-        <button class="tab-button" id="controls_tab_system">System</button>
+      <p class="category-label">CONTROL CATEGORY</p>
+      <div class="category-strip">
+        <button class="tab-button category-button" id="controls_tab_menu">Menu</button>
+        <button class="tab-button category-button" id="controls_tab_world">World</button>
+        <button class="tab-button category-button" id="controls_tab_panels">Panels</button>
+        <button class="tab-button category-button" id="controls_tab_system">System</button>
       </div>
       <div class="tab-strip">
         <button class="tab-button tab-device" id="controls_device_keyboard">Keyboard</button>
