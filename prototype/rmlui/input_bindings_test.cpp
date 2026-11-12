@@ -26,6 +26,10 @@ int main(int argc, char** argv) {
     QString reason;
     if (!Check(!original.bindKey(0, 0, Qt::Key_Down, &reason),
                "Conflicting key binding should be rejected")) return 4;
+    if (!Check(!original.bindKey(0, 0, Qt::Key_Tab, &reason),
+               "Tab recovery navigation must remain reserved")) return 18;
+    if (!Check(!original.bindKey(0, 0, int(Qt::CTRL) | Qt::Key_Escape, &reason),
+               "Modified Escape cannot be assigned to unreachable menu action")) return 19;
     if (!Check(!original.bindPad(0, 0, "DPadDown", &reason),
                "Conflicting controller binding should be rejected")) return 5;
     if (!Check(original.bindKey(0, 0, Qt::Key_F3, &reason),
