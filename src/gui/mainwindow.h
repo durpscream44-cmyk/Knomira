@@ -30,6 +30,10 @@
 #include <QElapsedTimer>
 #include <QWindow>
 #include <QTimer>
+#ifdef KNOMIRA_RMLUI_EXPERIMENT
+#include <memory>
+namespace Knomira { class RmlUiEngineOverlay; }
+#endif
 
 class QOpenGLContext;
 
@@ -133,6 +137,10 @@ private:
 
 	Noesis::IView* m_view          = nullptr;    ///< Noesis GUI view hosted on top of the world.
 	MainWindowRenderer* m_renderer = nullptr;    ///< Game world renderer.
+#ifdef KNOMIRA_RMLUI_EXPERIMENT
+	// Shares m_context, never creates another GL context or receives input.
+	std::unique_ptr<Knomira::RmlUiEngineOverlay> m_rmlUiOverlay;
+#endif
 
 	int m_clickX = 0;                            ///< Global X of last mouse click.
 	int m_clickY = 0;                            ///< Global Y of last mouse click.

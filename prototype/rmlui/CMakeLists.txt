@@ -66,4 +66,22 @@ if(KNOMIRA_BUILD_QT_HOST)
     if(MSVC)
         target_compile_options(knomira_rmlui_qt_host PRIVATE /W4)
     endif()
+
+    # Compile the exact adapter used by the real MainWindow integration,
+    # even without the proprietary NoesisSDK. Keep this as a compile-only
+    # static library to catch Qt/RmlUi/GLAD header errors on Windows CI.
+    add_library(knomira_rmlui_engine_adapter_compile STATIC
+        engine_overlay.cpp
+        "${rmlui_SOURCE_DIR}/Backends/RmlUi_Renderer_GL3.cpp"
+    )
+    target_include_directories(knomira_rmlui_engine_adapter_compile PRIVATE
+        "${rmlui_SOURCE_DIR}/Backends"
+        "${CMAKE_CURRENT_SOURCE_DIR}/../../3rdparty/glad/include"
+    )
+    target_compile_definitions(knomira_rmlui_engine_adapter_compile PRIVATE
+        "RMLUI_GL3_CUSTOM_LOADER=<glad/gl.h>"
+    )
+    target_link_libraries(knomira_rmlui_engine_adapter_compile PRIVATE
+        RmlUi::RmlUi Qt6::Core Qt6::Gui
+    )
 endif()

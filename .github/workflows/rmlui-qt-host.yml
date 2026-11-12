@@ -2,9 +2,12 @@ name: Knomira Qt-hosted RmlUi (Windows)
 
 on:
   push:
-    branches: [feature/rmlui-qt-host]
+    branches: [feature/rmlui-qt-host, feature/rmlui-engine-overlay]
     paths:
       - "prototype/rmlui/**"
+      - "content/rmlui/**"
+      - "src/gui/mainwindow.*"
+      - "CMakeLists.txt"
       - ".github/workflows/rmlui-qt-host.yml"
   pull_request:
     paths:
@@ -62,7 +65,7 @@ jobs:
       - name: Build Qt-hosted prototype
         shell: pwsh
         run: |
-          cmake --build build/rmlui-prototype --config Debug --target knomira_rmlui_qt_host --parallel 4
+          cmake --build build/rmlui-prototype --config Debug --target knomira_rmlui_qt_host knomira_rmlui_engine_adapter_compile --parallel 4
 
       - name: Stage Qt and FreeType runtime for desktop testing
         shell: pwsh

@@ -5,6 +5,7 @@ file(
 	"*.json"
 	"*.glsl"
 	"*.xaml"
+	"*.rml"
 	"*.ttf"
 	"*.otf"
 	"*.png"

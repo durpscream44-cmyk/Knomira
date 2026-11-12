@@ -95,6 +95,47 @@ target_sources(${PROJECT_NAME}
 add_subdirectory(src) # Sources list
 add_subdirectory(3rdparty) # 3rd party dependencies
 
+# Phase 3: opt-in diagnostic RmlUi overlay inside Ingnomia's *existing*
+# MainWindow Qt/OpenGL context. Noesis and world rendering remain intact.
+# The full game still requires its original Noesis SDK until migration ends.
+option(KNOMIRA_RMLUI_ENGINE_OVERLAY "Build experimental RmlUi in-game overlay" OFF)
+if(KNOMIRA_RMLUI_ENGINE_OVERLAY)
+    include(FetchContent)
+    set(RMLUI_SAMPLES OFF CACHE BOOL "" FORCE)
+    set(RMLUI_SHELL OFF CACHE BOOL "" FORCE)
+    set(RMLUI_FONT_ENGINE freetype CACHE STRING "" FORCE)
+    find_package(Freetype REQUIRED)
+    FetchContent_Declare(knomira_rmlui
+        GIT_REPOSITORY https://github.com/mikke89/RmlUi.git
+        GIT_TAG 6.3
+        GIT_SHALLOW TRUE
+    )
+    FetchContent_MakeAvailable(knomira_rmlui)
+
+    set(KNOMIRA_RMLUI_ENGINE_GL3 "${knomira_rmlui_SOURCE_DIR}/Backends/RmlUi_Renderer_GL3.cpp")
+    set(KNOMIRA_RMLUI_ENGINE_ADAPTER "${CMAKE_SOURCE_DIR}/prototype/rmlui/engine_overlay.cpp")
+
+    # Both UI libraries share the same OpenGL context and the game's GLAD
+    # function pointers. Never compile RmlUi's bundled GLAD a second time.
+    target_sources(${PROJECT_NAME} PRIVATE
+        ${KNOMIRA_RMLUI_ENGINE_ADAPTER}
+        ${KNOMIRA_RMLUI_ENGINE_GL3}
+    )
+    target_include_directories(${PROJECT_NAME} PRIVATE "${knomira_rmlui_SOURCE_DIR}/Backends")
+    target_compile_definitions(${PROJECT_NAME} PRIVATE
+        KNOMIRA_RMLUI_EXPERIMENT=1
+        "RMLUI_GL3_CUSTOM_LOADER=<glad/gl.h>"
+    )
+    target_link_libraries(${PROJECT_NAME} PRIVATE RmlUi::RmlUi)
+    # The upstream GL renderer is not game code and cannot depend on the
+    # game's Noesis precompiled header.
+    set_source_files_properties(
+        "${KNOMIRA_RMLUI_ENGINE_GL3}"
+        "${KNOMIRA_RMLUI_ENGINE_ADAPTER}"
+        PROPERTIES SKIP_PRECOMPILE_HEADERS ON
+    )
+endif()
+
 # Linking
 target_link_libraries(${PROJECT_NAME}
 	PRIVATE
