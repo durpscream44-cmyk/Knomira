@@ -25,6 +25,10 @@
 
 #include "license.h"
 #include "mainwindowrenderer.h"
+#ifdef KNOMIRA_RMLUI_EXPERIMENT
+#include "../../prototype/rmlui/engine_overlay.h"
+#include <QCoreApplication>
+#endif
 #include "xaml/GameGui.xaml.h"
 #include "xaml/GameModel.h"
 #include "xaml/IngamePage.xaml.h"
@@ -158,6 +162,17 @@ MainWindow::~MainWindow()
 	}
 
 	IO::saveConfig();
+
+#ifdef KNOMIRA_RMLUI_EXPERIMENT
+	// Release RmlUi and its GL resources before destroying the shared context.
+	if ( m_rmlUiOverlay )
+	{
+		makeCurrent();
+		m_rmlUiOverlay->shutdown();
+		m_rmlUiOverlay.reset();
+		doneCurrent();
+	}
+#endif
 
 	if ( m_context )
 	{
@@ -866,6 +881,18 @@ void MainWindow::paintGL()
 	// Rendering is done in the active framebuffer
 	m_view->GetRenderer()->Render();
 
+#ifdef KNOMIRA_RMLUI_EXPERIMENT
+	// First incremental migration stage: render a *passive* RmlUi overlay in
+	// this same backbuffer, after the world and Noesis, before swapping.
+	// The experimental overlay consumes no mouse, keyboard, or Xbox input.
+	if ( m_rmlUiOverlay && m_rmlUiOverlay->isReady() )
+	{
+		glBindFramebuffer( GL_FRAMEBUFFER, 0 );
+		glViewport( 0, 0, int( width() * devicePixelRatio() ), int( height() * devicePixelRatio() ) );
+		m_rmlUiOverlay->render();
+	}
+#endif
+
 	m_context->swapBuffers( this );
 
 	// Use slower tick rate in menu (no game world to render)
@@ -893,6 +920,13 @@ void MainWindow::resizeGL( int w, int h )
 
 	makeCurrent();
 	glViewport( 0, 0, this->width() * devicePixelRatio(), this->height() * devicePixelRatio() );
+#ifdef KNOMIRA_RMLUI_EXPERIMENT
+	if ( m_rmlUiOverlay )
+	{
+		m_rmlUiOverlay->resize( int( width() * devicePixelRatio() ),
+		                         int( height() * devicePixelRatio() ), float( devicePixelRatio() ) );
+	}
+#endif
 
 	emit signalWindowSize( this->width(), this->height() );
 
@@ -949,6 +983,28 @@ void MainWindow::initializeGL()
 	m_renderer->initializeGL();
 
 	noesisInit();
+
+#ifdef KNOMIRA_RMLUI_EXPERIMENT
+	// Explicit runtime opt-in keeps legacy builds and player controls untouched.
+	// Requires a build configured with -DKNOMIRA_RMLUI_ENGINE_OVERLAY=ON.
+	if ( qEnvironmentVariableIsSet( "KNOMIRA_TEST_RMLUI_OVERLAY" ) )
+	{
+		makeCurrent();
+		auto candidate = std::make_unique<Knomira::RmlUiEngineOverlay>();
+		const QString documentPath = QCoreApplication::applicationDirPath() + "/content/rmlui/engine_overlay.rml";
+		if ( candidate->initialize( documentPath,
+		                           int( width() * devicePixelRatio() ),
+		                           int( height() * devicePixelRatio() ),
+		                           float( devicePixelRatio() ) ) )
+		{
+			m_rmlUiOverlay = std::move( candidate );
+		}
+		else
+		{
+			qWarning() << "Experimental RmlUi overlay not available; continuing with original Noesis view.";
+		}
+	}
+#endif
 
 	// Trigger initial resize — QOpenGLWindow did this automatically, QWindow does not
 	resizeGL( width(), height() );
