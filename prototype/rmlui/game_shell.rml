@@ -20,6 +20,11 @@
     button:focus-visible { background-color: #586750; border-color: #fff0ac; }
     button:active { background-color: #6d785e; }
     #save_browser { display: none; }
+    #exit_confirm { display: none; }
+    #exit_confirm h2 { color: #f2e4c4; }
+    #exit_confirm p { color: #c5c9ba; margin: 10px 0px 22px 0px; }
+    #exit_yes { border-color: #a36e55; }
+
     #save_list { height: 260px; overflow-y: auto; margin-bottom: 12px; padding: 9px;
                  background-color: #192629; }
     #save_list button { text-align: left; font-size: 16px; min-height: 42px; }
@@ -45,6 +50,13 @@
       <h2>Saved Kingdoms</h2>
       <div id="save_list"></div>
       <button id="save_back">Back to Main Menu</button>
+    </div>
+    <div id="exit_confirm" class="panel">
+      <p class="eyebrow">CONFIRM ACTION</p>
+      <h2>Exit Knomira?</h2>
+      <p>Are you sure you want to close the game?</p>
+      <button id="exit_cancel">Cancel — Return to Menu</button>
+      <button id="exit_yes">Yes, Exit Knomira</button>
     </div>
     <div id="status">Use keyboard or Xbox controller to navigate.</div>
     <p id="footer">Read-only testing. Your game files are never modified.</p>
