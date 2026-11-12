@@ -724,8 +724,12 @@ private:
     void FocusSelected() {
         if (!document_) return;
         const std::string id = SelectedId();
-        if (Rml::Element* button = document_->GetElementById(id))
+        if (Rml::Element* button = document_->GetElementById(id)) {
             button->Focus(true); // Enables CSS :focus-visible highlight.
+#ifdef KNOMIRA_GAME_SHELL
+            if (showingSettings_) pendingScrollToFocus_ = true;
+#endif
+        }
         requestUpdate();
     }
 
@@ -949,6 +953,16 @@ private:
         }
         if (!context_ || !glContext_->makeCurrent(this)) return;
         context_->Update();
+#ifdef KNOMIRA_GAME_SHELL
+        // Layout must be computed before scrolling to a dynamically-generated
+        // row. This keeps every binding reachable with only an Xbox controller.
+        if (pendingScrollToFocus_ && document_) {
+            const std::string id = SelectedId();
+            if (Rml::Element* button = document_->GetElementById(id))
+                button->ScrollIntoView();
+            pendingScrollToFocus_ = false;
+        }
+#endif
         renderer_->Clear();
         renderer_->BeginFrame();
         context_->Render();
@@ -972,6 +986,7 @@ private:
     int captureAction_ = -1;
     int captureSlot_ = -1;
     bool captureController_ = false;
+    bool pendingScrollToFocus_ = false;
     QSet<QString> lastPadTokens_;
 #endif
 #ifdef _WIN32
