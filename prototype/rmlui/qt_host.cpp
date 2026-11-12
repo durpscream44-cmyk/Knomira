@@ -289,6 +289,10 @@ protected:
                 Navigate(event->modifiers() & Qt::ShiftModifier ? -1 : 1);
                 event->accept();
                 return;
+            case Qt::Key_Backtab:
+                Navigate(-1);
+                event->accept();
+                return;
             case Qt::Key_Up:
             case Qt::Key_Left:
                 Navigate(-1);
@@ -456,6 +460,9 @@ private:
                 element->AddEventListener("click", &events_);
         }
         document_->Show();
+        if (Rml::Element* footer = document_->GetElementById("footer"))
+            footer->SetInnerRML("Proof of concept: Qt 6 + RmlUi + OpenGL; no NoesisGUI.");
+        SetStatus("Use arrows / Tab or Xbox D-pad / stick to navigate. Enter / A selects.");
         selectedButton_ = 0;
         FocusSelected();
         glContext_->doneCurrent();
