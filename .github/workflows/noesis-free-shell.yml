@@ -90,6 +90,29 @@ jobs:
         run: |
           cmake --build build/rmlui-prototype --config Debug --target knomira_world_renderer_header_compile knomira_engine_headers_compile --parallel 4
 
+      - name: Validate readable control-menu document and action IDs
+        shell: pwsh
+        run: |
+          $file = "prototype/rmlui/game_shell.rml"
+          $document = New-Object System.Xml.XmlDocument
+          $document.Load((Resolve-Path $file).Path)
+          $nodes = @($document.SelectNodes('//*[@id]'))
+          $ids = @($nodes | ForEach-Object { $_.GetAttribute("id") })
+          $required = @(
+            "settings_panel", "controls_tab_menu", "controls_tab_world",
+            "controls_tab_panels", "controls_tab_system",
+            "controls_device_keyboard", "controls_device_xbox",
+            "bindings_list", "capture_action_name", "capture_prompt",
+            "capture_current", "capture_error", "capture_clear",
+            "capture_cancel", "controls_reset", "controls_back"
+          )
+          foreach ($id in $required) {
+            if ($ids -notcontains $id) { throw "Missing control-menu element: $id" }
+          }
+          $duplicates = $ids | Group-Object | Where-Object { $_.Count -gt 1 }
+          if ($duplicates) { throw "Duplicate RML element IDs: $($duplicates.Name -join ', ')" }
+          Write-Host "Controls screen XML and expected static IDs validated."
+
       - name: Stage Qt and FreeType runtime for desktop testing
         shell: pwsh
         run: |
