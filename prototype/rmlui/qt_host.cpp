@@ -26,6 +26,15 @@
 #include <QWindow>
 
 #ifdef _WIN32
+// Windows SDK XInput.h depends on Windows architecture definitions and must
+// be included *after* Windows.h (otherwise winnt.h emits "No Target Architecture").
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <Windows.h>
 #include <Xinput.h>
 #endif
 
