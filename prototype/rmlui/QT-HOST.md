@@ -52,13 +52,42 @@ If `git switch` reports that the branch does not yet exist locally, use
 A successful CI compile does not guarantee the new window launches.
 Report the desktop results before attempting the actual game integration.
 
+## Xbox controller / keyboard input (Windows Qt host)
+
+This prototype now supports **native Windows XInput 1.4** Xbox controllers.
+Connect an Xbox controller by USB, Microsoft wireless adapter, or compatible
+Bluetooth pairing before launching (or while the menu is open). The prototype
+scans controller slots 0–3 and reconnects automatically.
+
+| Input | Menu behavior |
+| --- | --- |
+| Xbox D-pad Up/Down | Change selected menu button |
+| Xbox left stick Up/Down | Change selected menu button (stick deadzone) |
+| Xbox A | Activate selected button |
+| Xbox B | Return selection to New Game / main menu |
+| Keyboard Up/Down/Left/Right | Change selected menu button |
+| Keyboard Tab / Shift+Tab | Move selection forward / backward |
+| Keyboard Enter / Space | Activate selection |
+| Keyboard Escape | Return to main menu |
+
+Buttons receive a visible focused highlight. Holding the gamepad D-pad or
+stick starts repeating after 360ms, then every 140ms. Disconnected controllers
+are scanned at most once every 250ms, and connected controllers are polled by
+the UI's existing 16ms timer. These polls never tick the simulation.
+
+**Scope:** Input handling is implemented for the new **Qt-hosted menu test
+executable**, *not yet* for the old Noesis-based game or game world. It provides
+a verified integration pattern to migrate to the eventual in-game UI.
+
 ## Acceptance tests
 
 - Build produces `knomira_rmlui_qt_host.exe` with the menu RML file adjacent.
 - Qt opens a resizable OpenGL window on desktop.
 - Buttons work: first three update status and Exit closes the window.
 - Mouse hit testing still works at 100% and 150% Windows DPI scaling.
-- Keyboard navigation, resizing, clipboard, and close/reopen are checked.
+- Keyboard arrows, Tab/Shift+Tab, Enter, Escape, resizing and close/reopen are checked.
+- Xbox XInput controller connects and the D-pad / left stick / A / B all work as specified.
+- Closing via keyboard or gamepad does not leave an error dialog or unhandled exception. Console cleanup messages are recorded verbatim if present.
 - No Noesis SDK or license is required by this *test target*.
 - Existing game CMake and gameplay code remain unchanged.
 
