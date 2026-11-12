@@ -32,6 +32,22 @@ build\rmlui-prototype\Debug\knomira_rmlui_prototype.exe
 
 If `cmake` isn't on PATH, invoke the CMake executable by its full path. If Git/FetchContent is blocked, download RmlUi 6.3 separately and adjust the local CMake source reference.
 
+## Windows GitHub Actions desktop test
+
+The `Knomira RmlUi Prototype (Windows)` workflow builds the prototype and uploads
+`knomira-rmlui-prototype-windows-debug` containing the executable, `main_menu.rml`,
+and required vcpkg Debug DLLs. From the successful workflow run, download the
+artifact ZIP, extract **all files to the same folder**, and launch
+`knomira_rmlui_prototype.exe`.
+
+Test all four buttons, window resizing, and clean exit. The first three buttons
+only display placeholders: they are not connected to game creation, saves, or
+settings yet. If Windows reports a missing MSVC runtime, install the matching
+Visual C++ Redistributable or run on a machine with Visual Studio 2022 installed.
+
+**Important:** A successful CI compile is not proof that the app opens or renders.
+The main menu still needs a Windows desktop smoke test.
+
 ## Scope and next steps
 
 1. Confirm the standalone prototype configures, compiles and launches on Windows.
