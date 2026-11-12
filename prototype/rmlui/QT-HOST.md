@@ -29,6 +29,29 @@ The Windows CI workflow `.github/workflows/rmlui-qt-host.yml` also builds the
 target against Qt 6.8.3 and uploads a packaged artifact containing Qt runtime
 dependencies. This is a compilation/package check, **not** a graphical test.
 
+## Install the Qt-hosted CI build into your Knomira folder
+
+When the new `Knomira Qt-hosted RmlUi (Windows)` workflow completes successfully,
+run this from PowerShell while on the `feature/rmlui-qt-host` branch:
+
+```powershell
+git fetch origin
+git switch feature/rmlui-qt-host
+git pull
+powershell -NoProfile -ExecutionPolicy Bypass -File .\prototype\rmlui\Install-Prototype.ps1 -QtHost
+```
+
+The installer downloads the new Qt-hosted artifact into
+`build\rmlui-prototype\desktop-test-qt\` and launches
+`knomira_rmlui_qt_host.exe`. It preserves the earlier
+`build\rmlui-prototype\desktop-test\` GLFW prototype.
+
+If `git switch` reports that the branch does not yet exist locally, use
+`git switch --track origin/feature/rmlui-qt-host` instead.
+
+A successful CI compile does not guarantee the new window launches.
+Report the desktop results before attempting the actual game integration.
+
 ## Acceptance tests
 
 - Build produces `knomira_rmlui_qt_host.exe` with the menu RML file adjacent.
