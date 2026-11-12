@@ -39,6 +39,8 @@
       text-align: center;
     }
     button:hover { background-color: #526462; border-color: #dcc084; }
+    button:focus { background-color: #586750; border-color: #fff0ac; }
+    button:focus-visible { background-color: #586750; border-color: #fff0ac; }
     button:active { background-color: #6d785e; }
     #status {
       margin-top: 22px;
