@@ -25,7 +25,12 @@
 #include <QWheelEvent>
 #include <QWindow>
 
+#ifdef _WIN32
+#include <Xinput.h>
+#endif
+
 #include <cmath>
+#include <array>
 #include <memory>
 #include <string>
 
@@ -125,6 +130,8 @@ bool LoadFont() {
     return false;
 }
 
+constexpr std::array<const char*, 4> MenuButtonIds{"new_game", "load_game", "settings", "quit"};
+
 class QtMenuWindow;
 
 class MenuEvents final : public Rml::EventListener {
@@ -153,7 +160,9 @@ public:
         setTitle(QStringLiteral("Knomira | Qt + RmlUi Host"));
         resize(1280, 800);
 
+        pollClock_.start();
         QObject::connect(&timer_, &QTimer::timeout, this, [this] {
+            PollGamepad();
             if (isExposed()) requestUpdate();
         });
         timer_.setInterval(16); // UI demonstration only; NOT simulation ticks.
@@ -176,6 +185,37 @@ public:
                 status->SetInnerRML(message);
         }
         requestUpdate();
+    }
+
+    // Keyboard and Xbox controllers share a single, deterministic menu cursor.
+    // The same navigation actions can later be routed to the real game UI.
+    void Navigate(int direction) {
+        if (!document_ || direction == 0) return;
+        constexpr int buttonCount = int(MenuButtonIds.size());
+        selectedButton_ = (selectedButton_ + direction + buttonCount) % buttonCount;
+        FocusSelected();
+    }
+
+    void ActivateSelected() {
+        if (!document_) return;
+        if (Rml::Element* button = document_->GetElementById(MenuButtonIds[size_t(selectedButton_)]))
+            button->Click();
+    }
+
+    void BackToMenu() {
+        selectedButton_ = 0;
+        FocusSelected();
+        SetStatus("Main menu: use arrows / D-pad / left stick, Enter / A to select.");
+    }
+
+    void SelectFromClick(const Rml::String& id) {
+        for (size_t i = 0; i < MenuButtonIds.size(); ++i) {
+            if (id == MenuButtonIds[i]) {
+                selectedButton_ = int(i);
+                FocusSelected();
+                return;
+            }
+        }
     }
 
 protected:
@@ -243,6 +283,36 @@ protected:
     }
 
     void keyPressEvent(QKeyEvent* event) override {
+        if (!event->isAutoRepeat()) {
+            switch (event->key()) {
+            case Qt::Key_Tab:
+                Navigate(event->modifiers() & Qt::ShiftModifier ? -1 : 1);
+                event->accept();
+                return;
+            case Qt::Key_Up:
+            case Qt::Key_Left:
+                Navigate(-1);
+                event->accept();
+                return;
+            case Qt::Key_Down:
+            case Qt::Key_Right:
+                Navigate(1);
+                event->accept();
+                return;
+            case Qt::Key_Return:
+            case Qt::Key_Enter:
+            case Qt::Key_Space:
+                ActivateSelected();
+                event->accept();
+                return;
+            case Qt::Key_Escape:
+                BackToMenu();
+                event->accept();
+                return;
+            default:
+                break;
+            }
+        }
         if (context_) {
             const int modifiers = Modifiers(event->modifiers());
             const auto key = Key(event->key());
@@ -266,6 +336,74 @@ protected:
     }
 
 private:
+    void FocusSelected() {
+        if (!document_) return;
+        if (Rml::Element* button = document_->GetElementById(MenuButtonIds[size_t(selectedButton_)]))
+            button->Focus(true); // Enables CSS :focus-visible highlight.
+        requestUpdate();
+    }
+
+    void PollGamepad() {
+#ifdef _WIN32
+        if (!isActive() || !document_) return;
+        const qint64 now = pollClock_.elapsed();
+        XINPUT_STATE state{};
+        DWORD result = ERROR_DEVICE_NOT_CONNECTED;
+
+        if (controllerIndex_ < XUSER_MAX_COUNT)
+            result = XInputGetState(controllerIndex_, &state);
+
+        if (result != ERROR_SUCCESS) {
+            controllerIndex_ = XUSER_MAX_COUNT;
+            previousButtons_ = 0;
+            heldDirection_ = 0;
+            if (now < nextScanMs_) return;
+            nextScanMs_ = now + 250; // Cheap polling when no gamepad exists.
+            for (DWORD i = 0; i < XUSER_MAX_COUNT; ++i) {
+                if (XInputGetState(i, &state) == ERROR_SUCCESS) {
+                    controllerIndex_ = i;
+                    result = ERROR_SUCCESS;
+                    SetStatus("Xbox controller detected. D-pad / left stick: navigate; A: select; B: back.");
+                    break;
+                }
+            }
+        }
+
+        if (result != ERROR_SUCCESS) return;
+
+        const WORD buttons = state.Gamepad.wButtons;
+        const WORD pressed = static_cast<WORD>(buttons & ~previousButtons_);
+        previousButtons_ = buttons;
+
+        // XInput stick thresholds are intentionally higher than hardware drift.
+        constexpr SHORT stickThreshold = 16000;
+        int direction = 0;
+        if ((buttons & XINPUT_GAMEPAD_DPAD_UP) || state.Gamepad.sThumbLY > stickThreshold)
+            direction = -1;
+        else if ((buttons & XINPUT_GAMEPAD_DPAD_DOWN) || state.Gamepad.sThumbLY < -stickThreshold)
+            direction = 1;
+
+        if (direction == 0) {
+            heldDirection_ = 0;
+        } else if (direction != heldDirection_) {
+            heldDirection_ = direction;
+            nextRepeatMs_ = now + 360;
+            Navigate(direction);
+        } else if (now >= nextRepeatMs_) {
+            nextRepeatMs_ = now + 140;
+            Navigate(direction);
+        }
+
+        if (pressed & XINPUT_GAMEPAD_A) {
+            ActivateSelected();
+            // The window may close on Exit. Do not touch its UI again in this tick.
+            return;
+        }
+        if (pressed & XINPUT_GAMEPAD_B)
+            BackToMenu();
+#endif
+    }
+
     void ResizeUi() {
         if (!context_ || !renderer_) return;
         const QSize pixels = size() * devicePixelRatio();
@@ -313,11 +451,13 @@ private:
             qCritical() << "Cannot load main menu:" << filePath;
             return false;
         }
-        for (const char* id : {"new_game", "load_game", "settings", "quit"}) {
+        for (const char* id : MenuButtonIds) {
             if (Rml::Element* element = document_->GetElementById(id))
                 element->AddEventListener("click", &events_);
         }
         document_->Show();
+        selectedButton_ = 0;
+        FocusSelected();
         glContext_->doneCurrent();
         qInfo() << "Knomira Qt-hosted RmlUi menu initialized.";
         return true;
@@ -344,6 +484,15 @@ private:
     QtSystemInterface system_;
     MenuEvents events_;
     QTimer timer_;
+    QElapsedTimer pollClock_;
+    int selectedButton_ = 0;
+#ifdef _WIN32
+    DWORD controllerIndex_ = XUSER_MAX_COUNT;
+    WORD previousButtons_ = 0;
+    int heldDirection_ = 0;
+    qint64 nextRepeatMs_ = 0;
+    qint64 nextScanMs_ = 0;
+#endif
     std::unique_ptr<QOpenGLContext> glContext_;
     std::unique_ptr<RenderInterface_GL3> renderer_;
     Rml::Context* context_ = nullptr;
@@ -358,6 +507,7 @@ void MenuEvents::ProcessEvent(Rml::Event& event) {
     Rml::Element* element = event.GetCurrentElement();
     if (!element) return;
     const Rml::String& id = element->GetId();
+    window_->SelectFromClick(id);
     if (id == "quit") {
         window_->close();
     } else if (id == "new_game") {
