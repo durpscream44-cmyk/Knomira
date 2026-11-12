@@ -138,10 +138,11 @@ int main(int argc, char** argv) {
                     const auto offset = button->GetAbsoluteOffset(Rml::BoxArea::Border);
                     const int px = int(std::lround(offset.x + button->GetOffsetWidth() / 2.f));
                     const int py = int(std::lround(offset.y + button->GetOffsetHeight() / 2.f));
-                    context->ProcessMouseMove(px, py, 0);
-                    const std::string id =
-                        KnomiraInput::FindBindingIdAtHover(context->GetHoverElement());
-                    std::printf("RmlUi mouse at %s (%d,%d): %s\n",
+                    const Rml::Vector2f point(float(px), float(py));
+                    // Same direct, no-focus/no-scroll hit-test as Qt mousePressEvent.
+                    const std::string id = KnomiraInput::FindBindingIdAtHover(
+                        context->GetElementAtPoint(point));
+                    std::printf("RmlUi direct hit at %s (%d,%d): %s\n",
                                 elementId, px, py, id.c_str());
                     if (id != expected) {
                         std::fprintf(stderr, "Mouse at %s did not resolve binding %s\n",
