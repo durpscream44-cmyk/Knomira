@@ -26,6 +26,10 @@
 #include <QWindow>
 #ifdef KNOMIRA_GAME_SHELL
 #include "save_catalog.h"
+#include "input_bindings.h"
+#include <QSet>
+#include <vector>
+#include <algorithm>
 #endif
 
 #ifdef _WIN32
@@ -194,6 +198,11 @@ public:
 #endif
         resize(1280, 800);
 
+#ifdef KNOMIRA_GAME_SHELL
+        QString bindingsError;
+        if (!controls_.load(&bindingsError))
+            qWarning() << "Controls profile invalid; safe defaults used:" << bindingsError;
+#endif
         pollClock_.start();
         QObject::connect(&timer_, &QTimer::timeout, this, [this] {
             PollGamepad();
@@ -227,6 +236,8 @@ public:
         if (!document_ || direction == 0) return;
         int buttonCount = int(MenuButtonIds.size());
 #ifdef KNOMIRA_GAME_SHELL
+        if (captureAction_ >= 0) return;
+        if (showingSettings_) buttonCount = int(settingsButtonIds_.size());
         if (showingSaves_) buttonCount = int(saves_.size()) + 1; // Back button
         if (confirmingExit_) buttonCount = 2; // Cancel (default), Confirm
 #endif
@@ -243,6 +254,11 @@ public:
 
     void BackToMenu() {
 #ifdef KNOMIRA_GAME_SHELL
+        if (captureAction_ >= 0) {
+            CancelCapture();
+            return;
+        }
+        showingSettings_ = false;
         showingSaves_ = false;
         confirmingExit_ = false;
         if (document_) {
@@ -252,15 +268,25 @@ public:
                 browser->SetProperty("display", "none");
             if (auto* confirm = document_->GetElementById("exit_confirm"))
                 confirm->SetProperty("display", "none");
+            if (auto* settings = document_->GetElementById("settings_panel"))
+                settings->SetProperty("display", "none");
         }
 #endif
         selectedButton_ = 0;
         FocusSelected();
-        SetStatus("Main menu: use arrows / D-pad / left stick, Enter / A to select.");
+        SetStatus("Main menu: use your configured bindings, Tab/Shift+Tab, or mouse.");
     }
 
     void SelectFromClick(const Rml::String& id) {
 #ifdef KNOMIRA_GAME_SHELL
+        if (showingSettings_) {
+            const auto selected = std::find(settingsButtonIds_.begin(), settingsButtonIds_.end(), std::string(id));
+            if (selected != settingsButtonIds_.end()) {
+                selectedButton_ = int(selected - settingsButtonIds_.begin());
+                FocusSelected();
+            }
+            return;
+        }
         if (confirmingExit_) {
             if (id == "exit_cancel" || id == "exit_yes") {
                 selectedButton_ = (id == "exit_yes") ? 1 : 0;
@@ -296,25 +322,187 @@ public:
     }
 
 #ifdef KNOMIRA_GAME_SHELL
+    void SetStatusText(const QString& plain) {
+        const QByteArray utf8 = plain.toHtmlEscaped().toUtf8();
+        SetStatus(utf8.constData());
+    }
+
+    void ShowSettings() {
+        if (!document_) return;
+        showingSettings_ = true;
+        confirmingExit_ = false;
+        showingSaves_ = false;
+        if (auto* menu = document_->GetElementById("menu_panel"))
+            menu->SetProperty("display", "none");
+        if (auto* saves = document_->GetElementById("save_browser"))
+            saves->SetProperty("display", "none");
+        if (auto* confirm = document_->GetElementById("exit_confirm"))
+            confirm->SetProperty("display", "none");
+        if (auto* settings = document_->GetElementById("settings_panel"))
+            settings->SetProperty("display", "block");
+        RebuildSettings();
+        selectedButton_ = 0;
+        FocusSelected();
+        SetStatus("Controls: menu bindings are live; gameplay bindings are saved for future engine integration.");
+    }
+
+    void RebuildSettings() {
+        settingsButtonIds_.clear();
+        if (!document_) return;
+        Rml::Element* list = document_->GetElementById("bindings_list");
+        if (!list) return;
+        std::string markup;
+        QString lastGroup;
+        const auto& actions = controls_.actions();
+        for (int i = 0; i < actions.size(); ++i) {
+            const auto& action = actions[i];
+            if (lastGroup != action.group) {
+                lastGroup = action.group;
+                markup += "<h3 class='control-group'>" + lastGroup.toHtmlEscaped().toUtf8().toStdString() + "</h3>";
+            }
+            markup += "<div class='control-row'><p class='control-name'>";
+            markup += action.label.toHtmlEscaped().toUtf8().toStdString();
+            markup += action.activeInShell ? " (active)</p>" : " (planned)</p>";
+            for (int slot = 0; slot < 2; ++slot) {
+                const std::string id = "control_k_" + std::to_string(i) + "_" + std::to_string(slot);
+                settingsButtonIds_.push_back(id);
+                markup += "<button class='bind-button' id='" + id + "'>K";
+                markup += std::to_string(slot + 1) + ": ";
+                markup += KnomiraInput::Profile::keyLabel(action.keys[slot]).toHtmlEscaped().toUtf8().toStdString();
+                markup += "</button>";
+            }
+            for (int slot = 0; slot < 2; ++slot) {
+                const std::string id = "control_p_" + std::to_string(i) + "_" + std::to_string(slot);
+                settingsButtonIds_.push_back(id);
+                markup += "<button class='bind-button' id='" + id + "'>Pad";
+                markup += std::to_string(slot + 1) + ": ";
+                markup += KnomiraInput::Profile::padLabel(action.pads[slot]).toHtmlEscaped().toUtf8().toStdString();
+                markup += "</button>";
+            }
+            markup += "</div>";
+        }
+        list->SetInnerRML(markup);
+        for (const auto& id : settingsButtonIds_) {
+            if (Rml::Element* button = document_->GetElementById(id))
+                button->AddEventListener("click", &events_);
+        }
+        settingsButtonIds_.push_back("controls_reset");
+        settingsButtonIds_.push_back("controls_back");
+        selectedButton_ = std::min(selectedButton_, int(settingsButtonIds_.size()) - 1);
+        FocusSelected();
+    }
+
+    void BeginCapture(const Rml::String& id) {
+        const QStringList parts = QString::fromStdString(id).split('_');
+        if (parts.size() != 4 || parts[0] != "control") return;
+        bool indexOk = false, slotOk = false;
+        const int index = parts[2].toInt(&indexOk);
+        const int slot = parts[3].toInt(&slotOk);
+        if (!indexOk || !slotOk || slot < 0 || slot > 1 ||
+            index < 0 || index >= controls_.actions().size()) return;
+        if (parts[1] != "k" && parts[1] != "p") return;
+        captureAction_ = index;
+        captureSlot_ = slot;
+        captureController_ = (parts[1] == "p");
+        if (auto* panel = document_->GetElementById("binding_capture"))
+            panel->SetProperty("display", "block");
+        if (auto* prompt = document_->GetElementById("capture_prompt")) {
+            const QString message = QStringLiteral("Remapping %1 (%2 %3). Press a %4 input.")
+                .arg(controls_.actions()[index].label)
+                .arg(captureController_ ? QStringLiteral("Controller") : QStringLiteral("Keyboard"))
+                .arg(slot + 1)
+                .arg(captureController_ ? QStringLiteral("gamepad") : QStringLiteral("keyboard"));
+            prompt->SetInnerRML(message.toHtmlEscaped().toUtf8().toStdString());
+        }
+        SetStatus("Press an input to rebind. Escape cancels keyboard capture. Clear / Cancel also available.");
+    }
+
+    void CancelCapture() {
+        captureAction_ = -1;
+        captureSlot_ = -1;
+        captureController_ = false;
+        if (document_) {
+            if (auto* panel = document_->GetElementById("binding_capture"))
+                panel->SetProperty("display", "none");
+        }
+        FocusSelected();
+        SetStatus("Binding capture cancelled. Choose another input or return to menu.");
+    }
+
+    void ApplyCapturedKey(int code) {
+        if (captureAction_ < 0 || captureController_) return;
+        QString issue;
+        if (!controls_.bindKey(captureAction_, captureSlot_, code, &issue)) {
+            SetStatusText("Cannot assign keyboard input: " + issue);
+            return;
+        }
+        FinishCapture();
+    }
+
+    void ApplyCapturedPad(const QString& token) {
+        if (captureAction_ < 0 || !captureController_) return;
+        QString issue;
+        if (!controls_.bindPad(captureAction_, captureSlot_, token, &issue)) {
+            SetStatusText("Cannot assign controller input: " + issue);
+            return;
+        }
+        FinishCapture();
+    }
+
+    void ClearCapture() {
+        if (captureAction_ < 0) return;
+        if (captureController_) ApplyCapturedPad(QString());
+        else ApplyCapturedKey(0);
+    }
+
+    void FinishCapture() {
+        const QString actionLabel = controls_.actions()[captureAction_].label;
+        captureAction_ = -1;
+        captureSlot_ = -1;
+        captureController_ = false;
+        if (auto* panel = document_->GetElementById("binding_capture"))
+            panel->SetProperty("display", "none");
+        QString error;
+        if (!controls_.save(&error))
+            SetStatusText("Binding changed for " + actionLabel + ", but saving failed: " + error);
+        else
+            SetStatusText("Binding saved for " + actionLabel + ".");
+        RebuildSettings();
+    }
+
+    void ResetControls() {
+        controls_.resetDefaults();
+        QString error;
+        if (!controls_.save(&error))
+            SetStatusText("Default controls restored in memory, but saving failed: " + error);
+        else
+            SetStatus("All controls restored to defaults and saved.");
+        RebuildSettings();
+    }
+
     void OpenExitConfirm() {
         if (!document_) return;
         confirmingExit_ = true;
         showingSaves_ = false;
+        showingSettings_ = false;
         if (auto* main = document_->GetElementById("menu_panel"))
             main->SetProperty("display", "none");
         if (auto* browser = document_->GetElementById("save_browser"))
             browser->SetProperty("display", "none");
+        if (auto* settings = document_->GetElementById("settings_panel"))
+            settings->SetProperty("display", "none");
         if (auto* confirm = document_->GetElementById("exit_confirm"))
             confirm->SetProperty("display", "block");
         selectedButton_ = 0; // Always default to Cancel, including gamepad A.
         FocusSelected();
-        SetStatus("Exit Knomira? Cancel is selected. Enter / Xbox A selects; Escape / Xbox B cancels.");
+        SetStatus("Exit Knomira? Cancel is selected. Use your configured Select / Back bindings.");
     }
 
     void ShowSaveBrowser() {
         saves_ = findIngnomiaSaves();
         showingSaves_ = true;
         confirmingExit_ = false;
+        showingSettings_ = false;
         if (auto* main = document_->GetElementById("menu_panel"))
             main->SetProperty("display", "none");
         if (auto* browser = document_->GetElementById("save_browser"))
@@ -419,6 +607,47 @@ protected:
     }
 
     void keyPressEvent(QKeyEvent* event) override {
+#ifdef KNOMIRA_GAME_SHELL
+        if (captureAction_ >= 0) {
+            if (!event->isAutoRepeat()) {
+                if (event->key() == Qt::Key_Escape) {
+                    CancelCapture();
+                } else if (!captureController_) {
+                    switch (event->key()) {
+                    case Qt::Key_Shift:
+                    case Qt::Key_Control:
+                    case Qt::Key_Alt:
+                    case Qt::Key_Meta:
+                        break; // Wait for a complete chord.
+                    default:
+                        ApplyCapturedKey(KnomiraInput::Profile::normalizeKey(
+                            event->key(), int(event->modifiers())));
+                        break;
+                    }
+                }
+            }
+            event->accept();
+            return;
+        }
+        if (!event->isAutoRepeat()) {
+            const int chord = KnomiraInput::Profile::normalizeKey(
+                event->key(), int(event->modifiers()));
+            if (event->key() == Qt::Key_Escape) BackToMenu(); // always recover
+            else if (controls_.keyMatches("menu_prev", chord)) Navigate(-1);
+            else if (controls_.keyMatches("menu_next", chord)) Navigate(1);
+            else if (controls_.keyMatches("menu_accept", chord)) ActivateSelected();
+            else if (controls_.keyMatches("menu_back", chord)) BackToMenu();
+            else if (event->key() == Qt::Key_Tab || event->key() == Qt::Key_Backtab)
+                Navigate((event->key() == Qt::Key_Backtab ||
+                          (event->modifiers() & Qt::ShiftModifier)) ? -1 : 1);
+            else {
+                event->ignore();
+                return;
+            }
+        }
+        event->accept();
+        return;
+#else
         if (!event->isAutoRepeat()) {
             switch (event->key()) {
             case Qt::Key_Tab:
@@ -464,6 +693,7 @@ protected:
             }
         }
         requestUpdate();
+#endif
     }
 
     void keyReleaseEvent(QKeyEvent* event) override {
@@ -485,6 +715,8 @@ private:
                 return "save_entry_" + std::to_string(selectedButton_);
             return "save_back";
         }
+        if (showingSettings_ && selectedButton_ >= 0 && selectedButton_ < int(settingsButtonIds_.size()))
+            return settingsButtonIds_[size_t(selectedButton_)];
 #endif
         return MenuButtonIds[size_t(selectedButton_)];
     }
@@ -492,8 +724,12 @@ private:
     void FocusSelected() {
         if (!document_) return;
         const std::string id = SelectedId();
-        if (Rml::Element* button = document_->GetElementById(id))
+        if (Rml::Element* button = document_->GetElementById(id)) {
             button->Focus(true); // Enables CSS :focus-visible highlight.
+#ifdef KNOMIRA_GAME_SHELL
+            if (showingSettings_) pendingScrollToFocus_ = true;
+#endif
+        }
         requestUpdate();
     }
 
@@ -511,13 +747,20 @@ private:
             controllerIndex_ = XUSER_MAX_COUNT;
             previousButtons_ = 0;
             heldDirection_ = 0;
+#ifdef KNOMIRA_GAME_SHELL
+            lastPadTokens_.clear();
+#endif
             if (now < nextScanMs_) return;
             nextScanMs_ = now + 250; // Cheap polling when no gamepad exists.
             for (DWORD i = 0; i < XUSER_MAX_COUNT; ++i) {
                 if (ReadControllerState(i, &state) == ERROR_SUCCESS) {
                     controllerIndex_ = i;
                     result = ERROR_SUCCESS;
+#ifdef KNOMIRA_GAME_SHELL
+                    SetStatus("Xbox controller detected. Custom bindings available in Settings / Controls.");
+#else
                     SetStatus("Xbox controller detected. D-pad / left stick: navigate; A: select; B: back.");
+#endif
                     break;
                 }
             }
@@ -529,14 +772,68 @@ private:
         const WORD pressed = static_cast<WORD>(buttons & ~previousButtons_);
         previousButtons_ = buttons;
 
-        // XInput stick thresholds are intentionally higher than hardware drift.
+#ifdef KNOMIRA_GAME_SHELL
+        // Convert physical XInput state into logical tokens. These exact names
+        // are persisted in controls.json and shared with future world actions.
+        QSet<QString> held;
+        auto add = [&held](bool on, const char* token) {
+            if (on) held.insert(QString::fromLatin1(token));
+        };
+        add((buttons & XINPUT_GAMEPAD_DPAD_UP) != 0, "DPadUp");
+        add((buttons & XINPUT_GAMEPAD_DPAD_DOWN) != 0, "DPadDown");
+        add((buttons & XINPUT_GAMEPAD_DPAD_LEFT) != 0, "DPadLeft");
+        add((buttons & XINPUT_GAMEPAD_DPAD_RIGHT) != 0, "DPadRight");
+        add((buttons & XINPUT_GAMEPAD_A) != 0, "A");
+        add((buttons & XINPUT_GAMEPAD_B) != 0, "B");
+        add((buttons & XINPUT_GAMEPAD_X) != 0, "X");
+        add((buttons & XINPUT_GAMEPAD_Y) != 0, "Y");
+        add((buttons & XINPUT_GAMEPAD_LEFT_SHOULDER) != 0, "LB");
+        add((buttons & XINPUT_GAMEPAD_RIGHT_SHOULDER) != 0, "RB");
+        add((buttons & XINPUT_GAMEPAD_BACK) != 0, "Back");
+        add((buttons & XINPUT_GAMEPAD_START) != 0, "Start");
+        add((buttons & XINPUT_GAMEPAD_LEFT_THUMB) != 0, "LThumb");
+        add((buttons & XINPUT_GAMEPAD_RIGHT_THUMB) != 0, "RThumb");
+        constexpr SHORT stickThreshold = 16000; // Exceeds normal stick drift.
+        add(state.Gamepad.sThumbLY > stickThreshold, "LSUp");
+        add(state.Gamepad.sThumbLY < -stickThreshold, "LSDown");
+        add(state.Gamepad.sThumbLX < -stickThreshold, "LSLeft");
+        add(state.Gamepad.sThumbLX > stickThreshold, "LSRight");
+        add(state.Gamepad.sThumbRY > stickThreshold, "RSUp");
+        add(state.Gamepad.sThumbRY < -stickThreshold, "RSDown");
+        add(state.Gamepad.sThumbRX < -stickThreshold, "RSLeft");
+        add(state.Gamepad.sThumbRX > stickThreshold, "RSRight");
+        add(state.Gamepad.bLeftTrigger > 140, "LT");
+        add(state.Gamepad.bRightTrigger > 140, "RT");
+
+        QSet<QString> justPressed = held;
+        for (const QString& old : lastPadTokens_) justPressed.remove(old);
+        lastPadTokens_ = held;
+
+        if (captureAction_ >= 0) {
+            if (captureController_) {
+                // Use deterministic order if a player presses multiple inputs.
+                for (const QString& token : KnomiraInput::Profile::availablePadTokens()) {
+                    if (justPressed.contains(token)) {
+                        ApplyCapturedPad(token);
+                        break;
+                    }
+                }
+            }
+            return;
+        }
+
+        int direction = 0;
+        if (controls_.padMatches("menu_prev", held)) direction = -1;
+        else if (controls_.padMatches("menu_next", held)) direction = 1;
+#else
+        // Unmodified Qt host prototype keeps its verified fixed XInput controls.
         constexpr SHORT stickThreshold = 16000;
         int direction = 0;
         if ((buttons & XINPUT_GAMEPAD_DPAD_UP) || state.Gamepad.sThumbLY > stickThreshold)
             direction = -1;
         else if ((buttons & XINPUT_GAMEPAD_DPAD_DOWN) || state.Gamepad.sThumbLY < -stickThreshold)
             direction = 1;
-
+#endif
         if (direction == 0) {
             heldDirection_ = 0;
         } else if (direction != heldDirection_) {
@@ -548,13 +845,20 @@ private:
             Navigate(direction);
         }
 
-        if (pressed & XINPUT_GAMEPAD_A) {
+#ifdef KNOMIRA_GAME_SHELL
+        if (controls_.padMatches("menu_accept", justPressed)) {
             ActivateSelected();
-            // The window may close on Exit. Do not touch its UI again in this tick.
             return;
         }
-        if (pressed & XINPUT_GAMEPAD_B)
+        if (controls_.padMatches("menu_back", justPressed))
             BackToMenu();
+#else
+        if (pressed & XINPUT_GAMEPAD_A) {
+            ActivateSelected();
+            return;
+        }
+        if (pressed & XINPUT_GAMEPAD_B) BackToMenu();
+#endif
 #endif
     }
 
@@ -624,7 +928,9 @@ private:
 #ifdef KNOMIRA_GAME_SHELL
         if (auto* back = document_->GetElementById("save_back"))
             back->AddEventListener("click", &events_);
-        for (const char* id : {"exit_cancel", "exit_yes"}) {
+        for (const char* id : {"exit_cancel", "exit_yes",
+                               "controls_reset", "controls_back",
+                               "capture_clear", "capture_cancel"}) {
             if (auto* option = document_->GetElementById(id))
                 option->AddEventListener("click", &events_);
         }
@@ -647,6 +953,16 @@ private:
         }
         if (!context_ || !glContext_->makeCurrent(this)) return;
         context_->Update();
+#ifdef KNOMIRA_GAME_SHELL
+        // Layout must be computed before scrolling to a dynamically-generated
+        // row. This keeps every binding reachable with only an Xbox controller.
+        if (pendingScrollToFocus_ && document_) {
+            const std::string id = SelectedId();
+            if (Rml::Element* button = document_->GetElementById(id))
+                button->ScrollIntoView();
+            pendingScrollToFocus_ = false;
+        }
+#endif
         renderer_->Clear();
         renderer_->BeginFrame();
         context_->Render();
@@ -664,6 +980,14 @@ private:
     QVector<KnomiraSaveEntry> saves_;
     bool showingSaves_ = false;
     bool confirmingExit_ = false;
+    bool showingSettings_ = false;
+    KnomiraInput::Profile controls_;
+    std::vector<std::string> settingsButtonIds_;
+    int captureAction_ = -1;
+    int captureSlot_ = -1;
+    bool captureController_ = false;
+    bool pendingScrollToFocus_ = false;
+    QSet<QString> lastPadTokens_;
 #endif
 #ifdef _WIN32
     DWORD controllerIndex_ = XUSER_MAX_COUNT;
@@ -702,10 +1026,22 @@ void MenuEvents::ProcessEvent(Rml::Event& event) {
         window_->SetStatus("Qt host: Load Game clicked; saves not connected.");
 #endif
     } else if (id == "settings") {
-        window_->SetStatus("Settings: engine settings adapter not connected yet.");
 #ifdef KNOMIRA_GAME_SHELL
-    } else if (id == "save_back" || id == "exit_cancel") {
+        window_->ShowSettings();
+#else
+        window_->SetStatus("Settings: engine settings adapter not connected yet.");
+#endif
+#ifdef KNOMIRA_GAME_SHELL
+    } else if (id == "save_back" || id == "exit_cancel" || id == "controls_back") {
         window_->BackToMenu();
+    } else if (id == "controls_reset") {
+        window_->ResetControls();
+    } else if (id == "capture_cancel") {
+        window_->CancelCapture();
+    } else if (id == "capture_clear") {
+        window_->ClearCapture();
+    } else if (id.rfind("control_", 0) == 0) {
+        window_->BeginCapture(id);
     } else if (id == "exit_yes") {
         window_->close();
     } else if (id.rfind("save_entry_", 0) == 0) {
@@ -720,6 +1056,10 @@ void MenuEvents::ProcessEvent(Rml::Event& event) {
 
 int main(int argc, char** argv) {
     QGuiApplication application(argc, argv);
+#ifdef KNOMIRA_GAME_SHELL
+    QCoreApplication::setOrganizationName(QStringLiteral("Knomira"));
+    QCoreApplication::setApplicationName(QStringLiteral("Knomira"));
+#endif
     QtMenuWindow window;
     window.show();
     return application.exec();

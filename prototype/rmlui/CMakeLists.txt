@@ -90,11 +90,13 @@ endif()
 # A separate executable to protect the verified Qt/Xbox prototype.
 option(KNOMIRA_BUILD_GAME_SHELL "Build the next Noesis-free game shell milestone" OFF)
 if(KNOMIRA_BUILD_GAME_SHELL)
-    find_package(Qt6 6.5 REQUIRED COMPONENTS Core Gui)
+    find_package(Qt6 6.5 REQUIRED COMPONENTS Core Gui Xml)
     add_executable(knomira_game_shell
         qt_host.cpp
         save_catalog.cpp
         save_catalog.h
+        input_bindings.cpp
+        input_bindings.h
         "${rmlui_SOURCE_DIR}/Backends/RmlUi_Renderer_GL3.cpp"
     )
     target_compile_definitions(knomira_game_shell PRIVATE KNOMIRA_GAME_SHELL=1)
@@ -120,6 +122,13 @@ if(KNOMIRA_BUILD_GAME_SHELL)
     )
     target_link_libraries(knomira_save_catalog_test PRIVATE Qt6::Core)
 
+    add_executable(knomira_input_bindings_test
+        input_bindings_test.cpp
+        input_bindings.cpp
+        input_bindings.h
+    )
+    target_link_libraries(knomira_input_bindings_test PRIVATE Qt6::Core Qt6::Gui)
+
     # The game's world renderer header must not drag in NoesisGUI transitively.
     # Compile-only test: the actual engine implementation is not linked here.
     add_library(knomira_world_renderer_header_compile OBJECT
@@ -129,6 +138,15 @@ if(KNOMIRA_BUILD_GAME_SHELL)
         "${CMAKE_CURRENT_SOURCE_DIR}/../../3rdparty/glad/include"
     )
     target_link_libraries(knomira_world_renderer_header_compile PRIVATE
-        Qt6::Core Qt6::Gui
+        Qt6::Core Qt6::Gui Qt6::Xml
+    )
+
+    # Compile-only check for real game startup and command interfaces.
+    # No proprietary GUI libraries or precompiled headers.
+    add_library(knomira_engine_headers_compile OBJECT
+        engine_headers_compile.cpp
+    )
+    target_link_libraries(knomira_engine_headers_compile PRIVATE
+        Qt6::Core Qt6::Gui Qt6::Xml
     )
 endif()
