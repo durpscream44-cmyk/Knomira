@@ -119,4 +119,16 @@ if(KNOMIRA_BUILD_GAME_SHELL)
         save_catalog.h
     )
     target_link_libraries(knomira_save_catalog_test PRIVATE Qt6::Core)
+
+    # The game's world renderer header must not drag in NoesisGUI transitively.
+    # Compile-only test: the actual engine implementation is not linked here.
+    add_library(knomira_world_renderer_header_compile OBJECT
+        world_renderer_header_compile.cpp
+    )
+    target_include_directories(knomira_world_renderer_header_compile PRIVATE
+        "${CMAKE_CURRENT_SOURCE_DIR}/../../3rdparty/glad/include"
+    )
+    target_link_libraries(knomira_world_renderer_header_compile PRIVATE
+        Qt6::Core Qt6::Gui
+    )
 endif()
