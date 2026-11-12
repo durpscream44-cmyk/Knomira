@@ -555,7 +555,15 @@ public:
     }
 
     void FinishCapture() {
-        const QString actionLabel = controls_.actions()[captureAction_].label;
+        const auto& action = controls_.actions()[captureAction_];
+        const QString actionLabel = action.label;
+        const QString device = captureController_ ? QStringLiteral("Xbox") : QStringLiteral("Keyboard");
+        const QString slot = captureSlot_ == 0 ? QStringLiteral("Primary") : QStringLiteral("Alternate");
+        const QString assignment = captureController_
+            ? (action.pads[captureSlot_].isEmpty() ? QStringLiteral("Not assigned")
+                                                   : KnomiraInput::Profile::padLabel(action.pads[captureSlot_]))
+            : (action.keys[captureSlot_] == 0 ? QStringLiteral("Not assigned")
+                                               : KnomiraInput::Profile::keyLabel(action.keys[captureSlot_]));
         captureAction_ = -1;
         captureSlot_ = -1;
         captureController_ = false;
@@ -563,9 +571,11 @@ public:
             panel->SetProperty("display", "none");
         QString error;
         if (!controls_.save(&error))
-            SetStatusText("Binding changed for " + actionLabel + ", but saving failed: " + error);
+            SetStatusText("Changed " + actionLabel + " / " + device + " / " + slot +
+                          " to " + assignment + ", but saving failed: " + error);
         else
-            SetStatusText("Binding saved for " + actionLabel + ".");
+            SetStatusText("Saved " + actionLabel + " / " + device + " / " + slot +
+                          ": " + assignment + ". The value is now shown in the table.");
         RebuildSettings();
         FocusSelected(); // Only after capture completes, not during mouse-down.
     }
