@@ -24,7 +24,7 @@
 
 #include "aggregatorrenderer.h"
 
-#include <NsGui/IView.h>
+// The world renderer must not depend on Noesis headers.
 
 #include <QElapsedTimer>
 #include <QMatrix4x4>
