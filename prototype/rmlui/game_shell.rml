@@ -46,7 +46,8 @@
     .category-strip { display: flex; flex-direction: row; width: 100%;
                       justify-content: space-between; margin-bottom: 18px; }
     button.category-button { display: block; flex-grow: 0; flex-shrink: 0;
-                             width: 220px; min-width: 220px; min-height: 64px;
+                             flex-basis: 220px; width: 220px; min-width: 220px;
+                             min-height: 64px;
                              padding: 12px 8px; margin: 0px; border: 2px solid #779196;
                              background-color: #314854; color: #f6ecda;
                              font-size: 21px; font-weight: bold; text-align: center; }
