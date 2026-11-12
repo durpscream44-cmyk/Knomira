@@ -274,7 +274,7 @@ public:
 #endif
         selectedButton_ = 0;
         FocusSelected();
-        SetStatus("Main menu: use arrows / D-pad / left stick, Enter / A to select.");
+        SetStatus("Main menu: use your configured bindings, Tab/Shift+Tab, or mouse.");
     }
 
     void SelectFromClick(const Rml::String& id) {
@@ -495,7 +495,7 @@ public:
             confirm->SetProperty("display", "block");
         selectedButton_ = 0; // Always default to Cancel, including gamepad A.
         FocusSelected();
-        SetStatus("Exit Knomira? Cancel is selected. Enter / Xbox A selects; Escape / Xbox B cancels.");
+        SetStatus("Exit Knomira? Cancel is selected. Use your configured Select / Back bindings.");
     }
 
     void ShowSaveBrowser() {
@@ -632,14 +632,14 @@ protected:
         if (!event->isAutoRepeat()) {
             const int chord = KnomiraInput::Profile::normalizeKey(
                 event->key(), int(event->modifiers()));
-            if (controls_.keyMatches("menu_prev", chord)) Navigate(-1);
+            if (event->key() == Qt::Key_Escape) BackToMenu(); // always recover
+            else if (controls_.keyMatches("menu_prev", chord)) Navigate(-1);
             else if (controls_.keyMatches("menu_next", chord)) Navigate(1);
             else if (controls_.keyMatches("menu_accept", chord)) ActivateSelected();
             else if (controls_.keyMatches("menu_back", chord)) BackToMenu();
             else if (event->key() == Qt::Key_Tab || event->key() == Qt::Key_Backtab)
                 Navigate((event->key() == Qt::Key_Backtab ||
                           (event->modifiers() & Qt::ShiftModifier)) ? -1 : 1);
-            else if (event->key() == Qt::Key_Escape) BackToMenu(); // recovery shortcut
             else {
                 event->ignore();
                 return;
@@ -752,7 +752,11 @@ private:
                 if (ReadControllerState(i, &state) == ERROR_SUCCESS) {
                     controllerIndex_ = i;
                     result = ERROR_SUCCESS;
+#ifdef KNOMIRA_GAME_SHELL
+                    SetStatus("Xbox controller detected. Custom bindings available in Settings / Controls.");
+#else
                     SetStatus("Xbox controller detected. D-pad / left stick: navigate; A: select; B: back.");
+#endif
                     break;
                 }
             }
