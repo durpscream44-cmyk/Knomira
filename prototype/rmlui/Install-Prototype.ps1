@@ -12,7 +12,7 @@ $repository = 'durpscream44-cmyk/Knomira'
 $branch = if ($QtHost) { 'feature/rmlui-qt-host' } else { 'feature/rmlui-menu-prototype' }
 $workflow = if ($QtHost) { 'rmlui-qt-host.yml' } else { 'rmlui-prototype.yml' }
 $artifactName = if ($QtHost) { 'knomira-rmlui-qt-host-windows-debug' } else { 'knomira-rmlui-prototype-windows-debug' }
-$exeName = if ($QtHost) { 'knomira_rmlui_qt_host.exe' } else { $exeName }
+$exeName = if ($QtHost) { 'knomira_rmlui_qt_host.exe' } else { 'knomira_rmlui_prototype.exe' }
 $root = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 $parent = Join-Path $root 'build\rmlui-prototype'
 $destination = Join-Path $parent $(if ($QtHost) { 'desktop-test-qt' } else { 'desktop-test' })
@@ -53,7 +53,7 @@ try {
     if ($LASTEXITCODE -ne 0) {
         throw "Could not download the Windows prototype artifact from run #$runId."
     }
-    if (-not (Test-Path -LiteralPath (Join-Path $staging 'knomira_rmlui_prototype.exe'))) {
+    if (-not (Test-Path -LiteralPath (Join-Path $staging $exeName))) {
         throw 'The workflow artifact is missing the prototype executable.'
     }
     if (-not (Test-Path -LiteralPath (Join-Path $staging 'main_menu.rml'))) {
@@ -79,7 +79,7 @@ try {
     }
 }
 
-$exe = Join-Path $destination 'knomira_rmlui_prototype.exe'
+$exe = Join-Path $destination $exeName
 Write-Host "Prototype installed in $destination" -ForegroundColor Green
 if (-not $NoLaunch) {
     Write-Host 'Opening the prototype menu...' -ForegroundColor Cyan
