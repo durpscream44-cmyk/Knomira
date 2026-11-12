@@ -5,12 +5,12 @@
     body { margin: 0; background-color: #121c24; color: #e6e3d6; font-family: "Segoe UI"; font-size: 17px; }
     #screen { width: 100%; height: 100%; display: flex; flex-direction: column;
               align-items: center; justify-content: center; }
-    .panel { width: 640px; padding: 32px; background-color: #26343e;
+    .panel { display: block; width: 640px; padding: 32px; background-color: #26343e;
              border: 2px solid #bc9760; }
-    .eyebrow { color: #d5b178; font-size: 14px; letter-spacing: 2px; margin: 0px 0px 6px 0px; }
-    h1 { font-size: 57px; color: #faf0d5; margin: 0px 0px 10px 0px; }
-    h2 { font-size: 30px; color: #faf0d5; margin: 0px 0px 10px 0px; }
-    .subtitle { font-size: 16px; color: #d1d9d5; margin: 0px 0px 20px 0px; }
+    .eyebrow { display: block; color: #d5b178; font-size: 14px; letter-spacing: 2px; margin: 0px 0px 6px 0px; }
+    h1 { display: block; font-size: 57px; color: #faf0d5; margin: 0px 0px 10px 0px; }
+    h2 { display: block; font-size: 30px; color: #faf0d5; margin: 0px 0px 10px 0px; }
+    .subtitle { display: block; font-size: 16px; color: #d1d9d5; margin: 0px 0px 20px 0px; }
     button { display: block; width: 100%; min-height: 52px; margin: 0px 0px 10px 0px;
              padding: 8px; border: 2px solid #9b8055; background-color: #3a5055;
              color: #fff4df; font-family: "Segoe UI"; font-size: 19px; text-align: center;
@@ -30,7 +30,7 @@
     .settings-top { display: flex; flex-direction: row; justify-content: space-between;
                     align-items: center; margin-bottom: 12px; }
     #settings_header { width: 720px; }
-    #settings_hint { font-size: 15px; color: #d0dcd8; margin: 0px 0px 14px 0px; }
+    #settings_hint { display: block; font-size: 15px; color: #d0dcd8; margin: 0px 0px 14px 0px; }
     #settings_state { font-size: 14px; border: 1px solid #6b958d;
                       padding: 9px 12px; color: #d1e6de; background-color: #18312f; }
     .tab-strip { display: flex; flex-direction: row; margin-bottom: 12px; }
@@ -41,7 +41,7 @@
                                border-color: #f4c77d; }
     /* Category navigation uses explicit wide buttons, not flex:1.
        RmlUi may size flex:auto items to text width, bunching all four left. */
-    .category-label { margin: 2px 0px 8px 0px; color: #d8c4a3;
+    .category-label { display: block; margin: 2px 0px 8px 0px; color: #d8c4a3;
                       font-size: 14px; letter-spacing: 1px; }
     .category-strip { display: flex; flex-direction: row; width: 100%;
                       justify-content: space-between; margin-bottom: 18px; }
@@ -59,29 +59,42 @@
                                          border: 3px solid #f5cc84;
                                          color: #fff5df; }
     .tab-device { font-size: 17px; min-height: 47px; }
-    .table-header { display: flex; flex-direction: row; padding: 10px 14px;
+    /* RmlUi defaults display to INLINE (including divs); a scroll container
+       without display:block and a definite row width collapsed these flex
+       columns to near zero. Use real block boxes and pixel-sized columns. */
+    .table-header { display: flex; flex-direction: row; flex-wrap: nowrap;
+                    width: 960px; box-sizing: border-box; padding: 8px;
                     background-color: #17262c; border-bottom: 2px solid #8f7959; }
-    .column-action { width: 36%; }
-    .column-binding { width: 30%; margin-left: 2%; }
+    .column-action { display: block; flex-shrink: 0; width: 315px; }
+    .column-binding { display: block; flex-shrink: 0; width: 300px; margin-left: 13px; }
     .table-header p { margin: 0px; color: #f4dab1; font-size: 16px; }
-    #bindings_list { height: 304px; overflow-y: auto; padding: 6px;
+    #bindings_list { display: block; box-sizing: border-box; width: 100%;
+                     height: 304px; overflow-y: auto; padding: 6px;
                      background-color: #16262d; border: 1px solid #44545d; }
-    .binding-row { display: flex; flex-direction: row; align-items: center;
-                   padding: 8px; margin-bottom: 5px; background-color: #293c44; }
+    .binding-row { display: flex; flex-direction: row; flex-wrap: nowrap;
+                   box-sizing: border-box; width: 960px; min-width: 960px;
+                   min-height: 74px; align-items: center; padding: 8px;
+                   margin-bottom: 6px; background-color: #293c44; }
     .binding-row:hover { background-color: #354a51; }
-    .binding-info { width: 36%; }
-    .binding-name { color: #faf0dd; font-size: 17px; margin: 0px 0px 3px 0px; }
-    .binding-detail { color: #b0cdc6; font-size: 13px; margin: 0px; }
-    .binding-planned { color: #cbb995; font-size: 13px; margin: 0px; }
-    /* Always-visible assignment readouts, separate from click targets. */
-    .binding-slot { width: 30%; margin-left: 2%; min-height: 56px;
-                    display: flex; flex-direction: row; align-items: center;
+    .binding-info { display: block; flex-shrink: 0;
+                    width: 315px; min-width: 315px; }
+    .binding-name { display: block; color: #faf0dd;
+                    font-size: 17px; margin: 0px 0px 5px 0px; }
+    .binding-detail { display: block; color: #b0cdc6; font-size: 13px; margin: 0px; }
+    .binding-planned { display: block; color: #cbb995; font-size: 13px; margin: 0px; }
+    /* Each slot permanently shows its value next to a large Change button. */
+    .binding-slot { display: flex; flex-direction: row; flex-wrap: nowrap;
+                    flex-shrink: 0; box-sizing: border-box;
+                    width: 300px; min-width: 300px; margin-left: 13px;
+                    min-height: 58px; align-items: center;
                     background-color: #182f3b; border: 1px solid #748d8b; }
-    .binding-value { width: 65%; margin: 0px; padding: 6px 5px;
+    .binding-value { display: block; flex-shrink: 0; box-sizing: border-box;
+                     width: 192px; min-width: 192px; margin: 0px; padding: 6px;
+                     white-space: nowrap; overflow: hidden;
                      color: #fff2c6; font-size: 17px; font-weight: bold; }
-    .binding-value.unbound { color: #d1c9b7; font-style: italic;
-                             font-size: 15px; }
-    button.bind-button { width: 35%; margin: 0px; min-height: 54px;
+    .binding-value.unbound { color: #d1c9b7; font-style: italic; font-size: 15px; }
+    button.bind-button { display: block; flex-shrink: 0; box-sizing: border-box;
+                         width: 99px; min-width: 99px; margin: 0px; min-height: 54px;
                          padding: 5px; font-size: 15px; background-color: #3c5e62;
                          color: #fff6de; text-align: center;
                          border: 2px solid #9cae9d; }
