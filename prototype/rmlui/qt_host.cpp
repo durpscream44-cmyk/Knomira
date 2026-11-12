@@ -228,6 +228,7 @@ public:
         int buttonCount = int(MenuButtonIds.size());
 #ifdef KNOMIRA_GAME_SHELL
         if (showingSaves_) buttonCount = int(saves_.size()) + 1; // Back button
+        if (confirmingExit_) buttonCount = 2; // Cancel (default), Confirm
 #endif
         selectedButton_ = (selectedButton_ + direction + buttonCount) % buttonCount;
         FocusSelected();
@@ -243,11 +244,14 @@ public:
     void BackToMenu() {
 #ifdef KNOMIRA_GAME_SHELL
         showingSaves_ = false;
+        confirmingExit_ = false;
         if (document_) {
             if (auto* main = document_->GetElementById("menu_panel"))
                 main->SetProperty("display", "block");
             if (auto* browser = document_->GetElementById("save_browser"))
                 browser->SetProperty("display", "none");
+            if (auto* confirm = document_->GetElementById("exit_confirm"))
+                confirm->SetProperty("display", "none");
         }
 #endif
         selectedButton_ = 0;
@@ -257,6 +261,13 @@ public:
 
     void SelectFromClick(const Rml::String& id) {
 #ifdef KNOMIRA_GAME_SHELL
+        if (confirmingExit_) {
+            if (id == "exit_cancel" || id == "exit_yes") {
+                selectedButton_ = (id == "exit_yes") ? 1 : 0;
+                FocusSelected();
+            }
+            return;
+        }
         if (showingSaves_) {
             if (id == "save_back") {
                 selectedButton_ = int(saves_.size());
@@ -285,9 +296,25 @@ public:
     }
 
 #ifdef KNOMIRA_GAME_SHELL
+    void OpenExitConfirm() {
+        if (!document_) return;
+        confirmingExit_ = true;
+        showingSaves_ = false;
+        if (auto* main = document_->GetElementById("menu_panel"))
+            main->SetProperty("display", "none");
+        if (auto* browser = document_->GetElementById("save_browser"))
+            browser->SetProperty("display", "none");
+        if (auto* confirm = document_->GetElementById("exit_confirm"))
+            confirm->SetProperty("display", "block");
+        selectedButton_ = 0; // Always default to Cancel, including gamepad A.
+        FocusSelected();
+        SetStatus("Exit Knomira? Cancel is selected. Enter / Xbox A selects; Escape / Xbox B cancels.");
+    }
+
     void ShowSaveBrowser() {
         saves_ = findIngnomiaSaves();
         showingSaves_ = true;
+        confirmingExit_ = false;
         if (auto* main = document_->GetElementById("menu_panel"))
             main->SetProperty("display", "none");
         if (auto* browser = document_->GetElementById("save_browser"))
@@ -451,6 +478,8 @@ protected:
 private:
     std::string SelectedId() const {
 #ifdef KNOMIRA_GAME_SHELL
+        if (confirmingExit_)
+            return selectedButton_ == 1 ? "exit_yes" : "exit_cancel";
         if (showingSaves_) {
             if (selectedButton_ < saves_.size())
                 return "save_entry_" + std::to_string(selectedButton_);
@@ -595,6 +624,10 @@ private:
 #ifdef KNOMIRA_GAME_SHELL
         if (auto* back = document_->GetElementById("save_back"))
             back->AddEventListener("click", &events_);
+        for (const char* id : {"exit_cancel", "exit_yes"}) {
+            if (auto* option = document_->GetElementById(id))
+                option->AddEventListener("click", &events_);
+        }
 #endif
         SetStatus("Use arrows / Tab or Xbox D-pad / stick to navigate. Enter / A selects.");
         selectedButton_ = 0;
@@ -630,6 +663,7 @@ private:
 #ifdef KNOMIRA_GAME_SHELL
     QVector<KnomiraSaveEntry> saves_;
     bool showingSaves_ = false;
+    bool confirmingExit_ = false;
 #endif
 #ifdef _WIN32
     DWORD controllerIndex_ = XUSER_MAX_COUNT;
@@ -654,7 +688,11 @@ void MenuEvents::ProcessEvent(Rml::Event& event) {
     const Rml::String& id = element->GetId();
     window_->SelectFromClick(id);
     if (id == "quit") {
+#ifdef KNOMIRA_GAME_SHELL
+        window_->OpenExitConfirm();
+#else
         window_->close();
+#endif
     } else if (id == "new_game") {
         window_->SetStatus("New Game: world generation will be wired after simulation bootstrap.");
     } else if (id == "load_game") {
@@ -666,8 +704,10 @@ void MenuEvents::ProcessEvent(Rml::Event& event) {
     } else if (id == "settings") {
         window_->SetStatus("Settings: engine settings adapter not connected yet.");
 #ifdef KNOMIRA_GAME_SHELL
-    } else if (id == "save_back") {
+    } else if (id == "save_back" || id == "exit_cancel") {
         window_->BackToMenu();
+    } else if (id == "exit_yes") {
+        window_->close();
     } else if (id.rfind("save_entry_", 0) == 0) {
         bool valid = false;
         const int index = QString::fromStdString(id.substr(11)).toInt(&valid);
