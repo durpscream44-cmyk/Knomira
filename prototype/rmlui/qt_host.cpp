@@ -327,11 +327,16 @@ public:
         SetStatus(utf8.constData());
     }
 
+    // A compact, readable table inspired by category-based game keybind menus.
+    // Only one category and one input device are shown at a time, so labels
+    // and button targets are large enough for mouse and controller users.
     void ShowSettings() {
         if (!document_) return;
         showingSettings_ = true;
         confirmingExit_ = false;
         showingSaves_ = false;
+        settingsCategory_ = 0;
+        settingsGamepad_ = false;
         if (auto* menu = document_->GetElementById("menu_panel"))
             menu->SetProperty("display", "none");
         if (auto* saves = document_->GetElementById("save_browser"))
@@ -340,56 +345,110 @@ public:
             confirm->SetProperty("display", "none");
         if (auto* settings = document_->GetElementById("settings_panel"))
             settings->SetProperty("display", "block");
-        RebuildSettings();
         selectedButton_ = 0;
+        RebuildSettings();
         FocusSelected();
-        SetStatus("Controls: menu bindings are live; gameplay bindings are saved for future engine integration.");
+        SetStatus("Click a binding once to edit it, or navigate with the controller. Menu inputs are active; gameplay inputs are planned.");
+    }
+
+    QString SettingsGroup() const {
+        static const char* groups[] = {"Menu", "World (planned)", "Panels (planned)", "System (planned)"};
+        return QString::fromUtf8(groups[settingsCategory_]);
+    }
+
+    void ChangeSettingsView(const Rml::String& id) {
+        if (id == "controls_tab_menu") settingsCategory_ = 0;
+        else if (id == "controls_tab_world") settingsCategory_ = 1;
+        else if (id == "controls_tab_panels") settingsCategory_ = 2;
+        else if (id == "controls_tab_system") settingsCategory_ = 3;
+        else if (id == "controls_device_keyboard") settingsGamepad_ = false;
+        else if (id == "controls_device_xbox") settingsGamepad_ = true;
+        else return;
+        RebuildSettings();
+        SetStatus(settingsCategory_ == 0
+            ? "Menu controls take effect immediately. Select a key to change it."
+            : "These controls are saved for the full game; gameplay actions are not connected yet.");
     }
 
     void RebuildSettings() {
-        settingsButtonIds_.clear();
         if (!document_) return;
-        Rml::Element* list = document_->GetElementById("bindings_list");
-        if (!list) return;
-        std::string markup;
-        QString lastGroup;
-        const auto& actions = controls_.actions();
-        for (int i = 0; i < actions.size(); ++i) {
-            const auto& action = actions[i];
-            if (lastGroup != action.group) {
-                lastGroup = action.group;
-                markup += "<h3 class='control-group'>" + lastGroup.toHtmlEscaped().toUtf8().toStdString() + "</h3>";
+        const std::string oldSelection = SelectedId();
+        settingsButtonIds_.clear();
+        for (const char* tab : {"controls_tab_menu", "controls_tab_world",
+                                "controls_tab_panels", "controls_tab_system",
+                                "controls_device_keyboard", "controls_device_xbox"})
+            settingsButtonIds_.push_back(tab);
+
+        if (auto* list = document_->GetElementById("bindings_list")) {
+            std::string markup;
+            const auto& actions = controls_.actions();
+            for (int i = 0; i < actions.size(); ++i) {
+                const auto& action = actions[i];
+                if (action.group != SettingsGroup()) continue;
+
+                markup += "<div class='binding-row'><div class='binding-info'>";
+                markup += "<p class='binding-name'>" +
+                    action.label.toHtmlEscaped().toUtf8().toStdString() + "</p>";
+                markup += action.activeInShell
+                    ? "<p class='binding-detail'>ACTIVE IN MENU</p>"
+                    : "<p class='binding-planned'>AVAILABLE IN FUTURE GAMEPLAY</p>";
+                markup += "</div>";
+
+                for (int slot = 0; slot < 2; ++slot) {
+                    const std::string id = std::string(settingsGamepad_ ? "control_p_" : "control_k_") +
+                        std::to_string(i) + "_" + std::to_string(slot);
+                    settingsButtonIds_.push_back(id);
+                    const QString label = settingsGamepad_
+                        ? KnomiraInput::Profile::padLabel(action.pads[slot])
+                        : KnomiraInput::Profile::keyLabel(action.keys[slot]);
+                    const bool unbound = settingsGamepad_ ? action.pads[slot].isEmpty() : action.keys[slot] == 0;
+                    markup += "<button class='bind-button";
+                    if (unbound) markup += " unbound";
+                    markup += "' id='" + id + "'>";
+                    markup += (unbound ? QStringLiteral("+ Add binding") : label)
+                        .toHtmlEscaped().toUtf8().toStdString();
+                    markup += "</button>";
+                }
+                markup += "</div>";
             }
-            markup += "<div class='control-row'><p class='control-name'>";
-            markup += action.label.toHtmlEscaped().toUtf8().toStdString();
-            markup += action.activeInShell ? " (active)</p>" : " (planned)</p>";
-            for (int slot = 0; slot < 2; ++slot) {
-                const std::string id = "control_k_" + std::to_string(i) + "_" + std::to_string(slot);
-                settingsButtonIds_.push_back(id);
-                markup += "<button class='bind-button' id='" + id + "'>K";
-                markup += std::to_string(slot + 1) + ": ";
-                markup += KnomiraInput::Profile::keyLabel(action.keys[slot]).toHtmlEscaped().toUtf8().toStdString();
-                markup += "</button>";
+            list->SetInnerRML(markup);
+            for (const auto& id : settingsButtonIds_) {
+                // The first six buttons are statically authored and attached
+                // once in Initialise. Only generated fields need listeners.
+                if (id.rfind("control_", 0) != 0) continue;
+                if (auto* button = document_->GetElementById(id)) {
+                    button->AddEventListener("mousedown", &events_); // mouse: capture immediately
+                    button->AddEventListener("click", &events_);     // Xbox: Click() route
+                }
             }
-            for (int slot = 0; slot < 2; ++slot) {
-                const std::string id = "control_p_" + std::to_string(i) + "_" + std::to_string(slot);
-                settingsButtonIds_.push_back(id);
-                markup += "<button class='bind-button' id='" + id + "'>Pad";
-                markup += std::to_string(slot + 1) + ": ";
-                markup += KnomiraInput::Profile::padLabel(action.pads[slot]).toHtmlEscaped().toUtf8().toStdString();
-                markup += "</button>";
-            }
-            markup += "</div>";
         }
-        list->SetInnerRML(markup);
-        for (const auto& id : settingsButtonIds_) {
-            if (Rml::Element* button = document_->GetElementById(id))
-                button->AddEventListener("click", &events_);
+
+        for (int i = 0; i < 4; ++i) {
+            static const char* categoryIds[] = {
+                "controls_tab_menu", "controls_tab_world", "controls_tab_panels", "controls_tab_system"
+            };
+            if (auto* button = document_->GetElementById(categoryIds[i]))
+                button->SetClass("tab-selected", i == settingsCategory_);
+        }
+        if (auto* button = document_->GetElementById("controls_device_keyboard"))
+            button->SetClass("tab-selected", !settingsGamepad_);
+        if (auto* button = document_->GetElementById("controls_device_xbox"))
+            button->SetClass("tab-selected", settingsGamepad_);
+
+        if (auto* tip = document_->GetElementById("controls_tip")) {
+            const QString message = settingsCategory_ == 0
+                ? QStringLiteral("Menu: changes work immediately. Click Primary or Alternate, then press the new input.")
+                : QStringLiteral("Planned gameplay action: the assignment saves now and activates when the engine is connected.");
+            tip->SetInnerRML(message.toHtmlEscaped().toUtf8().toStdString());
         }
         settingsButtonIds_.push_back("controls_reset");
         settingsButtonIds_.push_back("controls_back");
-        selectedButton_ = std::min(selectedButton_, int(settingsButtonIds_.size()) - 1);
-        FocusSelected();
+        auto old = std::find(settingsButtonIds_.begin(), settingsButtonIds_.end(), oldSelection);
+        selectedButton_ = old == settingsButtonIds_.end() ? 0 : int(old - settingsButtonIds_.begin());
+        requestUpdate();
+        // Do NOT call FocusSelected() here. Forcing ScrollIntoView while a mouse
+        // button is held moves the target between down/up and loses its click.
+        // Keyboard/Xbox navigation calls FocusSelected() independently.
     }
 
     void BeginCapture(const Rml::String& id) {
