@@ -1,6 +1,6 @@
-# Installs the latest successful RmlUi prototype build into this Knomira checkout.
-# Run from PowerShell:  .\prototype\rmlui\Install-Prototype.ps1
-# Requires GitHub CLI (gh) logged in with access to this repository.
+# Install the latest successful RmlUi prototype build into this Knomira checkout.
+# Usage: .\prototype\rmlui\Install-Prototype.ps1 [-NoLaunch]
+# Requires GitHub CLI (gh), authenticated to GitHub.
 [CmdletBinding()]
 param(
     [switch]$NoLaunch
@@ -12,7 +12,8 @@ $branch = 'feature/rmlui-menu-prototype'
 $workflow = 'rmlui-prototype.yml'
 $artifactName = 'knomira-rmlui-prototype-windows-debug'
 $root = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
-$destination = Join-Path $root 'build\rmlui-prototype\desktop-test'
+$parent = Join-Path $root 'build\rmlui-prototype'
+$destination = Join-Path $parent 'desktop-test'
 
 if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
     throw 'GitHub CLI (gh) is required. Install it with: winget install --id GitHub.cli -e'
@@ -23,46 +24,60 @@ if ($LASTEXITCODE -ne 0) {
     throw 'GitHub CLI is not authenticated. Run: gh auth login'
 }
 
-$runJson = & gh run list --repo $repository --workflow $workflow --branch $branch --status success --limit 20 --json databaseId,headSha,createdAt
+# Do not pipe a JSON array into @(...): Windows PowerShell may treat it as one
+# nested array, causing $runs[0].databaseId to contain every run ID.
+# Select exactly one ID in gh itself so the value is always scalar.
+$runId = & gh run list --repo $repository --workflow $workflow --branch $branch --status success --limit 1 --json databaseId --jq '.[0].databaseId'
 if ($LASTEXITCODE -ne 0) {
     throw 'Could not retrieve successful builds from GitHub Actions.'
 }
-$runs = @($runJson | ConvertFrom-Json)
-if ($runs.Count -eq 0) {
+$runId = "$runId".Trim()
+if ($runId -notmatch '^[0-9]+$') {
     throw 'No successful Windows RmlUi prototype build was found. Check the Actions workflow.'
 }
-$run = $runs[0]
-Write-Host "Using GitHub Actions run #$($run.databaseId), commit $($run.headSha)" -ForegroundColor Cyan
+
+Write-Host "Using GitHub Actions run #$runId" -ForegroundColor Cyan
 Write-Host "Target folder: $destination"
 
-if (Test-Path $destination) {
-    # Leave any previous desktop-test build untouched on failure.
-    $oldDestination = "$destination.previous"
-    if (Test-Path $oldDestination) {
-        throw "Previous backup already exists: $oldDestination. Remove or rename it manually."
-    }
-    Rename-Item -Path $destination -NewName (Split-Path $oldDestination -Leaf)
-}
-New-Item -ItemType Directory -Force -Path $destination | Out-Null
+# Never replace a previous working build until the new download has been
+# verified. Unique staging folders also avoid conflicts with previous failures.
+New-Item -ItemType Directory -Force -Path $parent | Out-Null
+$staging = Join-Path $parent ("desktop-test.staging-" + [guid]::NewGuid().ToString('N'))
+$backup = $null
+New-Item -ItemType Directory -Path $staging | Out-Null
 
 try {
-    & gh run download $run.databaseId --repo $repository --name $artifactName --dir $destination
+    & gh run download $runId --repo $repository --name $artifactName --dir $staging
     if ($LASTEXITCODE -ne 0) {
-        throw 'Could not download the Windows prototype artifact.'
+        throw "Could not download the Windows prototype artifact from run #$runId."
     }
-    $exe = Join-Path $destination 'knomira_rmlui_prototype.exe'
-    $document = Join-Path $destination 'main_menu.rml'
-    if (-not (Test-Path $exe)) {
-        throw "Missing prototype executable in $destination."
+    if (-not (Test-Path -LiteralPath (Join-Path $staging 'knomira_rmlui_prototype.exe'))) {
+        throw 'The workflow artifact is missing the prototype executable.'
     }
-    if (-not (Test-Path $document)) {
+    if (-not (Test-Path -LiteralPath (Join-Path $staging 'main_menu.rml'))) {
         throw 'The workflow artifact is missing main_menu.rml. Rebuild with the latest packaging changes.'
     }
+
+    if (Test-Path -LiteralPath $destination) {
+        $backup = Join-Path $parent ("desktop-test.previous-" + (Get-Date -Format 'yyyyMMdd-HHmmss') + "-" + [guid]::NewGuid().ToString('N').Substring(0, 8))
+        Move-Item -LiteralPath $destination -Destination $backup
+        Write-Host "Previous test folder saved to: $backup" -ForegroundColor Yellow
+    }
+
+    Move-Item -LiteralPath $staging -Destination $destination
 } catch {
-    Write-Warning 'Installation was not completed. An earlier desktop-test package, if any, remains under desktop-test.previous.'
+    # Restore the previous build if the replacement itself failed.
+    if ($backup -and -not (Test-Path -LiteralPath $destination) -and (Test-Path -LiteralPath $backup)) {
+        Move-Item -LiteralPath $backup -Destination $destination
+    }
     throw
+} finally {
+    if (Test-Path -LiteralPath $staging) {
+        Remove-Item -LiteralPath $staging -Recurse -Force
+    }
 }
 
+$exe = Join-Path $destination 'knomira_rmlui_prototype.exe'
 Write-Host "Prototype installed in $destination" -ForegroundColor Green
 if (-not $NoLaunch) {
     Write-Host 'Opening the prototype menu...' -ForegroundColor Cyan
