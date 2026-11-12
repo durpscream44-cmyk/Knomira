@@ -65,7 +65,13 @@ jobs:
       - name: Build Noesis-free shell
         shell: pwsh
         run: |
-          cmake --build build/rmlui-prototype --config Debug --target knomira_game_shell --parallel 4
+          cmake --build build/rmlui-prototype --config Debug --target knomira_game_shell knomira_save_catalog_test --parallel 4
+
+      - name: Test save discovery without Noesis
+        shell: pwsh
+        run: |
+          & "build/rmlui-prototype/Debug/knomira_save_catalog_test.exe"
+          if ($LASTEXITCODE -ne 0) { throw "Save catalog smoke test failed." }
 
       - name: Stage Qt and FreeType runtime for desktop testing
         shell: pwsh
