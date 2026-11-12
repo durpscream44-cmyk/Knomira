@@ -1,18 +1,20 @@
 # Install the latest successful Windows RmlUi prototype into this Knomira checkout.
-# Usage: .\prototype\rmlui\Install-Prototype.ps1 [-QtHost] [-NoLaunch]
+# Usage: .\prototype\rmlui\Install-Prototype.ps1 [-QtHost | -GameShell] [-NoLaunch]
 [CmdletBinding()]
 param(
     [switch]$QtHost,
+    [switch]$GameShell,
     [switch]$NoLaunch
 )
 
 $ErrorActionPreference = 'Stop'
+if ($QtHost -and $GameShell) { throw 'Choose either -QtHost or -GameShell, not both.' }
 $repository = 'durpscream44-cmyk/Knomira'
-$branch = if ($QtHost) { 'feature/rmlui-qt-host' } else { 'feature/rmlui-menu-prototype' }
-$workflow = if ($QtHost) { 'rmlui-qt-host.yml' } else { 'rmlui-prototype.yml' }
-$artifactName = if ($QtHost) { 'knomira-rmlui-qt-host-windows-debug' } else { 'knomira-rmlui-prototype-windows-debug' }
-$exeName = if ($QtHost) { 'knomira_rmlui_qt_host.exe' } else { 'knomira_rmlui_prototype.exe' }
-$folderName = if ($QtHost) { 'desktop-test-qt' } else { 'desktop-test' }
+$branch = if ($GameShell) { 'feature/noesis-free-shell' } elseif ($QtHost) { 'feature/rmlui-qt-host' } else { 'feature/rmlui-menu-prototype' }
+$workflow = if ($GameShell) { 'noesis-free-shell.yml' } elseif ($QtHost) { 'rmlui-qt-host.yml' } else { 'rmlui-prototype.yml' }
+$artifactName = if ($GameShell) { 'knomira-game-shell-windows-debug' } elseif ($QtHost) { 'knomira-rmlui-qt-host-windows-debug' } else { 'knomira-rmlui-prototype-windows-debug' }
+$exeName = if ($GameShell) { 'knomira_game_shell.exe' } elseif ($QtHost) { 'knomira_rmlui_qt_host.exe' } else { 'knomira_rmlui_prototype.exe' }
+$folderName = if ($GameShell) { 'desktop-test-game-shell' } elseif ($QtHost) { 'desktop-test-qt' } else { 'desktop-test' }
 $root = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 $parent = Join-Path $root 'build\rmlui-prototype'
 $destination = Join-Path $parent $folderName
@@ -58,6 +60,17 @@ if ($QtHost) {
     }
 }
 
+if ($GameShell) {
+    $minimumShellCommit = 'b780d656bc57245205ace64a30919169b8d66759'
+    $builtSha = & $ghExe run view $runId --repo $repository --json headSha --jq '.headSha'
+    if ($LASTEXITCODE -ne 0) { throw 'Could not verify the game shell build commit.' }
+    $builtSha = ([string]$builtSha).Trim()
+    & git -C $root merge-base --is-ancestor $minimumShellCommit $builtSha
+    if ($LASTEXITCODE -ne 0) {
+        throw "The latest successful game shell build ($builtSha) predates the save browser. Check the game-shell workflow."
+    }
+}
+
 Write-Host "Using GitHub Actions run #$runId" -ForegroundColor Cyan
 Write-Host "Target folder: $destination"
 
@@ -76,8 +89,9 @@ try {
     if (-not (Test-Path -LiteralPath (Join-Path $staging $exeName))) {
         throw "The artifact is missing $exeName."
     }
-    if (-not (Test-Path -LiteralPath (Join-Path $staging 'main_menu.rml'))) {
-        throw 'The artifact is missing main_menu.rml.'
+    $documentName = if ($GameShell) { 'game_shell.rml' } else { 'main_menu.rml' }
+    if (-not (Test-Path -LiteralPath (Join-Path $staging $documentName))) {
+        throw "The artifact is missing $documentName."
     }
 
     if (Test-Path -LiteralPath $destination) {

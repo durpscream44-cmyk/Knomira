@@ -24,6 +24,9 @@
 #include <QTimer>
 #include <QWheelEvent>
 #include <QWindow>
+#ifdef KNOMIRA_GAME_SHELL
+#include "save_catalog.h"
+#endif
 
 #ifdef _WIN32
 // Windows SDK XInput.h depends on Windows architecture definitions and must
@@ -184,7 +187,11 @@ public:
         format.setSwapInterval(1);
         setSurfaceType(QSurface::OpenGLSurface);
         setFormat(format);
+#ifdef KNOMIRA_GAME_SHELL
+        setTitle(QStringLiteral("Knomira | Noesis-Free Shell"));
+#else
         setTitle(QStringLiteral("Knomira | Qt + RmlUi Host"));
+#endif
         resize(1280, 800);
 
         pollClock_.start();
@@ -218,24 +225,67 @@ public:
     // The same navigation actions can later be routed to the real game UI.
     void Navigate(int direction) {
         if (!document_ || direction == 0) return;
-        constexpr int buttonCount = int(MenuButtonIds.size());
+        int buttonCount = int(MenuButtonIds.size());
+#ifdef KNOMIRA_GAME_SHELL
+        if (showingSaves_) buttonCount = int(saves_.size()) + 1; // Back button
+        if (confirmingExit_) buttonCount = 2; // Cancel (default), Confirm
+#endif
         selectedButton_ = (selectedButton_ + direction + buttonCount) % buttonCount;
         FocusSelected();
     }
 
     void ActivateSelected() {
         if (!document_) return;
-        if (Rml::Element* button = document_->GetElementById(MenuButtonIds[size_t(selectedButton_)]))
+        const std::string id = SelectedId();
+        if (Rml::Element* button = document_->GetElementById(id))
             button->Click();
     }
 
     void BackToMenu() {
+#ifdef KNOMIRA_GAME_SHELL
+        showingSaves_ = false;
+        confirmingExit_ = false;
+        if (document_) {
+            if (auto* main = document_->GetElementById("menu_panel"))
+                main->SetProperty("display", "block");
+            if (auto* browser = document_->GetElementById("save_browser"))
+                browser->SetProperty("display", "none");
+            if (auto* confirm = document_->GetElementById("exit_confirm"))
+                confirm->SetProperty("display", "none");
+        }
+#endif
         selectedButton_ = 0;
         FocusSelected();
         SetStatus("Main menu: use arrows / D-pad / left stick, Enter / A to select.");
     }
 
     void SelectFromClick(const Rml::String& id) {
+#ifdef KNOMIRA_GAME_SHELL
+        if (confirmingExit_) {
+            if (id == "exit_cancel" || id == "exit_yes") {
+                selectedButton_ = (id == "exit_yes") ? 1 : 0;
+                FocusSelected();
+            }
+            return;
+        }
+        if (showingSaves_) {
+            if (id == "save_back") {
+                selectedButton_ = int(saves_.size());
+                FocusSelected();
+                return;
+            }
+            if (id.rfind("save_entry_", 0) == 0) {
+                const QString suffix = QString::fromStdString(id.substr(11));
+                bool ok = false;
+                const int position = suffix.toInt(&ok);
+                if (ok && position >= 0 && position < saves_.size()) {
+                    selectedButton_ = position;
+                    FocusSelected();
+                }
+                return;
+            }
+        }
+#endif
         for (size_t i = 0; i < MenuButtonIds.size(); ++i) {
             if (id == MenuButtonIds[i]) {
                 selectedButton_ = int(i);
@@ -244,6 +294,65 @@ public:
             }
         }
     }
+
+#ifdef KNOMIRA_GAME_SHELL
+    void OpenExitConfirm() {
+        if (!document_) return;
+        confirmingExit_ = true;
+        showingSaves_ = false;
+        if (auto* main = document_->GetElementById("menu_panel"))
+            main->SetProperty("display", "none");
+        if (auto* browser = document_->GetElementById("save_browser"))
+            browser->SetProperty("display", "none");
+        if (auto* confirm = document_->GetElementById("exit_confirm"))
+            confirm->SetProperty("display", "block");
+        selectedButton_ = 0; // Always default to Cancel, including gamepad A.
+        FocusSelected();
+        SetStatus("Exit Knomira? Cancel is selected. Enter / Xbox A selects; Escape / Xbox B cancels.");
+    }
+
+    void ShowSaveBrowser() {
+        saves_ = findIngnomiaSaves();
+        showingSaves_ = true;
+        confirmingExit_ = false;
+        if (auto* main = document_->GetElementById("menu_panel"))
+            main->SetProperty("display", "none");
+        if (auto* browser = document_->GetElementById("save_browser"))
+            browser->SetProperty("display", "block");
+        if (auto* list = document_->GetElementById("save_list")) {
+            std::string markup;
+            if (saves_.isEmpty()) {
+                markup = "<p>No Ingnomia saves found in Documents/My Games/Ingnomia/save.</p>";
+            }
+            for (int i = 0; i < saves_.size(); ++i) {
+                const auto& entry = saves_[i];
+                const QString text = (entry.kingdomName + " / " + entry.slotName
+                    + " (" + entry.version + ")").toHtmlEscaped();
+                markup += "<button id='save_entry_" + std::to_string(i) + "'>"
+                    + text.toUtf8().toStdString() + "</button>";
+            }
+            list->SetInnerRML(markup);
+            for (int i = 0; i < saves_.size(); ++i) {
+                const std::string id = "save_entry_" + std::to_string(i);
+                if (auto* button = document_->GetElementById(id))
+                    button->AddEventListener("click", &events_);
+            }
+        }
+        selectedButton_ = 0;
+        FocusSelected();
+        SetStatus("Read-only save browser. Selecting a save shows its details; simulation loading comes next.");
+    }
+
+    void ShowSaveDetail(int index) {
+        if (index < 0 || index >= saves_.size()) return;
+        const auto& entry = saves_[index];
+        const QString info = "Selected: " + entry.kingdomName + " / " + entry.slotName
+            + " | Version: " + entry.version + " | Path: " + entry.absolutePath
+            + " | Read-only preview; game engine not connected.";
+        const QByteArray escaped = info.toHtmlEscaped().toUtf8();
+        SetStatus(escaped.constData());
+    }
+#endif
 
 protected:
     void exposeEvent(QExposeEvent* event) override {
@@ -367,9 +476,23 @@ protected:
     }
 
 private:
+    std::string SelectedId() const {
+#ifdef KNOMIRA_GAME_SHELL
+        if (confirmingExit_)
+            return selectedButton_ == 1 ? "exit_yes" : "exit_cancel";
+        if (showingSaves_) {
+            if (selectedButton_ < saves_.size())
+                return "save_entry_" + std::to_string(selectedButton_);
+            return "save_back";
+        }
+#endif
+        return MenuButtonIds[size_t(selectedButton_)];
+    }
+
     void FocusSelected() {
         if (!document_) return;
-        if (Rml::Element* button = document_->GetElementById(MenuButtonIds[size_t(selectedButton_)]))
+        const std::string id = SelectedId();
+        if (Rml::Element* button = document_->GetElementById(id))
             button->Focus(true); // Enables CSS :focus-visible highlight.
         requestUpdate();
     }
@@ -475,8 +598,13 @@ private:
             return false;
         }
         ResizeUi();
+#ifdef KNOMIRA_GAME_SHELL
+        const QString filePath = QDir::fromNativeSeparators(
+            QCoreApplication::applicationDirPath() + "/game_shell.rml");
+#else
         const QString filePath = QDir::fromNativeSeparators(
             QCoreApplication::applicationDirPath() + "/main_menu.rml");
+#endif
         document_ = context_->LoadDocument(filePath.toStdString());
         if (!document_) {
             qCritical() << "Cannot load main menu:" << filePath;
@@ -488,7 +616,19 @@ private:
         }
         document_->Show();
         if (Rml::Element* footer = document_->GetElementById("footer"))
+#ifdef KNOMIRA_GAME_SHELL
+            footer->SetInnerRML("Noesis-free shell | Original game simulation not connected yet.");
+#else
             footer->SetInnerRML("Proof of concept: Qt 6 + RmlUi + OpenGL; no NoesisGUI.");
+#endif
+#ifdef KNOMIRA_GAME_SHELL
+        if (auto* back = document_->GetElementById("save_back"))
+            back->AddEventListener("click", &events_);
+        for (const char* id : {"exit_cancel", "exit_yes"}) {
+            if (auto* option = document_->GetElementById(id))
+                option->AddEventListener("click", &events_);
+        }
+#endif
         SetStatus("Use arrows / Tab or Xbox D-pad / stick to navigate. Enter / A selects.");
         selectedButton_ = 0;
         FocusSelected();
@@ -520,6 +660,11 @@ private:
     QTimer timer_;
     QElapsedTimer pollClock_;
     int selectedButton_ = 0;
+#ifdef KNOMIRA_GAME_SHELL
+    QVector<KnomiraSaveEntry> saves_;
+    bool showingSaves_ = false;
+    bool confirmingExit_ = false;
+#endif
 #ifdef _WIN32
     DWORD controllerIndex_ = XUSER_MAX_COUNT;
     WORD previousButtons_ = 0;
@@ -543,13 +688,31 @@ void MenuEvents::ProcessEvent(Rml::Event& event) {
     const Rml::String& id = element->GetId();
     window_->SelectFromClick(id);
     if (id == "quit") {
+#ifdef KNOMIRA_GAME_SHELL
+        window_->OpenExitConfirm();
+#else
         window_->close();
+#endif
     } else if (id == "new_game") {
-        window_->SetStatus("Qt host: New Game clicked; simulation not connected.");
+        window_->SetStatus("New Game: world generation will be wired after simulation bootstrap.");
     } else if (id == "load_game") {
+#ifdef KNOMIRA_GAME_SHELL
+        window_->ShowSaveBrowser();
+#else
         window_->SetStatus("Qt host: Load Game clicked; saves not connected.");
+#endif
     } else if (id == "settings") {
-        window_->SetStatus("Qt host: Settings clicked; game preferences not connected.");
+        window_->SetStatus("Settings: engine settings adapter not connected yet.");
+#ifdef KNOMIRA_GAME_SHELL
+    } else if (id == "save_back" || id == "exit_cancel") {
+        window_->BackToMenu();
+    } else if (id == "exit_yes") {
+        window_->close();
+    } else if (id.rfind("save_entry_", 0) == 0) {
+        bool valid = false;
+        const int index = QString::fromStdString(id.substr(11)).toInt(&valid);
+        if (valid) window_->ShowSaveDetail(index);
+#endif
     }
 }
 
