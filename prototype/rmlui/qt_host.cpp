@@ -411,12 +411,19 @@ public:
                         ? KnomiraInput::Profile::padLabel(action.pads[slot])
                         : KnomiraInput::Profile::keyLabel(action.keys[slot]);
                     const bool unbound = settingsGamepad_ ? action.pads[slot].isEmpty() : action.keys[slot] == 0;
-                    markup += "<button class='bind-button";
+                    // The assignment is visible as a separate, high-contrast
+                    // readout rather than relying on a button caption. The
+                    // button always says Change and remains the click target.
+                    // After FinishCapture(), RebuildSettings() refreshes both
+                    // this readout and the active action's input behavior.
+                    const QString shown = unbound ? QStringLiteral("Not assigned") : label;
+                    markup += "<div class='binding-slot'>";
+                    markup += "<p class='binding-value";
                     if (unbound) markup += " unbound";
-                    markup += "' id='" + id + "'>";
-                    markup += (unbound ? QStringLiteral("+ Add binding") : label)
-                        .toHtmlEscaped().toUtf8().toStdString();
-                    markup += "</button>";
+                    markup += "'>" + shown.toHtmlEscaped().toUtf8().toStdString() + "</p>";
+                    markup += "<button class='bind-button' id='" + id + "'>";
+                    markup += "Change";
+                    markup += "</button></div>";
                 }
                 markup += "</div>";
             }
