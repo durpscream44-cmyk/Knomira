@@ -28,8 +28,12 @@ target_link_libraries(knomira_rmlui_prototype PRIVATE
     RmlUi::RmlUi
     rmlui_backend_GLFW_GL3
 )
-target_compile_definitions(knomira_rmlui_prototype PRIVATE
-    KNOMIRA_PROTOTYPE_DOCUMENT=\"${CMAKE_CURRENT_SOURCE_DIR}/main_menu.rml\"
+# Copy the RML document to the runtime output directory for both CI and local builds.
+add_custom_command(TARGET knomira_rmlui_prototype POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${CMAKE_CURRENT_SOURCE_DIR}/main_menu.rml"
+        "$<TARGET_FILE_DIR:knomira_rmlui_prototype>/main_menu.rml"
+    VERBATIM
 )
 if(MSVC)
     target_compile_options(knomira_rmlui_prototype PRIVATE /W4)
