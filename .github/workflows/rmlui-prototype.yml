@@ -1,0 +1,47 @@
+name: Knomira RmlUi Prototype (Windows)
+
+on:
+  push:
+    branches:
+      - feature/rmlui-menu-prototype
+    paths:
+      - "prototype/rmlui/**"
+      - ".github/workflows/rmlui-prototype.yml"
+  pull_request:
+    paths:
+      - "prototype/rmlui/**"
+      - ".github/workflows/rmlui-prototype.yml"
+  workflow_dispatch:
+
+jobs:
+  prototype-build:
+    name: Build standalone RmlUi prototype
+    runs-on: windows-2022
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up vcpkg
+        shell: pwsh
+        run: |
+          git clone --depth 1 https://github.com/microsoft/vcpkg.git "$env:RUNNER_TEMP/vcpkg"
+          & "$env:RUNNER_TEMP/vcpkg/bootstrap-vcpkg.bat" -disableMetrics
+          & "$env:RUNNER_TEMP/vcpkg/vcpkg.exe" install "glfw3:x64-windows" "freetype:x64-windows"
+
+      - name: Configure CMake
+        shell: pwsh
+        run: |
+          cmake -S prototype/rmlui -B build/rmlui-prototype -G "Visual Studio 17 2022" -A x64 "-DCMAKE_TOOLCHAIN_FILE=$env:RUNNER_TEMP/vcpkg/scripts/buildsystems/vcpkg.cmake"
+
+      - name: Build Debug
+        shell: pwsh
+        run: |
+          cmake --build build/rmlui-prototype --config Debug --target knomira_rmlui_prototype --parallel 4
+
+      - name: Upload binary for local smoke test
+        uses: actions/upload-artifact@v4
+        with:
+          name: knomira-rmlui-prototype-windows-debug
+          path: build/rmlui-prototype/Debug/knomira_rmlui_prototype.exe
+          if-no-files-found: error
