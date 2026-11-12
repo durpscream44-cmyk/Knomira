@@ -141,6 +141,24 @@ bool LoadFont() {
 
 constexpr std::array<const char*, 4> MenuButtonIds{"new_game", "load_game", "settings", "quit"};
 
+// Load the Windows XInput system DLL at runtime instead of requiring an SDK
+// import library on CI machines. Windows 10/11 provide xinput1_4.dll; older
+// supported builds may provide xinput9_1_0.dll.
+#ifdef _WIN32
+DWORD ReadControllerState(DWORD controller, XINPUT_STATE* state) {
+    using GetState = DWORD (WINAPI*)(DWORD, XINPUT_STATE*);
+    static const GetState getState = []() -> GetState {
+        HMODULE dll = LoadLibraryW(L"xinput1_4.dll");
+        if (!dll)
+            dll = LoadLibraryW(L"xinput9_1_0.dll");
+        if (!dll)
+            return nullptr;
+        return reinterpret_cast<GetState>(GetProcAddress(dll, "XInputGetState"));
+    }();
+    return getState ? getState(controller, state) : ERROR_DEVICE_NOT_CONNECTED;
+}
+#endif
+
 class QtMenuWindow;
 
 class MenuEvents final : public Rml::EventListener {
@@ -364,7 +382,7 @@ private:
         DWORD result = ERROR_DEVICE_NOT_CONNECTED;
 
         if (controllerIndex_ < XUSER_MAX_COUNT)
-            result = XInputGetState(controllerIndex_, &state);
+            result = ReadControllerState(controllerIndex_, &state);
 
         if (result != ERROR_SUCCESS) {
             controllerIndex_ = XUSER_MAX_COUNT;
@@ -373,7 +391,7 @@ private:
             if (now < nextScanMs_) return;
             nextScanMs_ = now + 250; // Cheap polling when no gamepad exists.
             for (DWORD i = 0; i < XUSER_MAX_COUNT; ++i) {
-                if (XInputGetState(i, &state) == ERROR_SUCCESS) {
+                if (ReadControllerState(i, &state) == ERROR_SUCCESS) {
                     controllerIndex_ = i;
                     result = ERROR_SUCCESS;
                     SetStatus("Xbox controller detected. D-pad / left stick: navigate; A: select; B: back.");
