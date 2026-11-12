@@ -358,6 +358,8 @@ public:
     }
 
     void ChangeSettingsView(const Rml::String& id) {
+        const int previousCategory = settingsCategory_;
+        const bool previousDevice = settingsGamepad_;
         if (id == "controls_tab_menu") settingsCategory_ = 0;
         else if (id == "controls_tab_world") settingsCategory_ = 1;
         else if (id == "controls_tab_panels") settingsCategory_ = 2;
@@ -366,6 +368,12 @@ public:
         else if (id == "controls_device_xbox") settingsGamepad_ = true;
         else return;
         RebuildSettings();
+        // New category/device should start at the first row, not inherit
+        // a previous panel's scroll position.
+        if (previousCategory != settingsCategory_ || previousDevice != settingsGamepad_) {
+            if (auto* list = document_->GetElementById("bindings_list"))
+                list->SetScrollTop(0.f);
+        }
         SetStatus(settingsCategory_ == 0
             ? "Menu controls take effect immediately. Select a key to change it."
             : "These controls are saved for the full game; gameplay actions are not connected yet.");
