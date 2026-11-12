@@ -56,10 +56,7 @@ if(KNOMIRA_BUILD_QT_HOST)
     target_link_libraries(knomira_rmlui_qt_host PRIVATE
         RmlUi::RmlUi Qt6::Core Qt6::Gui
     )
-    if(WIN32)
-        # XInput 1.4 ships with Windows 8 and later, including Windows 10/11.
-        target_link_libraries(knomira_rmlui_qt_host PRIVATE Xinput1_4)
-    endif()
+    # XInput loads dynamically from Windows; no SDK import-library link needed.
     add_custom_command(TARGET knomira_rmlui_qt_host POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
             "${CMAKE_CURRENT_SOURCE_DIR}/main_menu.rml"
