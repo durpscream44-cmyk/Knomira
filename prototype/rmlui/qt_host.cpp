@@ -490,7 +490,7 @@ public:
             error->SetInnerRML("");
         if (auto* modal = document_->GetElementById("binding_capture"))
             modal->SetProperty("display", "block");
-        SetStatus("Listening for a new input. Use Cancel Change or Escape to keep the old binding.");
+        SetStatus("Listening for a new input. Escape or Cancel Change keeps the old binding.");
         requestUpdate();
     }
 
@@ -913,6 +913,10 @@ private:
                         break;
                     }
                 }
+            } else if (justPressed.contains("B") || justPressed.contains("Back")) {
+                // A controller can escape keyboard-only capture without a
+                // physical keyboard. Controller captures still allow B/Back.
+                CancelCapture();
             }
             return;
         }
