@@ -72,8 +72,8 @@ jobs:
         run: |
           $package = "build/rmlui-prototype/Debug"
           $exe = "$package/knomira_game_shell.exe"
-          if (!(Test-Path $exe)) { throw "Qt-hosted prototype exe missing." }
-          if (!(Test-Path "$package/game_shell.rml")) { throw "Main menu document missing." }
+          if (!(Test-Path $exe)) { throw "Game shell executable missing." }
+          if (!(Test-Path "$package/game_shell.rml")) { throw "Game shell document missing." }
           & "$env:QT_ROOT_DIR/bin/windeployqt.exe" --debug --no-translations $exe
           if ($LASTEXITCODE -ne 0) { throw "Qt runtime deployment failed." }
           $vcpkgBin = "$env:RUNNER_TEMP/vcpkg/installed/x64-windows/debug/bin"
@@ -88,7 +88,7 @@ jobs:
           path: |
             build/rmlui-prototype/Debug/*.exe
             build/rmlui-prototype/Debug/*.dll
-            build/rmlui-prototype/Debug/main_menu.rml
+            build/rmlui-prototype/Debug/game_shell.rml
             build/rmlui-prototype/Debug/platforms/**
             build/rmlui-prototype/Debug/styles/**
             build/rmlui-prototype/Debug/generic/**
