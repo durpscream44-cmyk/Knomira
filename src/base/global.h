@@ -24,7 +24,6 @@
 #include "../base/enums.h"
 #include "../base/logger.h"
 
-#include <NsGui/InputEnums.h>
 
 #include <QDomElement>
 #include <QMap>
@@ -90,12 +89,10 @@ public:
 
 	static bool addBehaviorTree( QString id, QString path );
 
-	static QHash<Qt::Key, Noesis::Key> keyConvertMap; ///< Qt key to Noesis key mapping table.
 
 	static QMap<QString, CreaturePart> creaturePartLookUp;  ///< String to CreaturePart enum lookup.
 	static QMap<CreaturePart, QString> creaturePartToString; ///< CreaturePart enum to string lookup.
 
-	static Noesis::Key keyConvert( Qt::Key key );
 
 	static QSet<QString> craftable; ///< Set of item SIDs that can be crafted.
 
@@ -111,5 +108,4 @@ private:
 	static QMap<QString, QDomElement> m_behaviorTrees; ///< Loaded behavior tree XML elements by ID.
 
 	static bool loadBehaviorTrees();
-	static void initKeyConvert();
 };
