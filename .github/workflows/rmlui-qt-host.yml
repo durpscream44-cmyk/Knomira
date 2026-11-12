@@ -1,0 +1,75 @@
+name: Knomira Qt-hosted RmlUi (Windows)
+
+on:
+  push:
+    branches: [feature/rmlui-qt-host]
+    paths:
+      - "prototype/rmlui/**"
+      - ".github/workflows/rmlui-qt-host.yml"
+  pull_request:
+    paths:
+      - "prototype/rmlui/**"
+      - ".github/workflows/rmlui-qt-host.yml"
+  workflow_dispatch:
+
+jobs:
+  qt-rmlui-build:
+    name: Build Qt QWindow + RmlUi host
+    runs-on: windows-2022
+    timeout-minutes: 50
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Qt 6 for MSVC 2022 x64
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.8.3'
+          arch: win64_msvc2022_64
+          cache: true
+
+      - name: Prepare vcpkg dependencies
+        shell: pwsh
+        run: |
+          git clone --depth 1 https://github.com/microsoft/vcpkg.git "$env:RUNNER_TEMP/vcpkg"
+          & "$env:RUNNER_TEMP/vcpkg/bootstrap-vcpkg.bat" -disableMetrics
+          & "$env:RUNNER_TEMP/vcpkg/vcpkg.exe" install "glfw3:x64-windows" "freetype:x64-windows"
+
+      - name: Configure Qt-hosted RmlUi target
+        shell: pwsh
+        run: |
+          cmake -S prototype/rmlui -B build/rmlui-prototype -G "Visual Studio 17 2022" -A x64 "-DCMAKE_TOOLCHAIN_FILE=$env:RUNNER_TEMP/vcpkg/scripts/buildsystems/vcpkg.cmake" "-DCMAKE_PREFIX_PATH=$env:QT_ROOT_DIR" -DKNOMIRA_BUILD_QT_HOST=ON
+
+      - name: Build Qt-hosted prototype
+        shell: pwsh
+        run: |
+          cmake --build build/rmlui-prototype --config Debug --target knomira_rmlui_qt_host --parallel 4
+
+      - name: Stage Qt and FreeType runtime for desktop testing
+        shell: pwsh
+        run: |
+          $package = "build/rmlui-prototype/Debug"
+          $exe = "$package/knomira_rmlui_qt_host.exe"
+          if (!(Test-Path $exe)) { throw "Qt-hosted prototype exe missing." }
+          if (!(Test-Path "$package/main_menu.rml")) { throw "Main menu document missing." }
+          & "$env:QT_ROOT_DIR/bin/windeployqt.exe" --debug --no-translations $exe
+          if ($LASTEXITCODE -ne 0) { throw "Qt runtime deployment failed." }
+          $vcpkgBin = "$env:RUNNER_TEMP/vcpkg/installed/x64-windows/debug/bin"
+          if (Test-Path $vcpkgBin) {
+            Get-ChildItem $vcpkgBin -Filter "*.dll" | Copy-Item -Destination $package -Force
+          }
+
+      - name: Upload Qt prototype desktop-test files
+        uses: actions/upload-artifact@v4
+        with:
+          name: knomira-rmlui-qt-host-windows-debug
+          path: |
+            build/rmlui-prototype/Debug/*.exe
+            build/rmlui-prototype/Debug/*.dll
+            build/rmlui-prototype/Debug/main_menu.rml
+            build/rmlui-prototype/Debug/platforms/**
+            build/rmlui-prototype/Debug/styles/**
+            build/rmlui-prototype/Debug/generic/**
+            build/rmlui-prototype/Debug/iconengines/**
+            build/rmlui-prototype/Debug/tls/**
+          if-no-files-found: error
