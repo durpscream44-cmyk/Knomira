@@ -113,4 +113,10 @@ if(KNOMIRA_BUILD_GAME_SHELL)
     if(MSVC)
         target_compile_options(knomira_game_shell PRIVATE /W4)
     endif()
+    add_executable(knomira_save_catalog_test
+        save_catalog_test.cpp
+        save_catalog.cpp
+        save_catalog.h
+    )
+    target_link_libraries(knomira_save_catalog_test PRIVATE Qt6::Core)
 endif()
