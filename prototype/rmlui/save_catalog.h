@@ -18,6 +18,9 @@ struct KnomiraSaveEntry {
 // Never modify or rewrite any save; this is an index, not a loader.
 QVector<KnomiraSaveEntry> findIngnomiaSaves();
 
+// Testable explicit-root overload; never writes to the supplied directory.
+QVector<KnomiraSaveEntry> findIngnomiaSavesInRoot(const QString& saveRoot);
+
 // Windows: %USERPROFILE%/Documents/My Games/Ingnomia/save
 // Mirrors IO::getDataFolder() in the existing game code.
 QString ingnomiaSaveRoot();
