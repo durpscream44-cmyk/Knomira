@@ -32,6 +32,25 @@ build\rmlui-prototype\Debug\knomira_rmlui_prototype.exe
 
 If `cmake` isn't on PATH, invoke the CMake executable by its full path. If Git/FetchContent is blocked, download RmlUi 6.3 separately and adjust the local CMake source reference.
 
+## Install directly into an existing Knomira checkout
+
+For the easiest setup, use the helper script committed alongside this prototype:
+
+```powershell
+.\prototype\rmlui\Install-Prototype.ps1
+```
+
+It downloads the **latest successful GitHub Actions build** into
+`build\rmlui-prototype\desktop-test\` within the current Knomira checkout
+and then launches the UI prototype. It requires [GitHub CLI](https://cli.github.com/)
+(`gh`) and `gh auth login` once. To download without launching, add `-NoLaunch`.
+
+The installer uses its own script directory to find the repository root, so it
+does **not** need an absolute local development path. The script does not edit
+game code or installed game files. If a previous test package exists, it is
+renamed to `desktop-test.previous` to preserve it. Remove or rename that backup
+before using the helper again.
+
 ## Windows GitHub Actions desktop test
 
 The `Knomira RmlUi Prototype (Windows)` workflow builds the prototype and uploads
