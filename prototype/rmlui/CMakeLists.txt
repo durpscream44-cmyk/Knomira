@@ -85,3 +85,32 @@ if(KNOMIRA_BUILD_QT_HOST)
         RmlUi::RmlUi Qt6::Core Qt6::Gui
     )
 endif()
+
+# Noesis-free executable: Qt + RmlUi + original save metadata discovery.
+# A separate executable to protect the verified Qt/Xbox prototype.
+option(KNOMIRA_BUILD_GAME_SHELL "Build the next Noesis-free game shell milestone" OFF)
+if(KNOMIRA_BUILD_GAME_SHELL)
+    find_package(Qt6 6.5 REQUIRED COMPONENTS Core Gui)
+    add_executable(knomira_game_shell
+        qt_host.cpp
+        save_catalog.cpp
+        save_catalog.h
+        "${rmlui_SOURCE_DIR}/Backends/RmlUi_Renderer_GL3.cpp"
+    )
+    target_compile_definitions(knomira_game_shell PRIVATE KNOMIRA_GAME_SHELL=1)
+    target_include_directories(knomira_game_shell PRIVATE
+        "${rmlui_SOURCE_DIR}/Backends"
+    )
+    target_link_libraries(knomira_game_shell PRIVATE
+        RmlUi::RmlUi Qt6::Core Qt6::Gui
+    )
+    add_custom_command(TARGET knomira_game_shell POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${CMAKE_CURRENT_SOURCE_DIR}/game_shell.rml"
+            "$<TARGET_FILE_DIR:knomira_game_shell>/game_shell.rml"
+        VERBATIM
+    )
+    if(MSVC)
+        target_compile_options(knomira_game_shell PRIVATE /W4)
+    endif()
+endif()
