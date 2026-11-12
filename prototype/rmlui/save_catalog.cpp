@@ -38,8 +38,8 @@ QVector<KnomiraSaveEntry> findIngnomiaSavesInRoot(const QString& saveRoot) {
     const auto kingdomDirs = root.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot | QDir::NoSymLinks);
     for (const QFileInfo& kingdom : kingdomDirs) {
         const QDir kingdomFolder(kingdom.absoluteFilePath());
-        const auto slots = kingdomFolder.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot | QDir::NoSymLinks);
-        for (const QFileInfo& slot : slots) {
+        const auto saveSlots = kingdomFolder.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot | QDir::NoSymLinks);
+        for (const QFileInfo& slot : saveSlots) {
             if (slot.fileName().endsWith(QStringLiteral(".backup"), Qt::CaseInsensitive))
                 continue;
             const QString gameJson = slot.absoluteFilePath() + QStringLiteral("/game.json");
