@@ -728,13 +728,13 @@ protected:
             const int chord = KnomiraInput::Profile::normalizeKey(
                 event->key(), int(event->modifiers()));
             if (event->key() == Qt::Key_Escape) BackToMenu(); // always recover
+            else if (event->key() == Qt::Key_Tab || event->key() == Qt::Key_Backtab)
+                Navigate((event->key() == Qt::Key_Backtab ||
+                          (event->modifiers() & Qt::ShiftModifier)) ? -1 : 1);
             else if (controls_.keyMatches("menu_prev", chord)) Navigate(-1);
             else if (controls_.keyMatches("menu_next", chord)) Navigate(1);
             else if (controls_.keyMatches("menu_accept", chord)) ActivateSelected();
             else if (controls_.keyMatches("menu_back", chord)) BackToMenu();
-            else if (event->key() == Qt::Key_Tab || event->key() == Qt::Key_Backtab)
-                Navigate((event->key() == Qt::Key_Backtab ||
-                          (event->modifiers() & Qt::ShiftModifier)) ? -1 : 1);
             else {
                 event->ignore();
                 return;
