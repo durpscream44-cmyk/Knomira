@@ -24,6 +24,21 @@
     #exit_confirm h2 { color: #f2e4c4; }
     #exit_confirm p { color: #c5c9ba; margin: 10px 0px 22px 0px; }
     #exit_yes { border-color: #a36e55; }
+    #settings_panel { display: none; }
+    #bindings_list { height: 390px; overflow-y: auto; background-color: #172326;
+                     padding: 10px; margin-bottom: 10px; }
+    .control-group { color: #e3bb7b; font-size: 19px; margin: 14px 0 7px 0;
+                     border-bottom: 1px solid #63726b; padding-bottom: 5px; }
+    .control-row { background-color: #27383b; margin-bottom: 9px; padding: 8px; }
+    .control-name { margin: 0px 0px 7px 0px; font-size: 16px; color: #e5e1d2; }
+    button.bind-button { display: inline-block; width: 47%; margin: 1%; min-height: 36px;
+                         padding: 4px; font-size: 13px; text-align: center; }
+    #binding_capture { display: none; background-color: #323b33; border: 1px solid #d5b077;
+                       padding: 10px; margin-bottom: 12px; }
+    #capture_prompt { color: #ffe0ac; font-size: 15px; margin: 0px 0px 7px 0px; }
+    button.capture-button { display: inline-block; width: 46%; margin: 1%; min-height: 38px;
+                            font-size: 15px; }
+    button.control-footer { font-size: 16px; min-height: 42px; }
 
     #save_list { height: 260px; overflow-y: auto; margin-bottom: 12px; padding: 9px;
                  background-color: #192629; }
@@ -42,7 +57,7 @@
       <p class="subtitle">Noesis-free engine bootstrap — Phase 4</p>
       <button id="new_game">New Game (not connected)</button>
       <button id="load_game">Browse Existing Saves</button>
-      <button id="settings">Settings (not connected)</button>
+      <button id="settings">Settings / Controls</button>
       <button id="quit">Exit</button>
     </div>
     <div id="save_browser" class="panel">
@@ -57,6 +72,19 @@
       <p>Are you sure you want to close the game?</p>
       <button id="exit_cancel">Cancel — Return to Menu</button>
       <button id="exit_yes">Yes, Exit Knomira</button>
+    </div>
+    <div id="settings_panel" class="panel">
+      <p class="eyebrow">CUSTOMIZE YOUR INPUT</p>
+      <h2>Controls and Keybindings</h2>
+      <p class="subtitle">Keyboard and Xbox primary / alternate inputs. Planned actions are saved for gameplay.</p>
+      <div id="binding_capture">
+        <p id="capture_prompt">Press a new key or controller input.</p>
+        <button class="capture-button" id="capture_clear">Clear binding</button>
+        <button class="capture-button" id="capture_cancel">Cancel</button>
+      </div>
+      <div id="bindings_list"></div>
+      <button class="control-footer" id="controls_reset">Restore Default Controls</button>
+      <button class="control-footer" id="controls_back">Return to Main Menu</button>
     </div>
     <div id="status">Use keyboard or Xbox controller to navigate.</div>
     <p id="footer">Read-only testing. Your game files are never modified.</p>
