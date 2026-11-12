@@ -2,7 +2,7 @@ name: Knomira Noesis-Free Game Shell (Windows)
 
 on:
   push:
-    branches: [feature/noesis-free-shell, feature/remappable-controls]
+    branches: [feature/noesis-free-shell, feature/remappable-controls, feature/controls-menu-redesign]
     paths:
       - "prototype/rmlui/**"
       - "content/rmlui/**"
