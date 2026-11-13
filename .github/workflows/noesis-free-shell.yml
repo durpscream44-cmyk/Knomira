@@ -30,13 +30,17 @@ jobs:
         run: |
           $tokens = $null
           $parseErrors = $null
-          $path = Join-Path $env:GITHUB_WORKSPACE 'prototype\rmlui\Install-Prototype.ps1'
-          [System.Management.Automation.Language.Parser]::ParseFile($path, [ref]$tokens, [ref]$parseErrors) | Out-Null
-          if ($parseErrors.Count -gt 0) {
-            $parseErrors | Format-List | Out-String | Write-Host
-            throw "Install-Prototype.ps1 has PowerShell syntax errors."
+          foreach ($name in @('Install-Prototype.ps1', 'Test-GameShell.ps1')) {
+            $path = Join-Path $env:GITHUB_WORKSPACE ('prototype\rmlui\' + $name)
+            $tokens = $null
+            $parseErrors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile($path, [ref]$tokens, [ref]$parseErrors) | Out-Null
+            if ($parseErrors.Count -gt 0) {
+              $parseErrors | Format-List | Out-String | Write-Host
+              throw "$name has PowerShell 5.1 syntax errors."
+            }
+            Write-Host "$name syntax is valid."
           }
-          Write-Host "Installer PowerShell 5.1 syntax is valid."
 
   game-shell-build:
     name: Build Noesis-free game shell
