@@ -50,7 +50,11 @@ int main(int argc, char** argv)
         return 4;
     Global::cfg = &config;
 
-    DB::init();
+    if (!DB::init()) {
+        qCritical() << "Original DB initialization failed during embark test";
+        Global::cfg = nullptr;
+        return 14;
+    }
     if (DB::numRows(QStringLiteral("Items")) < 1 ||
         DB::selectRows(QStringLiteral("Items_Components"), QStringLiteral("Pickaxe")).size() != 2) {
         qCritical() << "Original game item/component data missing";
