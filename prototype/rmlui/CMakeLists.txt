@@ -235,9 +235,11 @@ if(KNOMIRA_BUILD_GAME_SHELL)
         "../../src/base/io_data_root.cpp"
         "../../src/base/io_settings_file.cpp"
         "../../src/gui/strings.cpp"
+        "../../src/game/newgamesettings.cpp"
+        "../../src/game/newgamesettings.h"
     )
     set_target_properties(knomira_engine_services_bootstrap_test PROPERTIES
-        CXX_STANDARD 23 CXX_STANDARD_REQUIRED ON
+        CXX_STANDARD 23 CXX_STANDARD_REQUIRED ON AUTOMOC ON
     )
     target_compile_definitions(knomira_engine_services_bootstrap_test PRIVATE
         KNOMIRA_ISOLATED_TEST_DATA_ROOT=1
