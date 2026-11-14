@@ -181,6 +181,28 @@ data changes. Avoid GUI reads of partially updated world state. Rate-limit
 purely visual redraws without delaying gameplay updates or user-visible
 alerts. Measure CPU/render and UPS separately.
 
+## First incremental implementation pass
+
+On `feature/tick-conveyor-prototype`:
+- `src/game/inventory.cpp`: in `Inventory::getClosestItems`, stop visiting
+  further material-specific octrees once a positive requested count has been
+  satisfied. No inventory counts/claims change; reduces repeated spatial
+  searches. **Not yet legacy-game compiled or measured**.
+- `src/game/game.cpp`: when debug mode is enabled, sample creature,
+  gnome, job and pathfinding subsystem milliseconds once per 120 simulation
+  ticks and print `KNOMIRA_PROFILE`. This is diagnostic-only. **Not yet
+  legacy-game compiled or measured**.
+- `src/base/tick_transport_line.h`: optional future event-scheduled
+  conveyors with strict input/output tick rates, capacity and backpressure.
+  Tested headlessly in `prototype/rmlui/tick_transport_line_test.cpp`;
+  not attached to authoritative game inventory or research.
+- Read [Mid-Game Conveyor / Tick Logistics](DESIGN_TICK_CONVEYORS.md) for
+  actual integration constraints and the player unlock concept.
+
+Do not interpret a passing Noesis-free shell test as proof that the original
+simulation source compiles without Noesis. The current CI target builds the
+standalone conveyor test, but not all original engine code.
+
 ## Prioritized roadmap
 
 | Priority | Deliverable | Risk | Reason |
