@@ -10,6 +10,8 @@
 #include <QDomDocument>
 #include <QFile>
 #include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonArray>
 #include <QFileInfo>
 #include <QSqlDatabase>
 #include <QSqlError>
