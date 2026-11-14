@@ -153,6 +153,8 @@ if(KNOMIRA_BUILD_GAME_SHELL)
     find_package(Qt6 6.5 REQUIRED COMPONENTS Widgets Sql)
     add_library(knomira_simulation_source_compile OBJECT
         "../../src/game/game.cpp"
+        "../../src/base/config.cpp"
+        "../../src/base/db.cpp"
         "../../src/game/gamemanager.cpp"
         "../../src/game/newgamesettings.cpp"
         "../../src/game/techtree.cpp"
@@ -166,6 +168,16 @@ if(KNOMIRA_BUILD_GAME_SHELL)
     )
     target_link_libraries(knomira_simulation_source_compile PRIVATE
         Qt6::Core Qt6::Gui Qt6::Xml Qt6::Widgets Qt6::Sql
+    )
+
+    # A linkable, read-only game-data bootstrap test. Executes the actual
+    # game's SQL asset in SQLite :memory:, checking the tables needed for
+    # gameplay initialization without creating config files or save folders.
+    add_executable(knomira_engine_db_bootstrap_test
+        engine_database_smoke.cpp
+    )
+    target_link_libraries(knomira_engine_db_bootstrap_test PRIVATE
+        Qt6::Core Qt6::Sql
     )
 
     # Compile-only check for real game startup and command interfaces.
