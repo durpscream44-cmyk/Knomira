@@ -1,4 +1,4 @@
-# Proposal: Preferred Routes and Workshop Logistics Links
+# Proposal: Preferred Routes, Workshop Logistics and Military Patrols
 
 **Status:** DESIGN ONLY — deferred until the Noesis-free executable can generate,
 display, save and reload playable colonies. This is not implemented gameplay.
@@ -19,6 +19,12 @@ destination stockpiles for finished products. Connections may include other
 workshops for production chains. This is about where hauling jobs get items
 and deliver outputs; it must not cause each worker to carry extra items during
 unrelated jobs.
+
+Allow players to create **military patrol designations** using the same
+existing farm/stockpile zone-selection tool, then assign an ordered patrol
+circuit to a squad. Many squad members can reuse a validated route without
+computing the same circuit afresh for each soldier, while still reacting to
+threats or blocked paths independently.
 
 ## Two independent features
 
@@ -91,6 +97,63 @@ unrelated jobs.
   inaccessible, full, filtered out, reserved, destroyed, or lacks inputs.
 - Build production chains incrementally: stockpile -> smelter -> metal
   stockpile -> forge, never infinite workshop transfer cycles.
+
+### C. Military patrol zones and shared squad circuits
+
+**Status: proposed gameplay, not implemented.** The existing
+`src/game/militarymanager.h/.cpp` defines squads, memberships, and target
+priorities with save/load support, but no confirmed working patrol-order
+controller. This will require new patrol behavior, not just painting tiles.
+
+- Reuse the `Selection` / `AggregatorSelection` farm-and-stockpile designation
+  interaction: **Military -> Paint Patrol Area** with a first/second-corner
+  tile selection and a colored overlay. Paint multiple areas to expand a
+  perimeter, towers, gate corridors, or underground passages. The saved
+  designation must not create walls, block ordinary movement, or own the
+  terrain tiles.
+- Important distinction: an **unordered set of painted tiles is not a patrol
+  circuit**. Provide **Set Patrol Checkpoints** (or click a closed circuit)
+  on walkable tiles inside the designated area, then resolve and cache the
+  connected paths between checkpoints in sequence. A simple v1 can also
+  auto-generate a circuit for straightforward corridors, but needs a clear
+  failure message for branches/disconnected areas.
+- Assign **one named patrol circuit to one or more squads**. Squad members
+  share the same immutable, versioned circuit segments, rather than each
+  launching full-map A* for every lap. Each soldier stores only a current
+  checkpoint/segment index, direction, local avoidance and temporary state.
+  A shared route is **not** a shared single position or one giant group AI
+  update; agents still occupy and navigate separate tiles.
+- Patrol modes: **Loop** (A -> B -> C -> A), **Back and Forth** (A -> B -> C
+  -> B -> A), and **Hold Position** (single checkpoint), if useful. Begin
+  with loop/back-and-forth; optional squad spacing/staggered starting points
+  keep large numbers of soldiers from crowding into one tile.
+- Checkpoint visits should be **event-driven** (arrived, became blocked,
+  target spotted, patrol resumed), not full-path recomputations every tick.
+  Use short local adjustment searches only for joins, obstacles, avoidance,
+  or leaving and returning after a combat interruption.
+- Combat/defense, survival, injuries, emergency alarms, rest/sleep,
+  player orders and higher-priority military AI always override patrol.
+  Resume at a sensible nearest safe checkpoint or route segment after
+  interruptions. Preserve existing target-priority rules and prevent idle
+  gnomes from getting stuck retrying a hostile/invalid corridor.
+- Painted travel corridors for hauling and military patrols can use one
+  shared underlying route-cache/invalidation service, while **patrol order
+  and checkpoint policy remain military-specific**. Avoid duplicating A*
+  implementations in `MilitaryManager`.
+- Save patrol designations, route version/ordered checkpoints, squad
+  assignments, direction and active/suspended status. Load safely when
+  a referenced squad, tile, door or z-level no longer exists.
+- Show **Patrol Available / Route Blocked / Unreachable / Fallback Patrol /
+  Paused for Combat** in a squad's Patrol panel. Send deduplicated alerts
+  when a patrol circuit changes from available to blocked or unreachable;
+  show affected checkpoint/first blocked tile with **Show on Map**. If
+  another safe path exists, recompute its **shared** replacement segment
+  once and report the detour. If no path exists, safely pause that circuit,
+  not the whole military system. Report restoration.
+- Do not call pathfinding “free”: collision avoidance, threat scanning,
+  formation spacing, animation and per-gnome decisions still cost CPU. The
+  optimization targets **redundant route searches**, not every aspect of
+  soldier simulation.
 
 ## Reusable workshop routes — explicit behavior
 
@@ -218,10 +281,25 @@ benchmark shows they reduce CPU time and improve or preserve completed work.
 8. Save/load preserves route definitions and logistics links; removed buildings
    or tiles are resolved without corrupting jobs.
 9. With routes disabled, existing movement behavior is unchanged.
-10. Benchmark path searches, total A* nodes expanded, pathfinding CPU p95, haul
-   throughput, distance walked, and idle/stuck gnomes for small and large
-   colonies. Compare baseline, corridors-only, links-only and both enabled.
-   Favor net improvement under representative production chains.
+10. Military patrol zones use the existing area-designation interaction;
+    ordered checkpoints create a closed loop or back-and-forth circuit.
+    Different squads can select and share the same cached circuit.
+11. With 10, 50 and 200 patrolling soldiers, measure A* invocations, nodes
+    expanded, p95 pathfinding CPU, total simulation CPU, movement throughput,
+    congestion and stuck/idle soldier counts compared with default patrol
+    movement. Require lower redundant searches without excessive detours.
+12. On enemy sighting, injury, sleep or emergency order, a soldier can
+    interrupt patrol and safely resume. Blocking a checkpoint issues one
+    squad-level alert; valid fallback recomputes a shared replacement
+    once, and complete disconnection safely suspends the affected patrol.
+13. Save/load preserves patrol tiles, checkpoint order, squad links and
+    valid interrupted/resumed state; deleting a squad or terrain cannot crash
+    the system.
+14. Benchmark civilian path searches, total A* nodes expanded, pathfinding
+    CPU p95, haul throughput, distance walked and idle/stuck gnomes for
+    small and large colonies. Compare baseline, corridors-only, links-only
+    and both enabled. Favor net improvement under representative production
+    chains.
 
 ## Development priority
 
@@ -229,4 +307,7 @@ benchmark shows they reduce CPU time and improve or preserve completed work.
 world rendering, new game, save/load and a minimally usable colony HUD.
 A workshop-specific choice of input/output stockpiles can ship before
 route corridor editing, since it is simpler and often useful even without
-pathfinding speed gains.
+pathfinding speed gains. Military patrols should follow once combat orders
+and squad behavior are dependable, ideally using the same reusable
+navigation-cache foundation as preferred hauling routes. Do not postpone
+basic playable gameplay to implement large-scale patrol optimizations.
