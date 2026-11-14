@@ -46,7 +46,7 @@ class Item;
 class DB
 {
 public:
-	static void init();
+	static bool init();
 	static void initStructs();
 
 	static QVariant execQuery( QString query );
