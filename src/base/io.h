@@ -22,6 +22,7 @@
 #pragma once
 
 #include <QObject>
+#include <QPointer>
 
 class Game;
 
