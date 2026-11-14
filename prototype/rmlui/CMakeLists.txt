@@ -110,6 +110,13 @@ if(KNOMIRA_BUILD_GAME_SHELL)
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
             "${CMAKE_CURRENT_SOURCE_DIR}/game_shell.rml"
             "$<TARGET_FILE_DIR:knomira_game_shell>/game_shell.rml"
+        # The original DB::init expects <appDir>/content/db/ingnomia.db.sql.
+        # Stage only the original read-only database asset at this milestone.
+        COMMAND ${CMAKE_COMMAND} -E make_directory
+            "$<TARGET_FILE_DIR:knomira_game_shell>/content/db"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${CMAKE_CURRENT_SOURCE_DIR}/../../content/db/ingnomia.db.sql"
+            "$<TARGET_FILE_DIR:knomira_game_shell>/content/db/ingnomia.db.sql"
         VERBATIM
     )
     if(MSVC)
