@@ -185,3 +185,17 @@ When uncertain, leave a concrete blocker and reproduction command. **A compile-o
 
 **Next:** After successful job cache regression, return to PLAY-01C GameManager constructor/shutdown using the real Config/DB/Strings services from #14 (plus the job-cache fix from #15). Preserve base dependency sequence #8 -> #10 -> #11 -> #12 -> #14 -> #15 and explicitly recheck open PRs before cherry-picking. Do not merge superseded PR #13.
 
+
+## PLAY-01 follow-up — game SQL startup fail-closed checks (2026-11-14)
+
+**Branch:** `completion/play01-db-init-fail-closed`, draft [PR #17](https://github.com/durpscream44-cmyk/Knomira/pull/17) based on `feature/fix-job-cache-task-scope` (PR #15). **CI PASS:** [Windows run 43632337797](https://github.com/durpscream44-cmyk/Knomira/actions/runs/43632337797). The Noesis-free executable build, real engine source compile, original Config startup, real DB+Strings bootstrap, database SQL/assets tests, input/save catalog and RmlUi tests all succeeded.
+
+**Concrete issue fixed:** Original `DB::init()` in `src/base/db.cpp` silently continued when `ingnomia.db.sql` was missing or SQL statements failed, allowing incomplete game definitions and invalid job/workshop caches. `DB::init()` now returns a boolean result, explicitly checks for Config and unreadable/empty SQL, logs the first failed statement, and rolls back the original dump transaction on errors. Original `src/main.cpp` now checks this result before `DB::initStructs()`. Calls that ignore the new boolean still compile, but new callers should check it.
+
+**Regression in linked original-services test:** `prototype/rmlui/engine_services_bootstrap_test.cpp` switches the original Config's in-memory `dataPath` to a nonexistent game asset root and asserts `DB::init()` fails; then writes malformed SQL to the marked `QTemporaryDir` using `BEGIN TRANSACTION; CREATE TABLE KNOMIRA_FAILED_IMPORT...; THIS IS INVALID SQL; COMMIT;`, asserts startup fails and the partial table is absent, restores the actual packaged asset directory, and verifies the real database, job caches and Strings still initialize. No user saves or save formats were modified.
+
+**What remains unverified:** Legacy `src/main.cpp` entrypoint still depends on Noesis and is not compiled by the Noesis-free shell workflow; its startup error check is small but requires full legacy build once the required SDK is available. There is no running `GameManager`, generated world, live world renderer, gameplay map mouse input or real save/reload session in the new shell. Keep the PR draft until reviewed in dependency order.
+
+**Canonical PR stack and duplication handling:** #8 → #10 → #11 → #12 → #14 → #15 → #17 (all draft/open as last checked). PR #13 was already superseded; alternate PR #16 was created during this chat before discovering already completed Config/DB work and **closed as a duplicate**. Do not merge #13 or #16. Check live branch ancestry/CI before cherry-picking.
+
+**Next small playable-first ticket:** PLAY-01C — link and construct the actual `GameManager` and `EventConnector` with real Config+DB+Strings in a marked test root, then destroy safely; inspect `Global::util` / `Global::sel` raw-pointer ownership, aggregator construction dependencies, QObject/moc linkage and original `src/main.cpp` force-termination pattern. Do not substitute fake managers, modify user saves or call a compile-only shell playable.
