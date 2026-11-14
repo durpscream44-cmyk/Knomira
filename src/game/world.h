@@ -34,6 +34,7 @@
 #include "../base/tile.h"
 
 #include <QMutex>
+#include <QPointer>
 #include <QPixmap>
 #include <QSet>
 
