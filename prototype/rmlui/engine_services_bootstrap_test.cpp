@@ -57,7 +57,46 @@ int main(int argc, char** argv)
         return 5;
     }
 
-    DB::init();        // Actual game's SQL replay, no standalone fixture.
+    // A bad packaged-data path must fail explicitly, rather than silently
+    // reporting successful initialization with empty game definitions.
+    const QString gameDataPath = config.get(QStringLiteral("dataPath")).toString();
+    config.object().insert(QStringLiteral("dataPath"),
+                           QDir(expected).filePath(QStringLiteral("missing-game-data")));
+    if (DB::init()) {
+        qCritical() << "Missing game database was incorrectly accepted";
+        Global::cfg = nullptr;
+        return 16;
+    }
+
+    // A partial SQL import must be rolled back before the normal original
+    // database is loaded. Use a deliberately malformed fixture in temp.
+    const QString badPath = QDir(expected).filePath(QStringLiteral("bad-asset"));
+    if (!QDir().mkpath(badPath + QStringLiteral("/db"))) {
+        Global::cfg = nullptr;
+        return 17;
+    }
+    QFile badSql(badPath + QStringLiteral("/db/ingnomia.db.sql"));
+    if (!badSql.open(QIODevice::WriteOnly | QIODevice::Text) ||
+        badSql.write("BEGIN TRANSACTION; CREATE TABLE KNOMIRA_FAILED_IMPORT(value INTEGER); "
+                     "THIS IS INVALID SQL; COMMIT;") <= 0) {
+        Global::cfg = nullptr;
+        return 18;
+    }
+    badSql.close();
+    config.object().insert(QStringLiteral("dataPath"), badPath);
+    if (DB::init() ||
+        DB::tables().contains(QStringLiteral("KNOMIRA_FAILED_IMPORT"))) {
+        qCritical() << "Corrupt SQL was accepted or partially committed";
+        Global::cfg = nullptr;
+        return 19;
+    }
+
+    config.object().insert(QStringLiteral("dataPath"), gameDataPath);
+    if (!DB::init()) {
+        qCritical() << "Real original game SQL failed after recovery";
+        Global::cfg = nullptr;
+        return 20;
+    }
     const int itemCount = DB::numRows(QStringLiteral("Items"));
     const int jobCount = DB::numRows(QStringLiteral("Jobs"));
     const int translationCount = DB::numRows(QStringLiteral("Translation"));
