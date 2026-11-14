@@ -22,6 +22,8 @@
  */
 #pragma once
 
+#include "../base/enums.h"
+#include <QPointer>
 #include <QObject>
 
 class GameManager;
