@@ -455,7 +455,9 @@ void MainWindow::keyboardMove()
 /// @param event Incoming Qt mouse event.
 void MainWindow::mouseMoveEvent( QMouseEvent* event )
 {
-	auto gp = this->mapFromGlobal( event->globalPosition().toPoint() );
+	// Mouse events already provide widget-local positions in Qt 6.
+	// Avoid global coordinate round-trips on scaled or multi-monitor desktops.
+	const auto gp = event->position().toPoint();
 	if ( m_view )
 	{
 		// Mouse movement needs to be handled by both Qt and Noesis, to correctly handle ongoing mouse gestures
@@ -521,8 +523,13 @@ void MainWindow::pushRenderParams()
 /// @param event Incoming Qt mouse event.
 void MainWindow::mousePressEvent( QMouseEvent* event )
 {
-	//qDebug() << "mousePressEvent";
-	auto gp = this->mapFromGlobal( event->globalPosition().toPoint() );
+	const auto gp = event->position().toPoint();
+	if ( Global::debugMode )
+	{
+		qDebug() << "KNOMIRA_MOUSE press" << "button" << event->button()
+		         << "local" << gp << "view" << ( m_view ? true : false )
+		         << "overGui" << ( m_view ? isOverGui( gp.x(), gp.y() ) : false );
+	}
 	if ( event->button() & Qt::LeftButton )
 	{
 		if ( m_view )
@@ -567,12 +574,23 @@ void MainWindow::mousePressEvent( QMouseEvent* event )
 /// @param event Incoming Qt mouse event.
 void MainWindow::mouseReleaseEvent( QMouseEvent* event )
 {
-	//qDebug() << "mouseReleaseEvent";
+	const auto gp = event->position().toPoint();
+	// Clicks may not have any intervening mouseMoveEvent. Use the *release*
+	// coordinates rather than the previous hover point for world selection.
+	m_mouseX = gp.x();
+	m_mouseY = gp.y();
+	if ( Global::debugMode )
+	{
+		qDebug() << "KNOMIRA_MOUSE release" << "button" << event->button()
+		         << "local" << gp << "view" << ( m_view ? true : false )
+		         << "overGui" << ( m_view ? isOverGui( gp.x(), gp.y() ) : false )
+		         << "leftStartedOnWorld" << m_leftDown
+		         << "rightStartedOnWorld" << m_rightDown << "dragged" << m_isMove;
+	}
 	if ( event->button() & Qt::LeftButton )
 	{
 		if ( m_view )
 		{
-			auto gp = this->mapFromGlobal( event->globalPosition().toPoint() );
 			if ( isOverGui( gp.x(), gp.y() ) || !m_leftDown )
 			{
 				if ( m_view->MouseButtonUp( gp.x(), gp.y(), Noesis::MouseButton::MouseButton_Left ) )
@@ -584,6 +602,7 @@ void MainWindow::mouseReleaseEvent( QMouseEvent* event )
 			{
 				if ( !m_isMove && m_leftDown )
 				{
+					if ( Global::debugMode ) qDebug() << "KNOMIRA_MOUSE world left dispatched" << gp;
 					emit signalMouse( m_mouseX, m_mouseY, event->modifiers() & Qt::ShiftModifier, event->modifiers() & Qt::ControlModifier );
 					emit signalLeftClick( event->modifiers() & Qt::ShiftModifier, event->modifiers() & Qt::ControlModifier );
 					redraw();
@@ -597,7 +616,6 @@ void MainWindow::mouseReleaseEvent( QMouseEvent* event )
 	{
 		if ( m_view )
 		{
-			auto gp = this->mapFromGlobal( event->globalPosition().toPoint() );
 			if ( isOverGui( gp.x(), gp.y() ) || !m_rightDown )
 			{
 				if ( m_view->MouseButtonUp( gp.x(), gp.y(), Noesis::MouseButton::MouseButton_Right ) )
@@ -608,11 +626,14 @@ void MainWindow::mouseReleaseEvent( QMouseEvent* event )
 			else
 			{
 				emit signalMouse( m_mouseX, m_mouseY, event->modifiers() & Qt::ShiftModifier, event->modifiers() & Qt::ControlModifier );
+				if ( Global::debugMode ) qDebug() << "KNOMIRA_MOUSE world right dispatched" << gp;
 				emit signalRightClick();
 				redraw();
 				m_rightDown = false;
 			}
 		}
+		// Releasing over UI must not leave the world right-button armed.
+		m_rightDown = false;
 	}
 }
 
@@ -623,7 +644,7 @@ void MainWindow::wheelEvent( QWheelEvent* event )
 {
 	if ( m_view )
 	{
-		auto gp = this->mapFromGlobal( event->globalPosition().toPoint() );
+		const auto gp = event->position().toPoint();
 		int delta = event->angleDelta().y();
 		if ( isOverGui( gp.x(), gp.y() ) )
 		{
