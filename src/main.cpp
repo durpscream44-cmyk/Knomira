@@ -181,7 +181,11 @@ int main( int argc, char* argv[] )
 		abort();
 	}
 
-	DB::init();
+	if ( !DB::init() )
+	{
+		qCritical() << "Unable to initialize original game data. Check content/db/ingnomia.db.sql.";
+		return 1;
+	}
 	DB::initStructs();
 
 	if ( !S::gi().init() )
