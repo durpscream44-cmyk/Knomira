@@ -1,5 +1,13 @@
 # Ingnomia Functional-Completion Codex Instructions
 
+## Current handoff / next-ticket checkpoint
+
+Before making new changes, read [CODEX_HANDOFF.md](CODEX_HANDOFF.md).
+It records verified CI status, branch/PR dependencies, unverified mouse issues,
+and a playable-first sequence of bounded tasks (PLAY-01 through PLAY-04).
+Update that handoff after a ticket with exact builds, limitations and next work.
+Do not present stand-alone compiler success as live gameplay success.
+
 ## Mission
 Your job is to turn this Ingnomia fork into a dependable, functionally complete single-player colony simulator before adding major new features. Preserve the existing game and architecture wherever practical. Prioritize correctness, save/load integrity, reachable player-facing features, and reproducible builds over refactors or feature expansion.
 
