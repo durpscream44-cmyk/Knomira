@@ -2,7 +2,7 @@ name: Knomira Noesis-Free Game Shell (Windows)
 
 on:
   push:
-    branches: [feature/noesis-free-shell, feature/remappable-controls, feature/controls-menu-redesign, feature/playable-engine-compile-gate, feature/playable-db-bootstrap-smoke, feature/playable-safe-data-root, feature/playable-config-startup-smoke, feature/playable-db-services-after-config]
+    branches: [feature/noesis-free-shell, feature/remappable-controls, feature/controls-menu-redesign, feature/playable-engine-compile-gate, feature/playable-db-bootstrap-smoke, feature/playable-safe-data-root, feature/playable-config-startup-smoke, feature/playable-db-services-after-config, feature/playable-newgame-settings-smoke]
     paths:
       - "prototype/rmlui/**"
       - "content/rmlui/**"
@@ -135,7 +135,7 @@ jobs:
           & "build/rmlui-prototype/Debug/knomira_engine_config_bootstrap_test.exe"
           if ($LASTEXITCODE -ne 0) { throw "Original Config sandbox initialization failed." }
 
-      - name: Initialize original DB and Strings services in isolated runtime
+      - name: Initialize DB Strings and NewGameSettings with two-material regression
         shell: pwsh
         run: |
           & "build/rmlui-prototype/Debug/knomira_engine_services_bootstrap_test.exe"
