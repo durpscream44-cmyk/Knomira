@@ -100,9 +100,9 @@ threats or blocked paths independently.
 
 ### C. Military patrol zones and shared squad circuits
 
-For squad-leader navigation, shared threat coordination, and player-selectable
-Single file / 2×2 / 3×3 formations, see
-[Squad Leader AI and Formations](DESIGN_SQUAD_LEADER_AI_AND_FORMATIONS.md).
+For lightweight squad-level reuse of patrol paths and optional, benchmarked
+shared threat-candidate checks (without formations or leader-following movement),
+see [Squad Patrol Performance](DESIGN_SQUAD_PATROL_OPTIMIZATION.md).
 
 **Status: proposed gameplay, not implemented.** The existing
 `src/game/militarymanager.h/.cpp` defines squads, memberships, and target
@@ -125,12 +125,12 @@ controller. This will require new patrol behavior, not just painting tiles.
   share the same immutable, versioned circuit segments, rather than each
   launching full-map A* for every lap. Each soldier stores only a current
   checkpoint/segment index, direction, local avoidance and temporary state.
-  A shared route is **not** a shared single position or one giant group AI
-  update; agents still occupy and navigate separate tiles.
+  A shared route is **not** a formation or a shared position: gnomes move
+  individually and never calculate leader-relative positions.
 - Patrol modes: **Loop** (A -> B -> C -> A), **Back and Forth** (A -> B -> C
   -> B -> A), and **Hold Position** (single checkpoint), if useful. Begin
-  with loop/back-and-forth; optional squad spacing/staggered starting points
-  keep large numbers of soldiers from crowding into one tile.
+  with loop/back-and-forth; avoid adding enforced spacing or formation
+  calculations. Congestion is a performance metric, not a reason to simulate ranks.
 - Checkpoint visits should be **event-driven** (arrived, became blocked,
   target spotted, patrol resumed), not full-path recomputations every tick.
   Use short local adjustment searches only for joins, obstacles, avoidance,
@@ -154,10 +154,11 @@ controller. This will require new patrol behavior, not just painting tiles.
   another safe path exists, recompute its **shared** replacement segment
   once and report the detour. If no path exists, safely pause that circuit,
   not the whole military system. Report restoration.
-- Do not call pathfinding “free”: collision avoidance, threat scanning,
-  formation spacing, animation and per-gnome decisions still cost CPU. The
-  optimization targets **redundant route searches**, not every aspect of
-  soldier simulation.
+- Do not call pathfinding “free”: collision avoidance, local threat checks,
+  animation and per-gnome decisions still cost CPU. The optimization targets
+  **redundant route searches**, not every aspect of soldier simulation.
+  Do not add formation, follower spacing, slot assignment, or leader-relative
+  steering as part of this feature.
 
 ## Reusable workshop routes — explicit behavior
 
