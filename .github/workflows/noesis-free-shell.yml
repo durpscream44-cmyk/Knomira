@@ -2,7 +2,7 @@ name: Knomira Noesis-Free Game Shell (Windows)
 
 on:
   push:
-    branches: [feature/noesis-free-shell, feature/remappable-controls, feature/controls-menu-redesign, feature/playable-engine-compile-gate, feature/playable-db-bootstrap-smoke, feature/playable-safe-data-root]
+    branches: [feature/noesis-free-shell, feature/remappable-controls, feature/controls-menu-redesign, feature/playable-engine-compile-gate, feature/playable-db-bootstrap-smoke, feature/playable-safe-data-root, feature/playable-config-startup-smoke]
     paths:
       - "prototype/rmlui/**"
       - "content/rmlui/**"
@@ -12,7 +12,7 @@ on:
       - "src/base/global.*"
       - "src/base/pathfinder.cpp"
       - "src/base/io*.cpp"
-      - "src/base/config.cpp"
+      - "src/base/config*.cpp"
       - "src/base/db.cpp"
       - "content/db/ingnomia.db.sql"
       - "src/game/game.*"
@@ -112,7 +112,7 @@ jobs:
       - name: Compile real simulation source without Noesis or legacy PCH
         shell: pwsh
         run: |
-          cmake --build build/rmlui-prototype --config Debug --target knomira_simulation_source_compile knomira_engine_db_bootstrap_test knomira_io_data_root_test knomira_io_data_root_production_test --parallel 4
+          cmake --build build/rmlui-prototype --config Debug --target knomira_simulation_source_compile knomira_engine_db_bootstrap_test knomira_engine_config_bootstrap_test knomira_io_data_root_test knomira_io_data_root_production_test --parallel 4
           if ($LASTEXITCODE -ne 0) { throw "Real engine source compile gate failed." }
 
       - name: Verify original game SQL loads into memory without writing saves
@@ -128,6 +128,12 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "Unsafe game data-root override detected." }
           & "build/rmlui-prototype/Debug/knomira_io_data_root_production_test.exe"
           if ($LASTEXITCODE -ne 0) { throw "Production save path unexpectedly changed." }
+
+      - name: Verify original Config starts safely using temporary game folders
+        shell: pwsh
+        run: |
+          & "build/rmlui-prototype/Debug/knomira_engine_config_bootstrap_test.exe"
+          if ($LASTEXITCODE -ne 0) { throw "Original Config sandbox initialization failed." }
 
       - name: Test actual RmlUi bindings layout geometry
         shell: pwsh
