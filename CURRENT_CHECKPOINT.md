@@ -37,6 +37,8 @@ All of #6/#7/#8/#9/#10/#11/#12/#14/#15/#17/#18 were **open draft PRs** at checkp
 Inspect `src/base/db.h`, `src/base/db.cpp`, `src/main.cpp`, `prototype/rmlui/engine_services_bootstrap_test.cpp` on #17 versus #18.
 - #17 changes `DB::init()` from `void` to `bool`, adds failure rollback and a guarded call in legacy main; its existing tests cover missing/corrupt data.
 - #18's `newgame_settings_bootstrap_test.cpp` currently calls `DB::init()` under the original signature. After integration, **check the return** instead of silently proceeding.
+- **Verified compare vs common #15 base:** #17 changes only `src/base/db.cpp`, `src/base/db.h`, `src/main.cpp`, `prototype/rmlui/engine_services_bootstrap_test.cpp`, and its historical `CODEX_HANDOFF.md`. #18's independent gameplay source change is `src/game/newgamesettings.cpp` plus new `io_json_writer.cpp` and `newgame_settings_bootstrap_test.cpp`. This minimizes source-level overlap, but `DB::init()` return handling must be updated in the new-game test and any other callers before CI. Keep the canonical checkpoint/handoff instead of copying the historical handoff diff.
+- Do not simply declare #17 covered: check both the missing-SQL/rollback assertions and the embark two-material assertions run against one new integrated SHA.
 - Choose a carefully reviewed integration branch/rebase or a small conflict-resolved cherry-pick. Preserve both sets of tests; do not merge PR #13/#16 or overwrite branch #18 blindly.
 - Acceptance: one CI run exercises **both** original-game DB failure/rollback and original NewGameSettings two-material roundtrip on a single commit. Never touch personal saves. Record actual commit and CI run here.
 
