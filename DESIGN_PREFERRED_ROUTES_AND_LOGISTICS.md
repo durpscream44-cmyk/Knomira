@@ -100,6 +100,10 @@ threats or blocked paths independently.
 
 ### C. Military patrol zones and shared squad circuits
 
+For squad-leader navigation, shared threat coordination, and player-selectable
+Single file / 2×2 / 3×3 formations, see
+[Squad Leader AI and Formations](DESIGN_SQUAD_LEADER_AI_AND_FORMATIONS.md).
+
 **Status: proposed gameplay, not implemented.** The existing
 `src/game/militarymanager.h/.cpp` defines squads, memberships, and target
 priorities with save/load support, but no confirmed working patrol-order
