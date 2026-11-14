@@ -2,7 +2,7 @@ name: Knomira Noesis-Free Game Shell (Windows)
 
 on:
   push:
-    branches: [feature/noesis-free-shell, feature/remappable-controls, feature/controls-menu-redesign]
+    branches: [feature/noesis-free-shell, feature/remappable-controls, feature/controls-menu-redesign, feature/playable-engine-compile-gate]
     paths:
       - "prototype/rmlui/**"
       - "content/rmlui/**"
@@ -10,6 +10,11 @@ on:
       - "src/gui/mainwindowrenderer.*"
       - "src/gui/noesiskeyconverter.*"
       - "src/base/global.*"
+      - "src/base/pathfinder.cpp"
+      - "src/game/game.*"
+      - "src/game/newgamesettings.*"
+      - "src/game/techtree.*"
+      - "src/game/gamemanager.cpp"
       - "CMakeLists.txt"
       - ".github/workflows/noesis-free-shell.yml"
   pull_request:
@@ -93,6 +98,12 @@ jobs:
         continue-on-error: true
         run: |
           cmake --build build/rmlui-prototype --config Debug --target knomira_world_renderer_header_compile knomira_engine_headers_compile --parallel 4
+
+      - name: Compile real simulation source without Noesis or legacy PCH
+        shell: pwsh
+        run: |
+          cmake --build build/rmlui-prototype --config Debug --target knomira_simulation_source_compile --parallel 4
+          if ($LASTEXITCODE -ne 0) { throw "Real engine source compile gate failed." }
 
       - name: Test actual RmlUi bindings layout geometry
         shell: pwsh
