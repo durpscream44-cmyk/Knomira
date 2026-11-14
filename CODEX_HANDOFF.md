@@ -1,5 +1,7 @@
 # Knomira — Codex development handoff
 
+> **IMPORTANT CURRENT STATUS:** Start with [CURRENT_CHECKPOINT.md](CURRENT_CHECKPOINT.md) for the verified latest branch/CI status and the exact next task. This longer document includes historical headings from earlier draft PRs and may show older branch names. The checkpoint is the maintained fast pickup.
+
 **Last reviewed:** 2026-11-14  
 **Working branch for next playable-first ticket:** `feature/playable-config-startup-smoke` ([draft PR #12](https://github.com/durpscream44-cmyk/Knomira/pull/12)); stacked over PR #11 → #10 → #8. Do not treat any draft branch as merged.  
 **Status:** UI shell and original IO/Config startup smoke tests pass in Windows CI; real `GameManager`/simulation **does not yet run inside the Noesis-free executable**. Keep the mission **playable -> stable -> optimized**.
