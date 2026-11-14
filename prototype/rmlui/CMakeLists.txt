@@ -162,6 +162,7 @@ if(KNOMIRA_BUILD_GAME_SHELL)
         "../../src/game/game.cpp"
         "../../src/base/config.cpp"
         "../../src/base/db.cpp"
+        "../../src/base/global.cpp"
         "../../src/game/gamemanager.cpp"
         "../../src/game/newgamesettings.cpp"
         "../../src/game/techtree.cpp"
