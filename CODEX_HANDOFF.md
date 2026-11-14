@@ -1,7 +1,7 @@
 # Knomira — Codex development handoff
 
 **Last reviewed:** 2026-11-14  
-**Working branch for next playable-first ticket:** `feature/playable-config-startup-smoke` ([draft PR #12](https://github.com/durpscream44-cmyk/Knomira/pull/12)); stacked over PR #11 → #10 → #8. Do not treat any draft branch as merged.  
+**Current branch and verified baseline:** Read [CURRENT_CHECKPOINT.md](CURRENT_CHECKPOINT.md) first; the latest canonical head is `feature/playable-db-services-after-config` (draft PR #14) stacked over #12 → #11 → #10 → #8. This document retains older historical steps that may be superseded. Do not treat any draft PR as merged.  
 **Status:** UI shell and original IO/Config startup smoke tests pass in Windows CI; real `GameManager`/simulation **does not yet run inside the Noesis-free executable**. Keep the mission **playable -> stable -> optimized**.
 
 This file is a durable "where to pick up" checkpoint for Codex or a local desktop developer. It records what was confirmed, what was only compiled, what is untested, and the next safe work units. Read the root [AGENTS.md](AGENTS.md), [prototype/rmlui/AGENTS.md](prototype/rmlui/AGENTS.md), and [Noesis-free migration plan](prototype/rmlui/NOESIS-FREE-PLAN.md) as well. **Inspect current code, branches, Actions and the local working tree again** rather than treating this document as proof of live functionality.
