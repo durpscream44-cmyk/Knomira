@@ -139,17 +139,13 @@ When uncertain, leave a concrete blocker and reproduction command. **A compile-o
 **Acceptance checklist for Codex before declaring this ticket done:** Windows CI passes both root-mode tests and original source compile; no real save/settings path writes; PR #11 remains draft until review; the next linked engine startup test must assert exactly which paths were written inside the temporary root; only call a game playable after a world is generated, rendered, given a genuine job, and save/reload works.
 
 
-## 8. PLAY-01B next increment — original Config and JSON IO linked smoke (2026-11-14)
+## 8. Integration reconciliation — one canonical Config bootstrap (2026-11-14)
 
-**Branch:** `feature/playable-safe-data-root`, draft PR #11 (child of PR #10). This increment moves **real** original `Config` startup out of the giant save/load link boundary, without generating a game world.
+PR #11 is limited to the tested fail-closed data-root/real IO::createFolders protection. Its later, overlapping Config refactor has been backed out of this branch. That extraction remains recoverable in Git history but should NOT be merged together with the following canonical implementation.
 
-**Implementation (committed):**
-- Extracted unchanged definitions of `IO::saveConfig`, `IO::loadOriginalConfig`, the `IO::saveFile` JSON overloads, and `IO::loadFile` from `src/base/io.cpp` into new `src/base/io_config.cpp` (the original root `src/CMakeLists.txt` recursively includes `*.cpp`). This permits linking configuration without all of the world-save dependencies.
-- Added `prototype/rmlui/config_bootstrap_test.cpp`, which creates an explicit marked `QTemporaryDir`, sets the fail-closed `KNOMIRA_TEST_DATA_ROOT`, constructs the **real original** `Config` with `IO::createFolders`, checks packaged defaults and `dataPath`, changes `XpMod` through `Config::set`, checks the real JSON write, reloads the real `Config`, and verifies there are no save files.
-- A minimal `Global::cfg` static-member definition exists only inside the test binary because the original `IO::saveConfig` requires it; **this is not an alternative GameManager/Global implementation**. The compiled target links real Config, IO data-root, and IO config methods with QtCore and QtXml.
-- CMake source compile target now includes `io_config.cpp`. Windows workflow builds/runs `knomira_config_bootstrap_test` alongside existing bootstrap and save-root tests.
+- [PR #12](https://github.com/durpscream44-cmyk/Knomira/pull/12) (branch feature/playable-config-startup-smoke, based on #11) is the **canonical, already-CI-tested** Config constructor bootstrap. It moves two JSON load functions into io_settings_file.cpp and Config persistence into config_persistence.cpp. It has a passed Windows Config test.
+- [PR #14](https://github.com/durpscream44-cmyk/Knomira/pull/14) (branch feature/playable-db-services-after-config, based on #12) is the **preferred next** real DB::init / DB::initStructs / Strings::init service integration check. Use its Windows CI run to confirm the database service test; it creates no world and uses the marked test root.
+- [PR #13](https://github.com/durpscream44-cmyk/Knomira/pull/13) was a separately verified DB/Strings prototype on the competing, now-backed-out Config extraction. It is **superseded for integration** by #14; do not merge it onto #11/#12.
+- Merge/test dependency order: #8 -> #11 (after its base #10 as appropriate) -> #12 -> #14. Note #11 actually bases on #10; see PR ancestry. Review all branch heads before merging.
 
-**CI at writing:** new test run was queued as [43585718231](https://github.com/durpscream44-cmyk/Knomira/actions/runs/43585718231); do **not** call this particular increment verified until its `Run real Config startup and persistence in marked temp sandbox` step has passed. If it fails, fetch that workflow job log and fix only the concrete compile/link/test failure. Continue protecting original saves.
-
-**Next after green:** PLAY-01B2: link original `DB::init()` / `DB::initStructs()` and `Strings::init()` with a real `Config` and an isolated test folder; compare database data to the existing in-memory SQL fixture. Then audit GameManager dependencies and Qt ownership before a real constructor/destructor smoke test. Do not skip DB or substitute fake game state to report playability.
-
+Next after a green PR #14: link genuine GameManager/EventConnector/aggregator dependencies under the temporary data-root guard; verify shutdown and no writes outside sandbox. Do not use stub managers to claim success.
