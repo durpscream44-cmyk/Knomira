@@ -176,6 +176,7 @@ if(KNOMIRA_BUILD_GAME_SHELL)
         "../../src/base/io.cpp"
         "../../src/base/io_data_root.cpp"
         "../../src/base/io_settings_file.cpp"
+        "../../src/base/io_json_writer.cpp"
         "../../src/game/gamemanager.cpp"
         "../../src/gui/strings.cpp"
         "../../src/game/newgamesettings.cpp"
@@ -243,6 +244,29 @@ if(KNOMIRA_BUILD_GAME_SHELL)
         KNOMIRA_ISOLATED_TEST_DATA_ROOT=1
     )
     target_link_libraries(knomira_engine_services_bootstrap_test PRIVATE
+        Qt6::Core Qt6::Gui Qt6::Xml Qt6::Widgets Qt6::Sql
+    )
+
+    # Real NewGameSettings constructor and save/reload under the same
+    # isolated data root as the original Config + DB + Strings smoke.
+    add_executable(knomira_newgame_settings_bootstrap_test
+        newgame_settings_bootstrap_test.cpp
+        "../../src/game/newgamesettings.cpp"
+        "../../src/game/newgamesettings.h"
+        "../../src/base/config.cpp"
+        "../../src/base/db.cpp"
+        "../../src/base/io_data_root.cpp"
+        "../../src/base/io_json_writer.cpp"
+        "../../src/base/io_settings_file.cpp"
+        "../../src/gui/strings.cpp"
+    )
+    set_target_properties(knomira_newgame_settings_bootstrap_test PROPERTIES
+        CXX_STANDARD 23 CXX_STANDARD_REQUIRED ON AUTOMOC ON
+    )
+    target_compile_definitions(knomira_newgame_settings_bootstrap_test PRIVATE
+        KNOMIRA_ISOLATED_TEST_DATA_ROOT=1
+    )
+    target_link_libraries(knomira_newgame_settings_bootstrap_test PRIVATE
         Qt6::Core Qt6::Gui Qt6::Xml Qt6::Widgets Qt6::Sql
     )
 
