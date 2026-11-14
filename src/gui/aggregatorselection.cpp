@@ -117,6 +117,12 @@ void AggregatorSelection::onMouse( int mouseX, int mouseY, bool shift, bool ctrl
 /// @param ctrl  True if Ctrl is held.
 void AggregatorSelection::onLeftClick( bool shift, bool ctrl )
 {
+	if ( Global::debugMode )
+	{
+		qDebug() << "KNOMIRA_MOUSE aggregator left" << "cursor" << m_cursorPos.toString()
+		         << "hasSelection" << ( Global::sel != nullptr )
+		         << "hasAction" << ( Global::sel && Global::sel->hasAction() );
+	}
 	if ( Global::sel )
 	{
 		if ( Global::sel->hasAction() )
