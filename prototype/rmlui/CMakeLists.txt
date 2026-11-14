@@ -169,11 +169,13 @@ if(KNOMIRA_BUILD_GAME_SHELL)
     add_library(knomira_simulation_source_compile OBJECT
         "../../src/game/game.cpp"
         "../../src/base/config.cpp"
+        "../../src/base/config_persistence.cpp"
         "../../src/base/db.cpp"
         "../../src/base/gamestate.cpp"
         "../../src/base/global.cpp"
         "../../src/base/io.cpp"
         "../../src/base/io_data_root.cpp"
+        "../../src/base/io_settings_file.cpp"
         "../../src/game/gamemanager.cpp"
         "../../src/gui/strings.cpp"
         "../../src/game/newgamesettings.cpp"
@@ -209,6 +211,20 @@ if(KNOMIRA_BUILD_GAME_SHELL)
     target_link_libraries(knomira_engine_db_bootstrap_test PRIVATE
         Qt6::Core Qt6::Sql Qt6::Xml
     )
+
+    # First linked original Config constructor test. It links only actual
+    # Config/IO startup translation units and must always run with a marked
+    # temporary root. Never attach this macro to shipping targets.
+    add_executable(knomira_engine_config_bootstrap_test
+        engine_config_bootstrap_test.cpp
+        "../../src/base/config.cpp"
+        "../../src/base/io_data_root.cpp"
+        "../../src/base/io_settings_file.cpp"
+    )
+    target_compile_definitions(knomira_engine_config_bootstrap_test PRIVATE
+        KNOMIRA_ISOLATED_TEST_DATA_ROOT=1
+    )
+    target_link_libraries(knomira_engine_config_bootstrap_test PRIVATE Qt6::Core)
 
     # Test the same data-folder resolver used by IO::getDataFolder, but with
     # test-only compile guard. Production keeps Documents/My Games/Ingnomia.
