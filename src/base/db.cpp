@@ -22,6 +22,7 @@
 #include "db.h"
 
 #include "../base/config.h"
+#include "../base/global.h"
 #include "../game/item.h"
 
 #include <QDebug>
