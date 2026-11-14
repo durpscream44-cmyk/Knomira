@@ -217,6 +217,11 @@ if(KNOMIRA_BUILD_GAME_SHELL)
     )
     target_link_libraries(knomira_io_data_root_test PRIVATE Qt6::Core)
 
+    # Second compilation of the same test with NO test-only macro verifies
+    # the shipping default ignores KNOMIRA_TEST_DATA_ROOT.
+    add_executable(knomira_io_data_root_production_test io_data_root_test.cpp)
+    target_link_libraries(knomira_io_data_root_production_test PRIVATE Qt6::Core)
+
     # Compile-only check for real game startup and command interfaces.
     # No proprietary GUI libraries or precompiled headers.
     add_library(knomira_engine_headers_compile OBJECT
