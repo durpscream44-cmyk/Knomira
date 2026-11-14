@@ -122,23 +122,3 @@ QVariant Config::get( QString key )
 		return QVariant();
 	}
 }
-
-/**
- * @brief Sets a configuration value and persists to disk.
- *
- * Only writes if the value actually changed. Logs the change to debug output.
- * @param key The setting name to set.
- * @param value The new value.
- */
-void Config::set( QString key, QVariant value )
-{
-	QMutexLocker lock( &m_mutex );
-	const auto oldValue = m_settings[key];
-	if (oldValue != value)
-	{
-		m_settings[key] = value;
-		IO::saveConfig();
-
-		qDebug() << "Update config" << key << "=" << value << "(was" << oldValue << ")";
-	}
-}
