@@ -1,6 +1,6 @@
 // Copyright (C) 2026 Knomira contributors.
 // Standalone test for the EXACT resolver used by original IO::getDataFolder.
-// Compiled with KNOMIRA_ISOLATED_TEST_DATA_ROOT; never uses real saves.
+// Compiled both with and without the test-only guard; never writes real saves.
 #include "../../src/base/io_data_root.h"
 
 #include <QCoreApplication>
@@ -42,6 +42,7 @@ int main(int argc, char** argv)
     // binary it must obey the explicit sandbox, not Documents/My Games.
     if (!qputenv("KNOMIRA_TEST_DATA_ROOT", sandbox.path().toLocal8Bit()))
         return 5;
+#ifdef KNOMIRA_ISOLATED_TEST_DATA_ROOT
     const QString selected = Knomira::DataPaths::userDataFolder();
     if (selected != expected)
         return 6;
@@ -63,5 +64,22 @@ int main(int argc, char** argv)
         return 10;
 
     qInfo() << "Isolated engine data root passed; test files remain inside temporary sandbox.";
+#else
+    // Shipping binaries must ignore the test-only environment variable,
+    // even when it points to a perfectly valid marked sandbox.
+    const QString selected = Knomira::DataPaths::userDataFolder();
+#ifdef Q_OS_WIN
+    const QString standard = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation)
+                           + QStringLiteral("/My Games/Ingnomia");
+#else
+    const QString standard = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)
+                           + QStringLiteral("/Ingnomia");
+#endif
+    if (selected != standard || selected == expected) {
+        qCritical() << "Production data root was redirected unexpectedly";
+        return 11;
+    }
+    qInfo() << "Production data-root behavior preserved; test override ignored.";
+#endif
     return 0;
 }
