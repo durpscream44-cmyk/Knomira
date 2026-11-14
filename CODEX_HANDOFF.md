@@ -153,3 +153,17 @@ When uncertain, leave a concrete blocker and reproduction command. **A compile-o
 
 **Next after green:** PLAY-01B2: link original `DB::init()` / `DB::initStructs()` and `Strings::init()` with a real `Config` and an isolated test folder; compare database data to the existing in-memory SQL fixture. Then audit GameManager dependencies and Qt ownership before a real constructor/destructor smoke test. Do not skip DB or substitute fake game state to report playability.
 
+
+## 9. Branch integration warning and next DB-service smoke (2026-11-14)
+
+New draft [PR #13 — original DB and Strings runtime bootstrap](https://github.com/durpscream44-cmyk/Knomira/pull/13), branch feature/playable-db-runtime-bootstrap, based on feature/playable-safe-data-root (PR #11). The new engine_services_bootstrap_test.cpp links the actual Config, DB::init, DB::initStructs, and Strings::init services using a marked temporary data root. It checks cached jobs/workshops and a translation. No GameManager, world generation or rendering is run. CI was pending when this note was written; inspect the latest PR #13 SHA before claiming PASS.
+
+### CRITICAL: overlapping Config startup PRs — DO NOT MERGE BOTH UNCHANGED
+
+[PR #12 — original Config startup](https://github.com/durpscream44-cmyk/Knomira/pull/12) on feature/playable-config-startup-smoke also targets PR #11 and has a green prior Windows check. It extracts IO::loadFile and IO::loadOriginalConfig into src/base/io_settings_file.cpp and moves Config::set persistence into src/base/config_persistence.cpp.
+
+Separately, later work on PR #11 moved the SAME IO::loadFile and IO::loadOriginalConfig definitions, plus IO::saveConfig and IO::saveFile, to src/base/io_config.cpp and added a linked Config runtime test. These are overlapping alternatives, NOT additive. Merging current PR #11 and PR #12 unchanged can define IO::loadFile and IO::loadOriginalConfig twice and duplicate CMake/test work.
+
+Reconciliation: choose one canonical extraction, compare branch heads in a local working tree, remove duplicate definitions/targets from the other approach, rebase in dependency order and rerun a fresh full-game compilation plus Noesis-free CI. If PR #12 is canonical, port only PR #13's new original DB/Strings test onto PR #12, not the overlapping Config extraction. Keep all three draft until reconciled. Do not blindly merge #11, #12, #13.
+
+Even if DB/Strings passes, the GameManager constructor still has a much larger dependency chain: EventConnector and aggregators, NewGameSettings, Util and GameState. Link actual services incrementally under the temp-root safeguard; do not fabricate a successful colony simulation with stubs.
