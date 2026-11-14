@@ -6,6 +6,9 @@ display, save and reload playable colonies. This is not implemented gameplay.
 ## Player goal
 
 Allow players to designate suggested corridors by selecting tiles or waypoints.
+**The primary performance goal is reusing an already solved, validated route
+between recurring logistics endpoints** (e.g. stockpile and workshop), rather
+than having every gnome independently recompute that same route for every trip.
 Gnomes headed in a compatible direction should favor these routes when doing so
 is sensible, but must never abandon their real job target to obey a route.
 
@@ -44,7 +47,9 @@ unrelated jobs.
   (production chain destination). Support per-input/item filters and multiple
   ranked candidates.
 - The hauling/job scheduler chooses a valid stockpile/item and destination.
-  The actual pathfinder still computes a safe path to the selected endpoint.
+  When possible, movement combines a short approach path, a **shared validated
+  route segment**, and a short exit/arrival path. The normal pathfinder
+  remains available for initial segment creation and fallback.
 - Links control logistics choices; corridors influence physical travel. The
   player can use either without needing the other.
 - Do not permit item duplication, incorrect reservations, or workers hauling
@@ -54,6 +59,69 @@ unrelated jobs.
   inaccessible, full, filtered out, reserved, destroyed, or lacks inputs.
 - Build production chains incrementally: stockpile -> smelter -> metal
   stockpile -> forge, never infinite workshop transfer cycles.
+
+## Reusable workshop routes — explicit behavior
+
+A defined route is a cached **shared travel segment**, not an instruction that
+forces every gnome to start from the exact same tile. Example:
+
+`Ore Stockpile -> validated trunk route -> Smelter -> Output Stockpile`.
+
+- On route creation or first use, validate the corridor against current
+  walkability, stair/ramp transitions, access/no-pass rules and hazards. If
+  the player draws rough waypoints, solve the legal walkable segments between
+  those waypoints once. The route is marked invalid if no safe legal connection
+  exists.
+- Store reusable segment(s) independently of the requesting gnome, keyed by
+  endpoints, traversal permissions, and a navigation/terrain version. All
+  compatible haul jobs may reuse them.
+- For each gnome, only the **approach to the reusable segment** and the **final
+  approach to the actual pickup/dropoff tile** may require new local searches.
+  A gnome standing directly on the route can often join with negligible
+  search work. Do not promise zero pathfinding for every haul.
+- Before reusing a segment, validate route revision and required movement
+  constraints. When map topology or access permissions change, invalidate
+  affected segments **once per route/version**, rather than running a
+  complete path search for every gnome that attempts to use it.
+- Compare estimated total travel cost (approach + cached route + arrival)
+  with ordinary travel, with a configurable detour threshold. Do not choose
+  a route that is blocked, unsafe, much longer, or incompatible with the job.
+  A route can be preferred for the inbound supply trip but not a gnome's
+  unrelated return journey.
+- When a route is invalidated, gnomes already traveling must safely switch
+  to fallback A* at the next relevant decision point. Avoid retry storms:
+  a failed route remains inactive until something relevant changes or a
+  bounded revalidation is requested.
+
+## Workshop route monitoring and player alerts
+
+A workshop's **Logistics / Routes** panel shows both the selected source and
+destination links and the status of each reusable travel route:
+
+| Route status | UI and behavior |
+|---|---|
+| Available | The preferred segment is valid and may be reused |
+| Blocked | A construction, door/access rule, obstacle, or dangerous tile broke the segment; normal pathfinding takes over |
+| Unreachable | No legal connection remains to the linked stockpile or workshop; hauling jobs using that link cannot proceed until another destination or access path is found |
+| Detour fallback | A normal path is available but the designated corridor would take too long |
+| Awaiting validation | Newly created or invalidated path is being checked |
+
+- Include a short **reason**, affected source and destination, and where
+  possible the first problem tile / z-level with a **Show on Map** action.
+- Send one actionable workshop alert when a previously usable link becomes
+  blocked or unreachable; group repeat alerts instead of sending one per
+  gnome or job. Notify again only on meaningful state change, and report
+  restoration when the route becomes usable.
+- Distinguish **route blocked but fallback available** (warning) from
+  **workshop cannot receive materials / deliver output at all** (problem).
+  These must integrate with the planned workshop status panel alongside
+  missing required inputs, output storage full and missing assigned worker.
+- If a preferred stockpile is unreachable, obey the workshop's fallback
+  rules (e.g. alternative source/destination). Never quietly lose reserved
+  items, duplicate transport jobs, or silently mark goods delivered.
+- Route topology changes should trigger **event-driven** invalidation and
+  revalidation (affected tile, door/permission, building/storage changes).
+  Avoid checking every route on every simulation tick.
 
 ## Potential pathfinding optimization — hypothesis, not a guarantee
 
@@ -81,14 +149,21 @@ benchmark shows they reduce CPU time and improve or preserve completed work.
 
 1. Suggested corridor is used for compatible destinations and ignored for
    unrelated/long-detour destinations.
-2. Blocked or hazardous corridor falls back to a safe ordinary path and
+2. Repeated stockpile-to-workshop hauling reuses a validated shared route
+   without running a full A* search for each identical trunk segment.
+3. Blocked or hazardous corridor falls back to a safe ordinary path and
    does not trap a gnome in repeated retry loops.
-3. Stockpile A supplies workshop B and workshop output goes to C; item filters,
-   reservations and output capacity are respected.
-4. Save/load preserves route definitions and logistics links; removed buildings
+4. Stockpile A supplies workshop B and workshop output goes to C; item
+   filters, reservations and output capacity are respected.
+5. When the player closes a passage or removes a stockpile, linked workshops
+   receive a single actionable blocked/unreachable alert; the map highlights
+   the affected route. Alert spam is suppressed and recovery is reported.
+6. Blocked route with valid ordinary alternative remains productive and is
+   labeled **fallback active**; no valid route stops affected hauling safely.
+7. Save/load preserves route definitions and logistics links; removed buildings
    or tiles are resolved without corrupting jobs.
-5. With routes disabled, existing movement behavior is unchanged.
-6. Benchmark path searches, total A* nodes expanded, pathfinding CPU p95, haul
+8. With routes disabled, existing movement behavior is unchanged.
+9. Benchmark path searches, total A* nodes expanded, pathfinding CPU p95, haul
    throughput, distance walked, and idle/stuck gnomes for small and large
    colonies. Compare baseline, corridors-only, links-only and both enabled.
    Favor net improvement under representative production chains.
