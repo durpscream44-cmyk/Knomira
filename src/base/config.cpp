@@ -23,6 +23,7 @@
 
 #include "../base/io.h"
 
+#include <QCoreApplication>
 #include <QDebug>
 #include <QDir>
 #include <QFile>
