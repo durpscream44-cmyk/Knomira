@@ -30,6 +30,9 @@
 
 #include <QDebug>
 #include <QElapsedTimer>
+#include <functional>
+#include <future>
+#include <unordered_set>
 
 /** @brief Constructs the PathFinder.
  *  @param world Pointer to the game World used for tile and region queries.
