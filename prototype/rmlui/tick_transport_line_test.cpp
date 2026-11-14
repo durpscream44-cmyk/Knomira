@@ -89,8 +89,14 @@ int main() {
     assert(ledger.items.at(101) == Location::Transit);
     ledger.destinationHasRoom = true;
     line.SetDestinationAvailable(true);
-    assert(line.Process(101, deliver, 2) == 2); // bounded throughput per step
-    assert(line.Process(101, deliver, 2) == 2);
+    // Unblocking at tick 101 may output one item immediately, but must not
+    // dump the entire blocked backlog at once.
+    assert(line.Process(101, deliver, 2) == 1);
+    assert(line.Process(101, deliver, 2) == 0);
+    assert(line.Process(102, deliver, 2) == 0);
+    assert(line.Process(103, deliver, 2) == 1);
+    assert(line.Process(105, deliver, 2) == 1);
+    assert(line.Process(107, deliver, 2) == 1);
     assert(line.InFlight() == 0);
     assert(ledger.movedOut == 4 && ledger.movedIn == 4);
     assert(line.Process(200, deliver) == 0);
