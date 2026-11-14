@@ -185,3 +185,22 @@ When uncertain, leave a concrete blocker and reproduction command. **A compile-o
 
 **Next:** After successful job cache regression, return to PLAY-01C GameManager constructor/shutdown using the real Config/DB/Strings services from #14 (plus the job-cache fix from #15). Preserve base dependency sequence #8 -> #10 -> #11 -> #12 -> #14 -> #15 and explicitly recheck open PRs before cherry-picking. Do not merge superseded PR #13.
 
+
+## PLAY-01C embark settings integration and combined-material regression (2026-11-14)
+
+**Branch:** `feature/playable-newgame-embark-smoke`, [draft PR #18](https://github.com/durpscream44-cmyk/Knomira/pull/18), **based on PR #15** `feature/fix-job-cache-task-scope`. This is another small linked startup step, not a GameManager/world renderer.
+
+**Newly identified original-game bug:** In `src/game/newgamesettings.cpp`, `NewGameSettings::setStartingItems()` previously read both `mat1` and `mat2` from `components[0]` in the `CombinedItem` case. This loses the true second material when an embark item is saved and reloaded. Changed `vmc2` to read `components[1]`. No save format or technology change.
+
+**Runtime integration/test implementation:**
+- Moved the original three `IO::saveFile` JSON overloads from large `src/base/io.cpp` to standalone `src/base/io_json_writer.cpp` with original behavior. This allows the **real** `NewGameSettings::save()` and preset methods to link without the world save serializer. `src/CMakeLists.txt` uses source globbing; **rerun CMake configure** when picking up this new source.
+- Added `prototype/rmlui/newgame_settings_bootstrap_test.cpp`: real Config, DB::init, DB::initStructs, Strings::init and **real** `NewGameSettings` constructor with its Qt metaobject. Test uses the marked temporary `KNOMIRA_TEST_DATA_ROOT`, verifies positive world dimensions/gnome count, nonempty random name/seed and preset names, writes a Pickaxe composed of two distinct materials, checks serialized JSON and a **new actual NewGameSettings instance** after reload, and asserts there are no colony saves.
+- Added `knomira_newgame_settings_bootstrap_test` to the standalone Qt/CMake build and Windows CI; added the extracted writer to the original simulation compile gate.
+- This is not a player-visible New Game button, actual world generation, gnomes, renderer, or GameManager linkage. Do not claim playability.
+
+**Validation:** Windows [Noesis-free run 43638918319](https://github.com/durpscream44-cmyk/Knomira/actions/runs/43638918319) was running when this note was authored. **Confirm its final status and exact failed step before claiming PASS.** Run the test target with the real packaged `content/db`, `content/JSON`, `content/ai` from the shell's build output. Keep PR #18 draft until verified.
+
+**Parallel PR reconciliation:** [PR #17](https://github.com/durpscream44-cmyk/Knomira/pull/17) is a **sibling** based on PR #15. It separately makes original `DB::init()` fail closed on missing/corrupt SQL and has passed its own Windows CI. PR #18 does **not** include PR #17. Integrate both after review (base stack #8 -> #10 -> #11 -> #12 -> #14 -> #15; then reconcile #17 and #18), without double-applying unrelated changes. Superseded #13 and #16 must remain closed.
+
+**Next task after green:** Link the original `EventConnector` / `GameManager` bootstrap under an isolated temp root, but expect many aggregator and renderer dependencies. Prefer one real service at a time; audit Qt thread ownership and `Global::util` before repeated lifecycle tests. A successful embark-settings bootstrap does not replace a working colony.
+
