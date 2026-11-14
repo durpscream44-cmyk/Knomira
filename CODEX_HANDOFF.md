@@ -115,3 +115,22 @@ Useful verification:
 - **Next single bounded coding task:**
 
 When uncertain, leave a concrete blocker and reproduction command. **A compile-only build success is not a playable game.** No async tasks or work-in-progress promises: a ticket is complete only when the changes, tests, and outstanding blockers are recorded.
+
+## 7. Latest PLAY-01B preparation: fail-closed test save-root isolation (2026-11-14)
+
+**Work branch:** `feature/playable-safe-data-root`, [draft PR #11](https://github.com/durpscream44-cmyk/Knomira/pull/11), based on draft PR #10 (`feature/playable-db-bootstrap-smoke`), itself based on draft PR #8 (`feature/playable-engine-compile-gate`). None is automatically merged; check actual branch ancestry before cherry-picking.
+
+**Why this matters:** `IO::getDataFolder()` in `src/base/io.cpp` normally returns `Documents/My Games/Ingnomia` on Windows. Original `Config::Config()` invokes `IO::createFolders()`, which can write to the configured data path. Before a linked `GameManager` smoke test, the real `IO` translation unit must be forced to use disposable test data or it risks touching existing player saves/settings.
+
+**Implemented on PR #11:**
+- `src/base/io_data_root.h`: one shared resolver called from the real `IO::getDataFolder()`.
+- Without `KNOMIRA_ISOLATED_TEST_DATA_ROOT`, it returns the **same OS-specific player save folder as before**. An environment variable alone does not redirect normal gameplay.
+- With that compile definition, `KNOMIRA_TEST_DATA_ROOT` is mandatory; it must refer to a real absolute directory **strictly inside the canonical system temp folder**, containing the `.knomira-isolated-test-root` marker. Missing, invalid, unmarked, or non-temp roots cause an immediate fatal failure, never a fallback to live saves.
+- `knomira_simulation_source_compile` is a **smoke-only** target and is compiled with the isolation definition, so it can later provide objects for an isolated engine bootstrap. **Never attach this define to the shipping legacy game or normal `knomira_game_shell`.**
+- `prototype/rmlui/io_data_root_test.cpp` is compiled twice: isolation mode tests rejection, temporary-file writes and root selection; production mode tests the unchanged default while the override environment variable is set. Windows CI targets are `knomira_io_data_root_test` and `knomira_io_data_root_production_test`.
+- Original game data/schema and save formats remain unchanged. The new test does not load or alter player saves.
+
+**Immediate next ticket: PLAY-01B linkable engine bootstrap** (not implemented): initialize `Config`, `DB::init()`, `DB::initStructs()`, `Strings::init()`, and then construct/destroy `GameManager` using the **test-compiled isolated IO source**, a deliberately created `QTemporaryDir` marker, and an explicit `KNOMIRA_TEST_DATA_ROOT`. Do not reuse any unguarded shipping `IO` implementation in the same executable. If the test root is missing or not validated, hard fail before constructing `Config`. Prefer `QApplication` with offscreen platform for legacy utility classes, and use orderly Qt thread quit/wait. GameManager still has extensive unresolved linker/aggregator/sprite/sound dependencies, so stop at the first tractable CI blocker and document it rather than faking lifecycle success.
+
+**Acceptance checklist for Codex before declaring this ticket done:** Windows CI passes both root-mode tests and original source compile; no real save/settings path writes; PR #11 remains draft until review; the next linked engine startup test must assert exactly which paths were written inside the temporary root; only call a game playable after a world is generated, rendered, given a genuine job, and save/reload works.
+
