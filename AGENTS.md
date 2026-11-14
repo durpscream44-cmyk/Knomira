@@ -2,6 +2,8 @@
 
 ## Current handoff / next-ticket checkpoint
 
+**Read [CURRENT_CHECKPOINT.md](CURRENT_CHECKPOINT.md) first for the latest verified branch, CI and next bounded ticket.** The longer CODEX_HANDOFF.md is historical detail; do not reread the whole history on every iteration.
+
 Before making new changes, read [CODEX_HANDOFF.md](CODEX_HANDOFF.md).
 It records verified CI status, branch/PR dependencies, unverified mouse issues,
 and a playable-first sequence of bounded tasks (PLAY-01 through PLAY-04).

@@ -2,7 +2,7 @@ name: Knomira Noesis-Free Game Shell (Windows)
 
 on:
   push:
-    branches: [feature/noesis-free-shell, feature/remappable-controls, feature/controls-menu-redesign, feature/playable-engine-compile-gate, feature/playable-db-bootstrap-smoke, feature/playable-safe-data-root, feature/playable-config-startup-smoke]
+    branches: [feature/noesis-free-shell, feature/remappable-controls, feature/controls-menu-redesign, feature/playable-engine-compile-gate, feature/playable-db-bootstrap-smoke, feature/playable-safe-data-root, feature/playable-config-startup-smoke, feature/playable-db-services-after-config]
     paths:
       - "prototype/rmlui/**"
       - "content/rmlui/**"
@@ -112,7 +112,7 @@ jobs:
       - name: Compile real simulation source without Noesis or legacy PCH
         shell: pwsh
         run: |
-          cmake --build build/rmlui-prototype --config Debug --target knomira_simulation_source_compile knomira_engine_db_bootstrap_test knomira_engine_config_bootstrap_test knomira_io_data_root_test knomira_io_data_root_production_test --parallel 4
+          cmake --build build/rmlui-prototype --config Debug --target knomira_simulation_source_compile knomira_engine_db_bootstrap_test knomira_engine_config_bootstrap_test knomira_io_data_root_test knomira_io_data_root_production_test knomira_engine_services_bootstrap_test --parallel 4
           if ($LASTEXITCODE -ne 0) { throw "Real engine source compile gate failed." }
 
       - name: Verify original game SQL loads into memory without writing saves
@@ -134,6 +134,12 @@ jobs:
         run: |
           & "build/rmlui-prototype/Debug/knomira_engine_config_bootstrap_test.exe"
           if ($LASTEXITCODE -ne 0) { throw "Original Config sandbox initialization failed." }
+
+      - name: Initialize original DB and Strings services in isolated runtime
+        shell: pwsh
+        run: |
+          & "build/rmlui-prototype/Debug/knomira_engine_services_bootstrap_test.exe"
+          if ($LASTEXITCODE -ne 0) { throw "Real DB/Strings service startup failed." }
 
       - name: Test actual RmlUi bindings layout geometry
         shell: pwsh
