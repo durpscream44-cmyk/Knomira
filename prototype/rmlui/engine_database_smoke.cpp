@@ -6,7 +6,10 @@
 
 #include <QCoreApplication>
 #include <QDebug>
+#include <QDir>
+#include <QDomDocument>
 #include <QFile>
+#include <QJsonDocument>
 #include <QFileInfo>
 #include <QSqlDatabase>
 #include <QSqlError>
@@ -95,6 +98,52 @@ int main(int argc, char** argv) {
         if (!RequireTableRows(db, table))
             return 7;
     }
+    // The real Global::loadBehaviorTrees uses these database filenames.
+    // Verify the same runtime files will be available beside the shell,
+    // without instantiating Global/Config or writing user data.
+    const QDir databaseFolder = QFileInfo(source).absoluteDir();
+    QSqlQuery aiQuery(db);
+    if (!aiQuery.exec(QStringLiteral("SELECT BehaviorTree FROM AI"))) {
+        qCritical() << "AI behavior-tree table unavailable:" << aiQuery.lastError().text();
+        return 8;
+    }
+    int aiCount = 0;
+    while (aiQuery.next()) {
+        const QString name = aiQuery.value(0).toString();
+        if (name.isEmpty() || QFileInfo(name).fileName() != name ||
+            name.contains(QLatin1Char('\\'))) {
+            qCritical() << "Invalid behavior-tree asset filename" << name;
+            return 9;
+        }
+        QFile xml(databaseFolder.absoluteFilePath(QStringLiteral("../ai/") + name));
+        if (!xml.open(QIODevice::ReadOnly)) {
+            qCritical() << "Missing packaged behavior tree:" << name << xml.errorString();
+            return 10;
+        }
+        QDomDocument document;
+        if (!document.setContent(&xml) || document.documentElement().isNull()) {
+            qCritical() << "Malformed packaged behavior tree:" << name;
+            return 11;
+        }
+        ++aiCount;
+    }
+    if (aiCount < 5) {
+        qCritical() << "Original game database has too few AI definitions:" << aiCount;
+        return 12;
+    }
+
+    QFile defaults(databaseFolder.absoluteFilePath(QStringLiteral("../JSON/newgame.json")));
+    if (!defaults.open(QIODevice::ReadOnly)) {
+        qCritical() << "Missing packaged default new-game settings:" << defaults.errorString();
+        return 13;
+    }
+    const QJsonDocument newGame = QJsonDocument::fromJson(defaults.readAll());
+    if (!newGame.isObject() || newGame.object().isEmpty()) {
+        qCritical() << "Invalid packaged new-game JSON defaults";
+        return 14;
+    }
+
+    qInfo() << "Validated" << aiCount << "behavior trees and default new-game settings.";
     qInfo() << "Knomira game data bootstrap passed (in-memory only; no saves or config written).";
     return 0;
 }
