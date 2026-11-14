@@ -1,5 +1,20 @@
 # Knomira canonical female centaur art baseline — FIRST THREE PRIMARY
 
+## VERIFIED BOARD-STYLE CORRECTION — NOVEMBER 14, 2026
+
+After comparing original full-resolution PNGs **#1, #2, #3** against `knomira_pasturekin_original_art_anatomy_board.png`, the user correctly noted that **using original character crops does NOT automatically reproduce the original art direction**. The reference board's whole layout, frame geometry, typography, scaling, panel backgrounds, and treatment of anatomy labels must also match.
+
+**Original visual language, based on direct inspection:**
+- **Illustrative pixel-work, not generic “pixel art”.** Fine, carefully clustered pixels and crisp contour decisions with painterly multi-layer lighting and detailed material texture; visible character-specific brush/pixel treatment and sculpted anatomy. NOT large coarse pixel squares, plastic-smooth AI/cartoon, heavily filtered raster, or generic modern fantasy infographic.
+- **Proportions:** smaller elegant adult anime heads with softly pointed chins, nuanced/occasionally half-lidded expressive eyes, detailed layered hair, pronounced stylized upper silhouette and narrow waist; lower equine body compact front-to-back but substantial/muscled and with independently readable legs and fetlocks. No oversized chibi heads, foal proportions, or generic doll-like faces.
+- **UI:** near-black graphite/charcoal-navy canvas, restrained thin slightly aged beige/gold rules, delicate squared corner flourishes, mostly even dark panel backdrops, warm cream pixel-fantasy serif lettering. Decorative motifs are sparse. No giant branded gold masthead, glossy metallic framing, bright rainbow accents, pale parchment layout, or flat presentation-dashboard aesthetic.
+- **Layout:** primary readable figures and roles lead; supporting small expression/coat/hair anatomy panels follow beneath or to side, with subtle separators. The technical info must not dominate the characters or force them into tiny unreadable thumbnails.
+- **Texture and scale:** do not enlarge tiny low-resolution crops to heroic size; it loses characteristic density and makes collage edges obvious. Crops should only support comparison, not stand in for newly authored matched artwork. Crops with black backdrops must have their seams blended or display with framing consistent with originals.
+- **Health anatomy:** reserve a subtle, secondary dark-gold-framed part-zone panel; show body-part names and separate tinted schematic overlay or color key without recoloring/replacing the primary character. Unlike the rejected reference board, colored dot numbers on photographic/image crops must not become the dominant design language.
+- **Workflow:** start with one approved original reference (#1 or the matching breed in #2/#3) as **direct visual input**. Create ONE focused new breed character or expression/body detail, inspect whether face, anatomy, pixel density, palette and gear still match before composing any full reference sheet; assemble the technical panel only afterward. Do not treat a newly generated full-sheet approximation as correct simply because it is dark/gold and says “Knomira.”
+
+**What was wrong with the latest Pasturekin board:** While its character crops came from genuine reference art, its flat flat panel blocks, modern editorial/technical typography, oversized labels, sparse untextured layout, isolated low-resolution crops, and bright circular body markers depart from sheets #1–#3. Mark this as a **source annotation draft only**, not an approved style example or production asset.
+
 ## CORRECTION — FIRST THREE HAVE HIGHEST PRIORITY (2026-11-14)
 
 The user explicitly corrected multiple later outputs for changing the art style. Re-inspection of the **actual original PNG bytes** (identified by the checksums below, **not files with reused/overwritten names**) establishes that **Originals #1, #2 and #3 are the PRIMARY design anchors**; #4–#7 are supplementary references only. If any later art or prose conflicts with the first three, follow the first three.
