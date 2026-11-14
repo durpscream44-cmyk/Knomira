@@ -203,6 +203,14 @@ if(KNOMIRA_BUILD_GAME_SHELL)
         Qt6::Core Qt6::Sql Qt6::Xml
     )
 
+    # Test the same data-folder resolver used by IO::getDataFolder, but with
+    # test-only compile guard. Production keeps Documents/My Games/Ingnomia.
+    add_executable(knomira_io_data_root_test io_data_root_test.cpp)
+    target_compile_definitions(knomira_io_data_root_test PRIVATE
+        KNOMIRA_ISOLATED_TEST_DATA_ROOT=1
+    )
+    target_link_libraries(knomira_io_data_root_test PRIVATE Qt6::Core)
+
     # Compile-only check for real game startup and command interfaces.
     # No proprietary GUI libraries or precompiled headers.
     add_library(knomira_engine_headers_compile OBJECT
