@@ -26,6 +26,7 @@
  */
 
 #include "io.h"
+#include "io_data_root.h"
 
 #include "../base/config.h"
 #include "../base/db.h"
@@ -135,12 +136,9 @@ bool IO::saveConfig()
  */
 QString IO::getDataFolder()
 {
-#ifdef _WIN32
-	return QStandardPaths::writableLocation( QStandardPaths::DocumentsLocation ) + "/My Games/Ingnomia";
-#else
-	// corresponds to ~/.local/share/<APPNAME> on Linux
-	return QStandardPaths::writableLocation( QStandardPaths::AppDataLocation ) + "/Ingnomia";
-#endif
+	// Production preserves the original save location. Startup smoke tests
+	// can opt into a marked, temp-only sandbox via a test build definition.
+	return Knomira::DataPaths::userDataFolder();
 }
 
 /** @brief Returns the path to the temporary folder inside the user data directory.
