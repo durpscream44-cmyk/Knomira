@@ -2,7 +2,7 @@ name: Knomira Noesis-Free Game Shell (Windows)
 
 on:
   push:
-    branches: [feature/noesis-free-shell, feature/remappable-controls, feature/controls-menu-redesign, feature/playable-engine-compile-gate, feature/playable-db-bootstrap-smoke, feature/playable-safe-data-root]
+    branches: [feature/noesis-free-shell, feature/remappable-controls, feature/controls-menu-redesign, feature/playable-engine-compile-gate, feature/playable-db-bootstrap-smoke, feature/playable-safe-data-root, feature/playable-db-runtime-bootstrap]
     paths:
       - "prototype/rmlui/**"
       - "content/rmlui/**"
@@ -112,7 +112,7 @@ jobs:
       - name: Compile real simulation source without Noesis or legacy PCH
         shell: pwsh
         run: |
-          cmake --build build/rmlui-prototype --config Debug --target knomira_simulation_source_compile knomira_engine_db_bootstrap_test knomira_io_data_root_test knomira_io_data_root_production_test knomira_config_bootstrap_test --parallel 4
+          cmake --build build/rmlui-prototype --config Debug --target knomira_simulation_source_compile knomira_engine_db_bootstrap_test knomira_io_data_root_test knomira_io_data_root_production_test knomira_config_bootstrap_test knomira_engine_services_bootstrap_test --parallel 4
           if ($LASTEXITCODE -ne 0) { throw "Real engine source compile gate failed." }
 
       - name: Verify original game SQL loads into memory without writing saves
@@ -134,6 +134,12 @@ jobs:
         run: |
           & "build/rmlui-prototype/Debug/knomira_config_bootstrap_test.exe"
           if ($LASTEXITCODE -ne 0) { throw "Original Config bootstrap or sandboxed JSON persistence failed." }
+
+      - name: Bootstrap original DB and localization services in sandbox
+        shell: pwsh
+        run: |
+          & "build/rmlui-prototype/Debug/knomira_engine_services_bootstrap_test.exe"
+          if ($LASTEXITCODE -ne 0) { throw "Original DB/Strings bootstrap or data isolation failed." }
 
       - name: Test actual RmlUi bindings layout geometry
         shell: pwsh
