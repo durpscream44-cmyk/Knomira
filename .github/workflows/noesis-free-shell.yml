@@ -15,6 +15,9 @@ on:
       - "src/game/newgamesettings.*"
       - "src/game/techtree.*"
       - "src/game/gamemanager.cpp"
+      - "src/gui/aggregatorsound.*"
+      - "src/gui/eventconnector.cpp"
+      - "AGENTS.md"
       - "CMakeLists.txt"
       - ".github/workflows/noesis-free-shell.yml"
   pull_request:
