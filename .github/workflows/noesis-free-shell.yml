@@ -117,7 +117,7 @@ jobs:
       - name: Verify original game SQL loads into memory without writing saves
         shell: pwsh
         run: |
-          & "build/rmlui-prototype/Debug/knomira_engine_db_bootstrap_test.exe" "$env:GITHUB_WORKSPACE/content/db/ingnomia.db.sql"
+          & "build/rmlui-prototype/Debug/knomira_engine_db_bootstrap_test.exe" "build/rmlui-prototype/Debug/content/db/ingnomia.db.sql"
           if ($LASTEXITCODE -ne 0) { throw "Game database bootstrap smoke test failed." }
 
       - name: Test actual RmlUi bindings layout geometry
@@ -156,6 +156,7 @@ jobs:
           $exe = "$package/knomira_game_shell.exe"
           if (!(Test-Path $exe)) { throw "Game shell executable missing." }
           if (!(Test-Path "$package/game_shell.rml")) { throw "Game shell document missing." }
+          if (!(Test-Path "$package/content/db/ingnomia.db.sql")) { throw "Original game database not staged next to executable." }
           & "$env:QT_ROOT_DIR/bin/windeployqt.exe" --debug --no-translations $exe
           if ($LASTEXITCODE -ne 0) { throw "Qt runtime deployment failed." }
           $vcpkgBin = "$env:RUNNER_TEMP/vcpkg/installed/x64-windows/debug/bin"
@@ -171,6 +172,7 @@ jobs:
             build/rmlui-prototype/Debug/*.exe
             build/rmlui-prototype/Debug/*.dll
             build/rmlui-prototype/Debug/game_shell.rml
+            build/rmlui-prototype/Debug/content/db/**
             build/rmlui-prototype/Debug/platforms/**
             build/rmlui-prototype/Debug/styles/**
             build/rmlui-prototype/Debug/generic/**
