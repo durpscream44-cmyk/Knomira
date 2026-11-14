@@ -22,9 +22,11 @@
 #include "db.h"
 
 #include "../base/config.h"
+#include "../base/global.h"
 #include "../game/item.h"
 
 #include <QDebug>
+#include <QFile>
 #include <QMutexLocker>
 #include <QSqlError>
 #include <QSqlField>

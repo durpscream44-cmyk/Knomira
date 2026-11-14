@@ -110,6 +110,21 @@ if(KNOMIRA_BUILD_GAME_SHELL)
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
             "${CMAKE_CURRENT_SOURCE_DIR}/game_shell.rml"
             "$<TARGET_FILE_DIR:knomira_game_shell>/game_shell.rml"
+        # The original DB::init expects <appDir>/content/db/ingnomia.db.sql.
+        # Stage only the original read-only database asset at this milestone.
+        COMMAND ${CMAKE_COMMAND} -E make_directory
+            "$<TARGET_FILE_DIR:knomira_game_shell>/content/db"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${CMAKE_CURRENT_SOURCE_DIR}/../../content/db/ingnomia.db.sql"
+            "$<TARGET_FILE_DIR:knomira_game_shell>/content/db/ingnomia.db.sql"
+        # The original Global::loadBehaviorTrees consumes content/ai;
+        # NewGameSettings falls back to content/JSON/newgame.json.
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${CMAKE_CURRENT_SOURCE_DIR}/../../content/ai"
+            "$<TARGET_FILE_DIR:knomira_game_shell>/content/ai"
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${CMAKE_CURRENT_SOURCE_DIR}/../../content/JSON"
+            "$<TARGET_FILE_DIR:knomira_game_shell>/content/JSON"
         VERBATIM
     )
     if(MSVC)
@@ -153,19 +168,39 @@ if(KNOMIRA_BUILD_GAME_SHELL)
     find_package(Qt6 6.5 REQUIRED COMPONENTS Widgets Sql)
     add_library(knomira_simulation_source_compile OBJECT
         "../../src/game/game.cpp"
+        "../../src/base/config.cpp"
+        "../../src/base/db.cpp"
+        "../../src/base/gamestate.cpp"
+        "../../src/base/global.cpp"
+        "../../src/base/io.cpp"
         "../../src/game/gamemanager.cpp"
+        "../../src/gui/strings.cpp"
         "../../src/game/newgamesettings.cpp"
         "../../src/game/techtree.cpp"
         "../../src/base/pathfinder.cpp"
         "../../src/gui/eventconnector.cpp"
     )
     # The original game's executable compiles its sources as C++23.
-    set_target_properties(knomira_simulation_source_compile PROPERTIES CXX_STANDARD 23 CXX_STANDARD_REQUIRED ON)
+    # Compile the real Qt signal/slot meta-object code alongside the game's
+    # sources; otherwise a compile-only gate can conceal moc errors until link.
+    set_target_properties(knomira_simulation_source_compile PROPERTIES
+        CXX_STANDARD 23 CXX_STANDARD_REQUIRED ON AUTOMOC ON
+    )
     target_include_directories(knomira_simulation_source_compile PRIVATE
         "${CMAKE_CURRENT_SOURCE_DIR}/../../3rdparty/glad/include"
     )
     target_link_libraries(knomira_simulation_source_compile PRIVATE
         Qt6::Core Qt6::Gui Qt6::Xml Qt6::Widgets Qt6::Sql
+    )
+
+    # A linkable, read-only game-data bootstrap test. Executes the actual
+    # game's SQL asset in SQLite :memory:, checking the tables needed for
+    # gameplay initialization without creating config files or save folders.
+    add_executable(knomira_engine_db_bootstrap_test
+        engine_database_smoke.cpp
+    )
+    target_link_libraries(knomira_engine_db_bootstrap_test PRIVATE
+        Qt6::Core Qt6::Sql Qt6::Xml
     )
 
     # Compile-only check for real game startup and command interfaces.

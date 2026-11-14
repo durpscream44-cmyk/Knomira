@@ -24,6 +24,8 @@
 
 #include "../base/config.h"
 #include "../base/db.h"
+#include "../base/global.h"
+#include <chrono>
 
 #include <QApplication>
 #include <QDebug>

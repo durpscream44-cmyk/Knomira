@@ -2,7 +2,7 @@ name: Knomira Noesis-Free Game Shell (Windows)
 
 on:
   push:
-    branches: [feature/noesis-free-shell, feature/remappable-controls, feature/controls-menu-redesign, feature/playable-engine-compile-gate]
+    branches: [feature/noesis-free-shell, feature/remappable-controls, feature/controls-menu-redesign, feature/playable-engine-compile-gate, feature/playable-db-bootstrap-smoke]
     paths:
       - "prototype/rmlui/**"
       - "content/rmlui/**"
@@ -11,6 +11,9 @@ on:
       - "src/gui/noesiskeyconverter.*"
       - "src/base/global.*"
       - "src/base/pathfinder.cpp"
+      - "src/base/config.cpp"
+      - "src/base/db.cpp"
+      - "content/db/ingnomia.db.sql"
       - "src/game/game.*"
       - "src/game/newgamesettings.*"
       - "src/game/techtree.*"
@@ -108,8 +111,14 @@ jobs:
       - name: Compile real simulation source without Noesis or legacy PCH
         shell: pwsh
         run: |
-          cmake --build build/rmlui-prototype --config Debug --target knomira_simulation_source_compile --parallel 4
+          cmake --build build/rmlui-prototype --config Debug --target knomira_simulation_source_compile knomira_engine_db_bootstrap_test --parallel 4
           if ($LASTEXITCODE -ne 0) { throw "Real engine source compile gate failed." }
+
+      - name: Verify original game SQL loads into memory without writing saves
+        shell: pwsh
+        run: |
+          & "build/rmlui-prototype/Debug/knomira_engine_db_bootstrap_test.exe" "build/rmlui-prototype/Debug/content/db/ingnomia.db.sql"
+          if ($LASTEXITCODE -ne 0) { throw "Game database bootstrap smoke test failed." }
 
       - name: Test actual RmlUi bindings layout geometry
         shell: pwsh
@@ -147,6 +156,9 @@ jobs:
           $exe = "$package/knomira_game_shell.exe"
           if (!(Test-Path $exe)) { throw "Game shell executable missing." }
           if (!(Test-Path "$package/game_shell.rml")) { throw "Game shell document missing." }
+          if (!(Test-Path "$package/content/db/ingnomia.db.sql")) { throw "Original game database not staged next to executable." }
+          if (!(Test-Path "$package/content/JSON/newgame.json")) { throw "Default new-game settings missing." }
+          if (!(Test-Path "$package/content/ai")) { throw "Behavior tree directory missing." }
           & "$env:QT_ROOT_DIR/bin/windeployqt.exe" --debug --no-translations $exe
           if ($LASTEXITCODE -ne 0) { throw "Qt runtime deployment failed." }
           $vcpkgBin = "$env:RUNNER_TEMP/vcpkg/installed/x64-windows/debug/bin"
@@ -162,6 +174,9 @@ jobs:
             build/rmlui-prototype/Debug/*.exe
             build/rmlui-prototype/Debug/*.dll
             build/rmlui-prototype/Debug/game_shell.rml
+            build/rmlui-prototype/Debug/content/db/**
+            build/rmlui-prototype/Debug/content/ai/**
+            build/rmlui-prototype/Debug/content/JSON/**
             build/rmlui-prototype/Debug/platforms/**
             build/rmlui-prototype/Debug/styles/**
             build/rmlui-prototype/Debug/generic/**
