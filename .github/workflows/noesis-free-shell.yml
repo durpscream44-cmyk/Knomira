@@ -157,6 +157,8 @@ jobs:
           if (!(Test-Path $exe)) { throw "Game shell executable missing." }
           if (!(Test-Path "$package/game_shell.rml")) { throw "Game shell document missing." }
           if (!(Test-Path "$package/content/db/ingnomia.db.sql")) { throw "Original game database not staged next to executable." }
+          if (!(Test-Path "$package/content/JSON/newgame.json")) { throw "Default new-game settings missing." }
+          if (!(Test-Path "$package/content/ai")) { throw "Behavior tree directory missing." }
           & "$env:QT_ROOT_DIR/bin/windeployqt.exe" --debug --no-translations $exe
           if ($LASTEXITCODE -ne 0) { throw "Qt runtime deployment failed." }
           $vcpkgBin = "$env:RUNNER_TEMP/vcpkg/installed/x64-windows/debug/bin"
@@ -173,6 +175,8 @@ jobs:
             build/rmlui-prototype/Debug/*.dll
             build/rmlui-prototype/Debug/game_shell.rml
             build/rmlui-prototype/Debug/content/db/**
+            build/rmlui-prototype/Debug/content/ai/**
+            build/rmlui-prototype/Debug/content/JSON/**
             build/rmlui-prototype/Debug/platforms/**
             build/rmlui-prototype/Debug/styles/**
             build/rmlui-prototype/Debug/generic/**
