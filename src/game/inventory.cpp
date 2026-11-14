@@ -697,6 +697,12 @@ QList<unsigned int> Inventory::getClosestItems( const Position& pos, bool allowI
 		{
 			Octree* ot = octree( itemSID, material );
 			ot->visit( pos.x, pos.y, pos.z, predicate );
+			// An Octree::visit stop only ends this material's traversal.
+			// Don't keep scanning other materials once enough items were found.
+			if ( count > 0 && out.size() >= count )
+			{
+				break;
+			}
 		}
 	}
 	else

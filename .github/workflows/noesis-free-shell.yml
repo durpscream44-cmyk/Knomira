@@ -2,7 +2,7 @@ name: Knomira Noesis-Free Game Shell (Windows)
 
 on:
   push:
-    branches: [feature/noesis-free-shell, feature/remappable-controls, feature/controls-menu-redesign]
+    branches: [feature/noesis-free-shell, feature/remappable-controls, feature/controls-menu-redesign, feature/tick-conveyor-prototype]
     paths:
       - "prototype/rmlui/**"
       - "content/rmlui/**"
@@ -10,6 +10,7 @@ on:
       - "src/gui/mainwindowrenderer.*"
       - "src/gui/noesiskeyconverter.*"
       - "src/base/global.*"
+      - "src/base/tick_transport_line.h"
       - "CMakeLists.txt"
       - ".github/workflows/noesis-free-shell.yml"
   pull_request:
@@ -72,7 +73,7 @@ jobs:
       - name: Build Noesis-free shell
         shell: pwsh
         run: |
-          cmake --build build/rmlui-prototype --config Debug --target knomira_game_shell knomira_save_catalog_test knomira_input_bindings_test knomira_rmlui_layout_test --parallel 4
+          cmake --build build/rmlui-prototype --config Debug --target knomira_game_shell knomira_save_catalog_test knomira_input_bindings_test knomira_rmlui_layout_test knomira_tick_transport_line_test --parallel 4
 
       - name: Test save discovery without Noesis
         shell: pwsh
@@ -85,6 +86,12 @@ jobs:
         run: |
           & "build/rmlui-prototype/Debug/knomira_input_bindings_test.exe"
           if ($LASTEXITCODE -ne 0) { throw "Controls profile test failed." }
+
+      - name: Test tick-scheduled conveyor transport integrity
+        shell: pwsh
+        run: |
+          & "build/rmlui-prototype/Debug/knomira_tick_transport_line_test.exe"
+          if ($LASTEXITCODE -ne 0) { throw "Tick conveyor transport test failed." }
 
       # This checks the next migration boundary, without blocking working
       # shell artifacts when other engine headers still need refactoring.

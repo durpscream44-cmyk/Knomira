@@ -220,7 +220,14 @@ void Game::loop()
 		
 		if ( !m_paused )
 		{
-			
+			// Sample expensive subsystems in debug mode only. Do not change
+			// scheduling or simulation results; this is diagnostic instrumentation.
+			const bool profileSample = Global::debugMode && ( GameState::tick % 120 == 0 );
+			QElapsedTimer phaseTimer;
+			qint64 creatureNs = 0;
+			qint64 gnomeNs = 0;
+			qint64 jobNs = 0;
+			qint64 pathNs = 0;
 			
 			emit sendOverlayMessage( 6, "tick " + QString::number( GameState::tick ) );
 			//printf("   game tick %d\n",GameState::tick );
@@ -234,15 +241,20 @@ void Game::loop()
 
 			// process animals
 
+			if ( profileSample ) phaseTimer.start();
 			m_creatureManager->onTick( GameState::tick, GameState::seasonChanged, GameState::dayChanged, GameState::hourChanged, GameState::minuteChanged );
+			if ( profileSample ) creatureNs = phaseTimer.nsecsElapsed();
 
 			// process gnomes
 			QElapsedTimer timer2;
 			timer2.start();
 			m_gnomeManager->onTick( GameState::tick, GameState::seasonChanged, GameState::dayChanged, GameState::hourChanged, GameState::minuteChanged );
 			ms2 = timer2.elapsed();
+			if ( profileSample ) gnomeNs = timer2.nsecsElapsed();
 			// process jobs
+			if ( profileSample ) phaseTimer.start();
 			m_jobManager->onTick();
+			if ( profileSample ) jobNs = phaseTimer.nsecsElapsed();
 			// process stockpiles
 			m_spm->onTick( GameState::tick );
 			m_farmingManager->onTick( GameState::tick, GameState::seasonChanged, GameState::dayChanged, GameState::hourChanged, GameState::minuteChanged );
@@ -258,7 +270,17 @@ void Game::loop()
 			
 			m_world->processWater();
 
+			if ( profileSample ) phaseTimer.start();
 			m_pf->findPaths();
+			if ( profileSample )
+			{
+				pathNs = phaseTimer.nsecsElapsed();
+				qDebug() << "KNOMIRA_PROFILE tick" << GameState::tick
+				         << "creature_ms" << ( creatureNs / 1000000.0 )
+				         << "gnome_ms" << ( gnomeNs / 1000000.0 )
+				         << "jobs_ms" << ( jobNs / 1000000.0 )
+				         << "pathfinding_ms" << ( pathNs / 1000000.0 );
+			}
 
 			++GameState::tick;
 		}
