@@ -115,3 +115,37 @@ Useful verification:
 - **Next single bounded coding task:**
 
 When uncertain, leave a concrete blocker and reproduction command. **A compile-only build success is not a playable game.** No async tasks or work-in-progress promises: a ticket is complete only when the changes, tests, and outstanding blockers are recorded.
+
+## 7. Latest PLAY-01B preparation: fail-closed test save-root isolation (2026-11-14)
+
+**Work branch:** `feature/playable-safe-data-root`, [draft PR #11](https://github.com/durpscream44-cmyk/Knomira/pull/11), based on draft PR #10 (`feature/playable-db-bootstrap-smoke`), itself based on draft PR #8 (`feature/playable-engine-compile-gate`). None is automatically merged; check actual branch ancestry before cherry-picking.
+
+**Why this matters:** `IO::getDataFolder()` in `src/base/io.cpp` normally returns `Documents/My Games/Ingnomia` on Windows. Original `Config::Config()` invokes `IO::createFolders()`, which can write to the configured data path. Before a linked `GameManager` smoke test, the real `IO` translation unit must be forced to use disposable test data or it risks touching existing player saves/settings.
+
+**Implemented on PR #11:**
+- `src/base/io_data_root.h`: one shared resolver called from the real `IO::getDataFolder()`.
+- Without `KNOMIRA_ISOLATED_TEST_DATA_ROOT`, it returns the **same OS-specific player save folder as before**. An environment variable alone does not redirect normal gameplay.
+- With that compile definition, `KNOMIRA_TEST_DATA_ROOT` is mandatory; it must refer to a real absolute directory **strictly inside the canonical system temp folder**, containing the `.knomira-isolated-test-root` marker. Missing, invalid, unmarked, or non-temp roots cause an immediate fatal failure, never a fallback to live saves.
+- `knomira_simulation_source_compile` is a **smoke-only** target and is compiled with the isolation definition, so it can later provide objects for an isolated engine bootstrap. **Never attach this define to the shipping legacy game or normal `knomira_game_shell`.**
+- `prototype/rmlui/io_data_root_test.cpp` is compiled twice: isolation mode tests rejection, temporary-file writes and root selection; production mode tests the unchanged default while the override environment variable is set. Windows CI targets are `knomira_io_data_root_test` and `knomira_io_data_root_production_test`.
+- Original game data/schema and save formats remain unchanged. The new test does not load or alter player saves.
+
+**Immediate next ticket: PLAY-01B linkable engine bootstrap** (not implemented): initialize `Config`, `DB::init()`, `DB::initStructs()`, `Strings::init()`, and then construct/destroy `GameManager` using the **test-compiled isolated IO source**, a deliberately created `QTemporaryDir` marker, and an explicit `KNOMIRA_TEST_DATA_ROOT`. Do not reuse any unguarded shipping `IO` implementation in the same executable. If the test root is missing or not validated, hard fail before constructing `Config`. Prefer `QApplication` with offscreen platform for legacy utility classes, and use orderly Qt thread quit/wait. GameManager still has extensive unresolved linker/aggregator/sprite/sound dependencies, so stop at the first tractable CI blocker and document it rather than faking lifecycle success.
+
+**Verification — PASS:** [Noesis-free Windows CI run 43578230240](https://github.com/durpscream44-cmyk/Knomira/actions/runs/43578230240) built both test targets and passed the `Verify isolated game data root cannot target player saves` step. The real engine sources also compiled. The runtime tests exercised the shared data-folder resolver only; `IO::getDataFolder()` itself has not been linked into an actual GameManager process.
+
+**Additional lifecycle finding for PLAY-01B (source review only):** `src/game/gamemanager.cpp` assigns `Global::util = new Util(nullptr)` in the constructor and later replaces it via `new Util(m_game)` in both new-game and load paths, as well as a fresh `new Util(nullptr)` in `endCurrentGame()`. `Util` is not a QObject and has a trivial destructor; the displaced pointers are not explicitly freed in these paths. Audit `Util` and `Selection` ownership and shutdown on the real game thread before adding another manager lifecycle. Do not blindly `delete` objects during a running simulation; scope this as a separate measured, testable fix after smoke initialization.
+
+**Acceptance checklist for Codex before declaring this ticket done:** Windows CI passes both root-mode tests and original source compile; no real save/settings path writes; PR #11 remains draft until review; the next linked engine startup test must assert exactly which paths were written inside the temporary root; only call a game playable after a world is generated, rendered, given a genuine job, and save/reload works.
+
+
+## 8. Integration reconciliation — one canonical Config bootstrap (2026-11-14)
+
+PR #11 is limited to the tested fail-closed data-root/real IO::createFolders protection. Its later, overlapping Config refactor has been backed out of this branch. That extraction remains recoverable in Git history but should NOT be merged together with the following canonical implementation.
+
+- [PR #12](https://github.com/durpscream44-cmyk/Knomira/pull/12) (branch feature/playable-config-startup-smoke, based on #11) is the **canonical, already-CI-tested** Config constructor bootstrap. It moves two JSON load functions into io_settings_file.cpp and Config persistence into config_persistence.cpp. It has a passed Windows Config test.
+- [PR #14](https://github.com/durpscream44-cmyk/Knomira/pull/14) (branch feature/playable-db-services-after-config, based on #12) is the **preferred next** real DB::init / DB::initStructs / Strings::init service integration check. Use its Windows CI run to confirm the database service test; it creates no world and uses the marked test root.
+- [PR #13](https://github.com/durpscream44-cmyk/Knomira/pull/13) was a separately verified DB/Strings prototype on the competing, now-backed-out Config extraction. It is **superseded for integration** by #14; do not merge it onto #11/#12.
+- Merge/test dependency order: #8 -> #11 (after its base #10 as appropriate) -> #12 -> #14. Note #11 actually bases on #10; see PR ancestry. Review all branch heads before merging.
+
+Next after a green PR #14: link genuine GameManager/EventConnector/aggregator dependencies under the temporary data-root guard; verify shutdown and no writes outside sandbox. Do not use stub managers to claim success.

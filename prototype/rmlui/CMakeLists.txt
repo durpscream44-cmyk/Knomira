@@ -173,6 +173,7 @@ if(KNOMIRA_BUILD_GAME_SHELL)
         "../../src/base/gamestate.cpp"
         "../../src/base/global.cpp"
         "../../src/base/io.cpp"
+        "../../src/base/io_data_root.cpp"
         "../../src/game/gamemanager.cpp"
         "../../src/gui/strings.cpp"
         "../../src/game/newgamesettings.cpp"
@@ -185,6 +186,12 @@ if(KNOMIRA_BUILD_GAME_SHELL)
     # sources; otherwise a compile-only gate can conceal moc errors until link.
     set_target_properties(knomira_simulation_source_compile PROPERTIES
         CXX_STANDARD 23 CXX_STANDARD_REQUIRED ON AUTOMOC ON
+    )
+    # This is a compile-only integration/test target, never the shipping game.
+    # Ensure any future smoke executable reusing these objects cannot silently
+    # create files in Documents/My Games/Ingnomia.
+    target_compile_definitions(knomira_simulation_source_compile PRIVATE
+        KNOMIRA_ISOLATED_TEST_DATA_ROOT=1
     )
     target_include_directories(knomira_simulation_source_compile PRIVATE
         "${CMAKE_CURRENT_SOURCE_DIR}/../../3rdparty/glad/include"
@@ -202,6 +209,25 @@ if(KNOMIRA_BUILD_GAME_SHELL)
     target_link_libraries(knomira_engine_db_bootstrap_test PRIVATE
         Qt6::Core Qt6::Sql Qt6::Xml
     )
+
+    # Test the same data-folder resolver used by IO::getDataFolder, but with
+    # test-only compile guard. Production keeps Documents/My Games/Ingnomia.
+    add_executable(knomira_io_data_root_test
+        io_data_root_test.cpp
+        "../../src/base/io_data_root.cpp"
+    )
+    target_compile_definitions(knomira_io_data_root_test PRIVATE
+        KNOMIRA_ISOLATED_TEST_DATA_ROOT=1
+    )
+    target_link_libraries(knomira_io_data_root_test PRIVATE Qt6::Core)
+
+    # Second compilation of the same test with NO test-only macro verifies
+    # the shipping default ignores KNOMIRA_TEST_DATA_ROOT.
+    add_executable(knomira_io_data_root_production_test
+        io_data_root_test.cpp
+        "../../src/base/io_data_root.cpp"
+    )
+    target_link_libraries(knomira_io_data_root_production_test PRIVATE Qt6::Core)
 
     # Compile-only check for real game startup and command interfaces.
     # No proprietary GUI libraries or precompiled headers.

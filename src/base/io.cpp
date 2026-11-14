@@ -130,89 +130,12 @@ bool IO::saveConfig()
 	return true;
 }
 
-/** @brief Returns the platform-specific user data folder for Ingnomia.
- *  @return On Windows: Documents/My Games/Ingnomia. On Linux: ~/.local/share/Ingnomia.
- */
-QString IO::getDataFolder()
-{
-#ifdef _WIN32
-	return QStandardPaths::writableLocation( QStandardPaths::DocumentsLocation ) + "/My Games/Ingnomia";
-#else
-	// corresponds to ~/.local/share/<APPNAME> on Linux
-	return QStandardPaths::writableLocation( QStandardPaths::AppDataLocation ) + "/Ingnomia";
-#endif
-}
-
 /** @brief Returns the path to the temporary folder inside the user data directory.
  *  @return Path to the tmp subfolder.
  */
 QString IO::getTempFolder()
 {
 	return getDataFolder() + "/tmp/";
-}
-
-/** @brief Creates all required subdirectories (mods, save, screenshots, settings, tmp) in the
- *         user data folder, and copies default config files from the application content directory
- *         if they do not already exist.
- *  @return True if the save folder exists after creation.
- */
-bool IO::createFolders()
-{
-	QString folder = getDataFolder() + "/";
-	if ( !QDir( folder ).exists() )
-	{
-		QDir().mkpath( folder );
-	}
-	QString modFolder = folder + "mods/";
-	if ( !QDir( modFolder ).exists() )
-	{
-		QDir().mkdir( modFolder );
-	}
-	QString saveFolder = folder + "save/";
-	if ( !QDir( saveFolder ).exists() )
-	{
-		QDir().mkdir( saveFolder );
-	}
-	QString ssFolder = folder + "screenshots/";
-	if ( !QDir( ssFolder ).exists() )
-	{
-		QDir().mkdir( ssFolder );
-	}
-	QString settingsFolder = folder + "settings/";
-	if ( !QDir( settingsFolder ).exists() )
-	{
-		QDir().mkdir( settingsFolder );
-	}
-	QString tmpFolder = folder + "tmp/";
-	if ( !QDir( tmpFolder ).exists() )
-	{
-		QDir().mkdir( tmpFolder );
-	}
-
-	QString exePath = QCoreApplication::applicationDirPath();
-
-	if ( !QFile::exists( folder + "settings/profs.json" ) && QFile::exists( exePath + "/content/JSON/profs.json" ) )
-	{
-		QFile::copy( exePath + "/content/JSON/profs.json", folder + "settings/profs.json" );
-	}
-	if ( !QFile::exists( folder + "settings/config.json" ) && QFile::exists( exePath + "/content/JSON/config.json" ) )
-	{
-		QFile::copy( exePath + "/content/JSON/config.json", folder + "settings/config.json" );
-	}
-	if ( !QFile::exists( folder + "settings/newgame.json" ) && QFile::exists( exePath + "/content/JSON/newgame.json" ) )
-	{
-		QFile::copy( exePath + "/content/JSON/newgame.json", folder + "settings/newgame.json" );
-	}
-	/*
-	if ( !QFile::exists( folder + "settings/keybindings.json" ) && QFile::exists( exePath + "/content/JSON/keybindings.json" ) )
-	{
-		QFile::copy( exePath + "/content/JSON/keybindings.json", folder + "settings/keybindings.json" );
-	}
-	*/
-
-	folder = getDataFolder() + "/save/";
-
-	return QDir( folder ).exists();
 }
 
 /** @brief Loads the original (shipped) config.json from the application content directory.
