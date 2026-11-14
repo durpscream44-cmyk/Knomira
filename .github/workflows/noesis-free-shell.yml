@@ -11,6 +11,7 @@ on:
       - "src/gui/noesiskeyconverter.*"
       - "src/base/global.*"
       - "src/base/pathfinder.cpp"
+      - "src/base/io*.cpp"
       - "src/base/config.cpp"
       - "src/base/db.cpp"
       - "content/db/ingnomia.db.sql"
