@@ -226,6 +226,26 @@ if(KNOMIRA_BUILD_GAME_SHELL)
     )
     target_link_libraries(knomira_engine_config_bootstrap_test PRIVATE Qt6::Core)
 
+    # Real original DB and localization bootstrap, layered on the verified
+    # Config-only smoke test without duplicate IO/config source extractions.
+    add_executable(knomira_engine_services_bootstrap_test
+        engine_services_bootstrap_test.cpp
+        "../../src/base/config.cpp"
+        "../../src/base/db.cpp"
+        "../../src/base/io_data_root.cpp"
+        "../../src/base/io_settings_file.cpp"
+        "../../src/gui/strings.cpp"
+    )
+    set_target_properties(knomira_engine_services_bootstrap_test PROPERTIES
+        CXX_STANDARD 23 CXX_STANDARD_REQUIRED ON
+    )
+    target_compile_definitions(knomira_engine_services_bootstrap_test PRIVATE
+        KNOMIRA_ISOLATED_TEST_DATA_ROOT=1
+    )
+    target_link_libraries(knomira_engine_services_bootstrap_test PRIVATE
+        Qt6::Core Qt6::Gui Qt6::Xml Qt6::Widgets Qt6::Sql
+    )
+
     # Test the same data-folder resolver used by IO::getDataFolder, but with
     # test-only compile guard. Production keeps Documents/My Games/Ingnomia.
     add_executable(knomira_io_data_root_test
