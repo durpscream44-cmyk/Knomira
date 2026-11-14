@@ -244,6 +244,24 @@ if(KNOMIRA_BUILD_GAME_SHELL)
     )
     target_link_libraries(knomira_config_bootstrap_test PRIVATE Qt6::Core Qt6::Xml)
 
+    # Linked original database+localization startup. This intentionally
+    # excludes GameManager until the engine's other dependencies can link.
+    # All real IO methods use a marked temporary test root.
+    add_executable(knomira_engine_services_bootstrap_test
+        engine_services_bootstrap_test.cpp
+        "../../src/base/config.cpp"
+        "../../src/base/db.cpp"
+        "../../src/base/io_config.cpp"
+        "../../src/base/io_data_root.cpp"
+        "../../src/gui/strings.cpp"
+    )
+    target_compile_definitions(knomira_engine_services_bootstrap_test PRIVATE
+        KNOMIRA_ISOLATED_TEST_DATA_ROOT=1
+    )
+    target_link_libraries(knomira_engine_services_bootstrap_test PRIVATE
+        Qt6::Core Qt6::Gui Qt6::Xml Qt6::Widgets Qt6::Sql
+    )
+
     # Compile-only check for real game startup and command interfaces.
     # No proprietary GUI libraries or precompiled headers.
     add_library(knomira_engine_headers_compile OBJECT
