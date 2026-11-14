@@ -3,6 +3,13 @@
 ## Mission
 Your job is to turn this Ingnomia fork into a dependable, functionally complete single-player colony simulator before adding major new features. Preserve the existing game and architecture wherever practical. Prioritize correctness, save/load integrity, reachable player-facing features, and reproducible builds over refactors or feature expansion.
 
+## Current delivery order
+1. **Playable:** Noesis-free RmlUi executable links the real simulation; New Game, world rendering, pause, Save and Load work end-to-end.
+2. **Stable:** verify input, inventory/job ownership, autosaves and simulation progression with automated and desktop smoke tests.
+3. **Optimized:** profile and then integrate low-risk caching, schedule adjustments, preferred routes and inlet/outlet logistics only after the playable baseline is verified. Standalone experiments can remain separate draft branches.
+
+Do not claim that a working menu prototype or source-compilation gate means the colony is playable.
+
 ## Definition of done
 A release candidate must reliably support: new-game/world generation; colony setup; mining/chopping/hauling; stockpiles and construction; workshops/production; farming and animal care; food/water survival; pathfinding and job recovery; combat and deaths; trading/events that are exposed in the UI; repeated save/load during active simulation; and multi-season play without game-stopping corruption, deadlock, or crashes.
 
@@ -10,7 +17,7 @@ A visible feature must either work end-to-end or be clearly disabled/removed unt
 
 ## Hard rules
 1. Do not add multiplayer, caravans, expedition systems, or new dungeon systems during the completion pass.
-2. Do not rewrite the engine or migrate frameworks.
+2. Do not rewrite the engine or start new framework migrations. **Exception:** the user-approved, ongoing NoesisGUI-to-RmlUi UI replacement is in scope; retain the existing simulation, world renderer and save system while completing it. Avoid unrelated engine rewrites.
 3. Do not clear TODOs mechanically. Prove reachability/player impact first.
 4. Make the smallest coherent change that fixes the verified problem.
 5. Do not remove gameplay merely to make compilation/tests pass unless the ticket explicitly authorizes disabling an unfinished UI feature.
