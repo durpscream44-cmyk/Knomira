@@ -2,7 +2,7 @@ name: Knomira Noesis-Free Game Shell (Windows)
 
 on:
   push:
-    branches: [feature/noesis-free-shell, feature/remappable-controls, feature/controls-menu-redesign, feature/playable-engine-compile-gate]
+    branches: [feature/noesis-free-shell, feature/remappable-controls, feature/controls-menu-redesign, feature/playable-engine-compile-gate, feature/playable-db-bootstrap-smoke]
     paths:
       - "prototype/rmlui/**"
       - "content/rmlui/**"
@@ -11,6 +11,9 @@ on:
       - "src/gui/noesiskeyconverter.*"
       - "src/base/global.*"
       - "src/base/pathfinder.cpp"
+      - "src/base/config.cpp"
+      - "src/base/db.cpp"
+      - "content/db/ingnomia.db.sql"
       - "src/game/game.*"
       - "src/game/newgamesettings.*"
       - "src/game/techtree.*"
@@ -108,8 +111,14 @@ jobs:
       - name: Compile real simulation source without Noesis or legacy PCH
         shell: pwsh
         run: |
-          cmake --build build/rmlui-prototype --config Debug --target knomira_simulation_source_compile --parallel 4
+          cmake --build build/rmlui-prototype --config Debug --target knomira_simulation_source_compile knomira_engine_db_bootstrap_test --parallel 4
           if ($LASTEXITCODE -ne 0) { throw "Real engine source compile gate failed." }
+
+      - name: Verify original game SQL loads into memory without writing saves
+        shell: pwsh
+        run: |
+          & "build/rmlui-prototype/Debug/knomira_engine_db_bootstrap_test.exe" "$env:GITHUB_WORKSPACE/content/db/ingnomia.db.sql"
+          if ($LASTEXITCODE -ne 0) { throw "Game database bootstrap smoke test failed." }
 
       - name: Test actual RmlUi bindings layout geometry
         shell: pwsh
