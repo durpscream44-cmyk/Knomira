@@ -25,6 +25,7 @@
 #include "../base/priorityqueue.h"
 #include "../game/neighbormanager.h"
 
+#include <QPointer>
 #include <QMap>
 #include <QObject>
 #include <QVariantMap>

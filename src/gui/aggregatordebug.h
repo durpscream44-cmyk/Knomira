@@ -24,6 +24,7 @@
 #include "../game/creature.h"
 #include "../game/eventmanager.h"
 
+#include <QPointer>
 #include <QObject>
 
 class Game;

@@ -23,6 +23,7 @@
 
 #include "../game/creature.h"
 
+#include <QPointer>
 #include <QObject>
 
 #include "../game/gnome.h"

@@ -146,6 +146,28 @@ if(KNOMIRA_BUILD_GAME_SHELL)
         Qt6::Core Qt6::Gui Qt6::Xml
     )
 
+    # First real C++ simulation-source compile gate. Unlike the existing
+    # public-header test, this compiles selected original engine .cpp files
+    # independently from Noesis and the legacy game's forced PCH. This does
+    # not link GameManager or run a colony yet.
+    find_package(Qt6 6.5 REQUIRED COMPONENTS Widgets Sql)
+    add_library(knomira_simulation_source_compile OBJECT
+        "../../src/game/game.cpp"
+        "../../src/game/gamemanager.cpp"
+        "../../src/game/newgamesettings.cpp"
+        "../../src/game/techtree.cpp"
+        "../../src/base/pathfinder.cpp"
+        "../../src/gui/eventconnector.cpp"
+    )
+    # The original game's executable compiles its sources as C++23.
+    set_target_properties(knomira_simulation_source_compile PROPERTIES CXX_STANDARD 23 CXX_STANDARD_REQUIRED ON)
+    target_include_directories(knomira_simulation_source_compile PRIVATE
+        "${CMAKE_CURRENT_SOURCE_DIR}/../../3rdparty/glad/include"
+    )
+    target_link_libraries(knomira_simulation_source_compile PRIVATE
+        Qt6::Core Qt6::Gui Qt6::Xml Qt6::Widgets Qt6::Sql
+    )
+
     # Compile-only check for real game startup and command interfaces.
     # No proprietary GUI libraries or precompiled headers.
     add_library(knomira_engine_headers_compile OBJECT

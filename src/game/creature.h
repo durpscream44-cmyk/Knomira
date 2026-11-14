@@ -28,6 +28,7 @@
 #include "../game/anatomy.h"
 #include "object.h"
 
+#include <QPointer>
 #include <QPixmap>
 
 class QPainter;

@@ -22,6 +22,7 @@
 #pragma once
 
 #include <QMap>
+#include <QMutex>
 #include <QString>
 #include <QStringList>
 

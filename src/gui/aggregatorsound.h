@@ -25,8 +25,24 @@
 #include "../base/position.h"
 
 #include <QList>
+#include <QMap>
+#include <QObject>
+#include <QPointer>
+#include <QString>
 
-#include "openalwrapper.h"
+#include <cstddef>
+#include <memory>
+#include <vector>
+
+// Keep OpenAL implementation headers out of the public game/event headers.
+// This allows the simulation to compile without the sound backend installed.
+namespace AL {
+class Source;
+class Buffer;
+class Context;
+class Listener;
+class Filter;
+}
 
 class Job;
 class Game;

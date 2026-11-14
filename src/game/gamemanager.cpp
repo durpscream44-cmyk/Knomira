@@ -36,8 +36,6 @@
 #include "../game/world.h"
 #include "../gfx/spritefactory.h"
 #include "../gui/eventconnector.h"
-#include "../gui/mainwindow.h"
-#include "../gui/mainwindowrenderer.h"
 #include "../gui/strings.h"
 
 #include "../game/inventory.h"

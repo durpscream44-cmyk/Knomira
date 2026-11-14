@@ -24,6 +24,7 @@
 
 #include "../base/enums.h"
 
+#include <QPointer>
 #include <QObject>
 #include <QList>
 #include <QHash>
