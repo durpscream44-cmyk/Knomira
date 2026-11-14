@@ -143,6 +143,19 @@ int main(int argc, char** argv) {
         return 14;
     }
 
+    QFile configDefaults(databaseFolder.absoluteFilePath(QStringLiteral("../JSON/config.json")));
+    QFile profiles(databaseFolder.absoluteFilePath(QStringLiteral("../JSON/profs.json")));
+    if (!configDefaults.open(QIODevice::ReadOnly) ||
+        !QJsonDocument::fromJson(configDefaults.readAll()).isObject()) {
+        qCritical() << "Missing/invalid packaged config.json";
+        return 15;
+    }
+    if (!profiles.open(QIODevice::ReadOnly) ||
+        !QJsonDocument::fromJson(profiles.readAll()).isArray()) {
+        qCritical() << "Missing/invalid packaged profs.json";
+        return 16;
+    }
+
     qInfo() << "Validated" << aiCount << "behavior trees and default new-game settings.";
     qInfo() << "Knomira game data bootstrap passed (in-memory only; no saves or config written).";
     return 0;
