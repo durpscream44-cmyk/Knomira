@@ -5,6 +5,16 @@ and related Windows desktop tests. Keep the root AGENTS.md rules for protecting
 saves, credentials and unrelated engine code. The user has explicitly
 authorized the ongoing RmlUi replacement experiment in this directory.
 
+## Current playable-first handoff
+
+For the next engine integration milestone, read the root
+[CODEX_HANDOFF.md](../../CODEX_HANDOFF.md) on
+`feature/playable-engine-compile-gate` and use that branch for PLAY-01.
+The original controls test instructions below still apply when investigating
+that shell and its separate draft PR #6. Before switching branches, inspect
+`git status` and protect local changes. Don't treat the current shell as
+having a playable map.
+
 ## Local machine and tools
 
 - Project checkout: `C:\Users\durps\Knomira`.
