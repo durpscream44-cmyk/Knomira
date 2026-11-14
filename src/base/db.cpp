@@ -135,7 +135,10 @@ void DB::initStructs()
 		{
 			job->WorkPositions.append( Position( spos ) );
 		}
-		auto trows = DB::selectRows( "Jobs_Tasks" );
+		// Each Jobs_Tasks row belongs to one job (the ID column). Loading
+		// every task for every job makes a single digging job execute unrelated
+		// actions and multiplies cache memory and startup work.
+		auto trows = DB::selectRows( "Jobs_Tasks", job->ID );
 		for( const auto& trow : trows )
 		{
 			DBS::Job_Task jt;
@@ -146,7 +149,8 @@ void DB::initStructs()
 			jt.Task = trow.value( "Task" ).toString();
 			job->tasks.append( jt );
 		}
-		auto srows = DB::selectRows( "Jobs_SpriteID" );
+		// Likewise, only cache the world sprites assigned to this job.
+		auto srows = DB::selectRows( "Jobs_SpriteID", job->ID );
 		for( const auto& srow : srows )
 		{
 			DBS::Job_SpriteID js;

@@ -172,3 +172,16 @@ When uncertain, leave a concrete blocker and reproduction command. **A compile-o
 
 **Status boundaries:** CI proves a linked original data/translation service, not a linked GameManager, not moving gnomes, not a rendered map, and not playable save/load. Keep the draft PR chain in dependency order and test on Windows after each merge.
 
+
+## PLAY-01B2 gameplay-data correctness audit — PR #15 (2026-11-14)
+
+**Branch:** `feature/fix-job-cache-task-scope` ([draft PR #15](https://github.com/durpscream44-cmyk/Knomira/pull/15)), based on the canonical DB/Strings bootstrap [PR #14](https://github.com/durpscream44-cmyk/Knomira/pull/14). **This patch is a sibling follow-up, not yet merged.**
+
+**Source bug discovered:** In `src/base/db.cpp`, `DB::initStructs()` loops over jobs but previously read ALL rows from `Jobs_Tasks` and ALL rows from `Jobs_SpriteID` for **each** job (missing an ID filter). The original `content/db/ingnomia.db.sql` has 54 jobs, 52 task rows, and 39 sprite rows. This erroneously yields 2,808 task attachments and 2,106 sprite attachments rather than 52 and 39. Each job's task list could contain completely unrelated actions, affecting real gameplay correctness and CPU/memory usage.
+
+**Small fix committed:** Use the existing `DB::selectRows("Jobs_Tasks", job->ID)` and `DB::selectRows("Jobs_SpriteID", job->ID)` overloads. No data schema, gameplay design, inventory storage, or save format changes. Extended `prototype/rmlui/engine_services_bootstrap_test.cpp` to assert the **cached task and sprite counts for every job** equal the original database's rows scoped by ID; also assert global cached totals exactly match raw table counts.
+
+**Verification — PASS:** [Windows Noesis-free run 43628614627](https://github.com/durpscream44-cmyk/Knomira/actions/runs/43628614627) completed successfully. The `Compile real simulation source without Noesis or legacy PCH` step and `Initialize original DB and Strings services in isolated runtime` (including the new per-job task/sprite regression assertions) passed. Existing original Config, in-memory SQL, isolated-save-root and RmlUi checks also passed. This is still an isolated database-services test: original map, GameManager lifecycle, desktop map mouse input, and playable world remain untested.
+
+**Next:** After successful job cache regression, return to PLAY-01C GameManager constructor/shutdown using the real Config/DB/Strings services from #14 (plus the job-cache fix from #15). Preserve base dependency sequence #8 -> #10 -> #11 -> #12 -> #14 -> #15 and explicitly recheck open PRs before cherry-picking. Do not merge superseded PR #13.
+
