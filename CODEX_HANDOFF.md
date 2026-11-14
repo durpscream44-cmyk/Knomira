@@ -156,7 +156,7 @@ When uncertain, leave a concrete blocker and reproduction command. **A compile-o
 
 ## 9. Branch integration warning and next DB-service smoke (2026-11-14)
 
-New draft [PR #13 — original DB and Strings runtime bootstrap](https://github.com/durpscream44-cmyk/Knomira/pull/13), branch feature/playable-db-runtime-bootstrap, based on feature/playable-safe-data-root (PR #11). The new engine_services_bootstrap_test.cpp links the actual Config, DB::init, DB::initStructs, and Strings::init services using a marked temporary data root. It checks cached jobs/workshops and a translation. No GameManager, world generation or rendering is run. CI was pending when this note was written; inspect the latest PR #13 SHA before claiming PASS.
+New draft [PR #13 — original DB and Strings runtime bootstrap](https://github.com/durpscream44-cmyk/Knomira/pull/13), branch feature/playable-db-runtime-bootstrap, based on feature/playable-safe-data-root (PR #11). The new engine_services_bootstrap_test.cpp links the actual Config, DB::init, DB::initStructs, and Strings::init services using a marked temporary data root. It checks cached jobs/workshops and a translation. No GameManager, world generation or rendering is run. **Verified PASS:** [Windows Noesis-free run 43586439338](https://github.com/durpscream44-cmyk/Knomira/actions/runs/43586439338) completed successfully, including the linked original Config/DB::init/DB::initStructs/Strings::init test, existing Config/IO sandbox tests, real engine source compilation, menu/input/layout checks, installer syntax and artifact staging. No real player saves were opened by the isolated service tests.
 
 ### CRITICAL: overlapping Config startup PRs — DO NOT MERGE BOTH UNCHANGED
 
@@ -167,3 +167,10 @@ Separately, later work on PR #11 moved the SAME IO::loadFile and IO::loadOrigina
 Reconciliation: choose one canonical extraction, compare branch heads in a local working tree, remove duplicate definitions/targets from the other approach, rebase in dependency order and rerun a fresh full-game compilation plus Noesis-free CI. If PR #12 is canonical, port only PR #13's new original DB/Strings test onto PR #12, not the overlapping Config extraction. Keep all three draft until reconciled. Do not blindly merge #11, #12, #13.
 
 Even if DB/Strings passes, the GameManager constructor still has a much larger dependency chain: EventConnector and aggregators, NewGameSettings, Util and GameState. Link actual services incrementally under the temp-root safeguard; do not fabricate a successful colony simulation with stubs.
+
+### Verified PLAY-01B2 result / next ticket
+
+- **Date/branch:** 2026-11-14, feature/playable-db-runtime-bootstrap, draft PR #13.
+- **Acceptance:** PASS, Windows [43586439338](https://github.com/durpscream44-cmyk/Knomira/actions/runs/43586439338), step "Bootstrap original DB and localization services in sandbox". Real SQL, original DB service caches and localization initialization were linked and executed; test data root was marked and temporary. Build passed original engine-source object target and regression suites.
+- **Remaining:** GameManager's constructor/aggregators are NOT linked or executed, no world exists, no UI map or actual save/reload, original game mouse bug unresolved in desktop build. Do not claim playable.
+- **Next:** reconcile competing Config extraction in draft PRs #11 and #12 BEFORE merge, then carry only DB/Strings service target from PR #13 onto canonical branch. Once reconciled, implement real EventConnector/GameManager startup with orderly ownership and a temporary test root; avoid fake lifecycle objects and non-isolated IO.
