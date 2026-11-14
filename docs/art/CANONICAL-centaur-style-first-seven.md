@@ -1,4 +1,22 @@
-# Knomira canonical female centaur art baseline — FIRST SEVEN ONLY
+# Knomira canonical female centaur art baseline — FIRST THREE PRIMARY
+
+## CORRECTION — FIRST THREE HAVE HIGHEST PRIORITY (2026-11-14)
+
+The user explicitly corrected multiple later outputs for changing the art style. Re-inspection of the **actual original PNG bytes** (identified by the checksums below, **not files with reused/overwritten names**) establishes that **Originals #1, #2 and #3 are the PRIMARY design anchors**; #4–#7 are supplementary references only. If any later art or prose conflicts with the first three, follow the first three.
+
+- **#1 — First baseline sheet (SHA-256 ad3ec5d0…):** Six professions in two rows. The characters have delicate but confident adult anime-inspired faces, comparatively small heads, pronounced stylized feminine bust and defined waist, flowing/braided hair, carefully integrated compact horse body, recognizable four legs, dark contour work and elaborate leather/metal/fabric; dense, soft-cluster pixel/illustrative detail rather than oversized block pixels.
+- **#2 — Five breeds overview (SHA-256 044883f0…):** Five distinct side-by-side adult portraits and three profession poses per breed, plus expression/hair/ear/tail/coat and silhouette panels. Standard versatile; Clydesdale heavy and shaggy fetlocks; Milkmaid round pastoral with pinto markings; Paladin light, tall and fine-legged in ivory-blue-gold armor; Mustang rugged, compact, muscular and nomadic. The anatomy, not the outfits, distinguishes the five breeds.
+- **#3 — Five breed full-body comparison (SHA-256 60e6956a…):** Five full-character silhouettes, the matrix of race × class variants, and expressive portraits. This confirms the medium-sized illustrated pixel-art proportions with graceful faces, refined material shading and natural rounded equine musculature, NOT cutesy tiny pony toys, plastic 3D-looking cartoons, rigid vector icons or huge-headed chibi.
+
+### Additional mandatory corrections
+1. Preserve the **precise face and eye style** (smallish head, nuanced almond eyes, softly serious/confident demeanor, visually mature adult designs) and the **distinctive, stylized chest/waist silhouettes** of #1–#3; do not simplify anatomy to childlike, puffier cartoon proportions.
+2. Horses have compact length but **convincing equine musculature and separate legs/hooves**. Do not shrink them to featureless toys or enlarge them into full-sized horse bodies unrelated to the original game-sprite scale.
+3. **Ornate black/charcoal canvas and hairline gold dividers**: prioritize character artwork over large logos, broad frame ornaments, pale panels, or excessive explanatory text. Include focused head, body and expression panels as in #2/#3.
+4. Original ears are equine / pointed; **do not invent horns** for every centaur simply because a generated diagram used a “horn accessories” heading. Headpieces, flowers, feathers, braids and ear variations are the supported baseline.
+5. Pixel art here is a **high-detail illustrated pixel hybrid** with subtle clustered pixels and sculptural lighting, not a rigid low-resolution game tile mockup. Actual production-size sprites are a separate translation stage; do not force the visual reference board to tiny pixels.
+6. Anatomy and health-zone maps are additions, preferably in separate understated panels or sheets, not excuses to change the original character's facial anatomy, body proportions, coat markings, lighting, costumes, or artistic medium. Colorized hit zones should be an **overlay or schematic**, not the master art of the character.
+7. **Never accept later generations as new baselines unless the user explicitly approves.** Previous pale-parchment sheets and later dark-but-different cartoon sheets are rejected regardless of labeling, logo, or apparent “more pixels.”
+8. **File names may be reused and overwritten during generation.** Identify the canonical files by SHA-256 and original_01/02/03 inside the seven-original reference ZIP, not by a bare path that could now hold another image.
 
 **Status:** LOCKED BY USER (2026-11-14)
 **Scope:** All future centaur designs, anatomy/health-part sheets, body-variant sheets, and related art. This supersedes style instructions implied by any later Centaur image. Do NOT use the later pale parchment / simplified / soft cartoon renderings as art references.
