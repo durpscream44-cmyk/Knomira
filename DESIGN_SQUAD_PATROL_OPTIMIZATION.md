@@ -89,7 +89,7 @@ As inspected on `feature/controls-menu-redesign`:
    still respond correctly and rejoin its assigned circuit when appropriate.
 5. A missing leader, changing squad membership, and save/reload cannot strand
    soldiers or invalidate unrelated patrols.
-6. A follower seeing an enemy outside the leader's vision still responds
+6. A soldier seeing an enemy outside the leader's vision still responds
    promptly; no shared-vision shortcuts permit attacks without individual LOS.
 7. With shared patrol optimization disabled, behavior returns to the
    existing independent navigation without additional overhead.
