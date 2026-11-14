@@ -72,16 +72,32 @@ public:
             tick > std::numeric_limits<Tick>::max() - m_config.ticksBetweenItems) {
             return EnqueueResult::TickOverflow;
         }
-        if (!takeFromSource || !takeFromSource(item)) {
+        if (!takeFromSource) return EnqueueResult::SourceUnavailable;
+
+        // Allocate all internal state *before* transferring item ownership.
+        // On source rejection or exception, roll it back. The adapter's hook
+        // must leave the authoritative item unchanged if it returns false or
+        // throws (the same rule applies to destination hooks).
+        m_items.push_back({item, tick + delay});
+        try {
+            m_ids.insert(item);
+        } catch (...) {
+            m_items.pop_back();
+            throw;
+        }
+        bool taken = false;
+        try {
+            taken = takeFromSource(item);
+        } catch (...) {
+            m_ids.erase(item);
+            m_items.pop_back();
+            throw;
+        }
+        if (!taken) {
+            m_ids.erase(item);
+            m_items.pop_back();
             return EnqueueResult::SourceUnavailable;
         }
-
-        // After successful transfer of ownership into transit, these insertions
-        // should be made exception-safe in a later engine integration. The
-        // prototype assumes allocation success; do not connect to live items
-        // until the engine adapter uses a true rollback transaction.
-        m_ids.insert(item);
-        m_items.push_back({item, tick + delay});
         m_nextInputTick = tick + m_config.ticksBetweenItems;
         return EnqueueResult::Accepted;
     }
