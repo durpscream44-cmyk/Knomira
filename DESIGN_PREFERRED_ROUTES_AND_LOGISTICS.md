@@ -5,7 +5,9 @@ display, save and reload playable colonies. This is not implemented gameplay.
 
 ## Player goal
 
-Allow players to designate suggested corridors by selecting tiles or waypoints.
+Allow players to mark preferred travel tiles using the **same designation selection
+workflow already used for farms, stockpiles, rooms and no-pass areas**. The
+player should not need a new standalone painting/waypoint editor.
 **The primary performance goal is reusing an already solved, validated route
 between recurring logistics endpoints** (e.g. stockpile and workshop), rather
 than having every gnome independently recompute that same route for every trip.
@@ -20,10 +22,40 @@ unrelated jobs.
 
 ## Two independent features
 
-### A. Soft path corridors
+### A. Preferred-path tile designations (reuse existing selection)
 
-- Player selects a corridor by dragging across passable tiles or specifying
-  connected waypoints; a named route may span multiple z-levels.
+**Reuse, don't rebuild the farm/stockpile painting UI:**
+
+- The existing `src/base/selection.cpp` handles `CreateStockpile`,
+  `CreateFarm`, `CreatePasture`, `CreateGrove` and `CreateNoPass`.
+  `Selection::setAction()`, `leftClick()`, `updateSelection()` and
+  `onSecondClick()` already provide a two-click area/rectangle designation,
+  per-tile validation, selection previews, and final dispatch. The
+  `src/gui/aggregatorselection.cpp` maps mouse movement to world tiles and
+  sends selection previews to the renderer.
+- Introduce a `CreatePreferredPath` designation through this established
+  action pipeline. Reuse the existing floor/walkability checks, action preview
+  feedback, camera/z-level behavior, and rectangle selection conventions.
+  Add erase/remove designation support through the same UI pattern.
+- The initial interaction should match farm and stockpile area selection:
+  **choose Preferred Path -> first corner -> second corner**. Each selected,
+  valid tile becomes part of a soft travel network. Players can repeat the
+  action to build thin corridors, larger walkways, junctions and branches.
+  Freehand paint brushes can be added later only if useful; no need to invent
+  a separate editor for v1.
+- The tile zone storage and routing policy need a dedicated data owner (e.g.
+  `PreferredPathManager`) rather than abusing Stockpile/Farm records. A path
+  designation **must not** reserve tiles for storage, farming or work, and
+  may overlap other designations wherever walkability permits.
+- Start with one colony-wide painted preferred network; named sub-networks or
+  workshop-scoped preferences can be introduced if benchmarks/gameplay show
+  clear value. Multiple disconnected areas are allowed and must not imply
+  false connections between them.
+- A route may span multiple z-levels only through actual legal connections
+  such as stairs and ramps; simply marking tiles on different levels does
+  not create a connection.
+- When the world UI is replaced with RmlUi, preserve the existing game-world
+  selection logic; replace only the Noesis UI command surface.
 - Mark route as **Preferred**, not **Mandatory**. A route must be optional
   whenever endpoints are not on/near it, it is blocked, dangerous, too slow or
   creates an unacceptable detour.
@@ -123,6 +155,25 @@ destination links and the status of each reusable travel route:
   revalidation (affected tile, door/permission, building/storage changes).
   Avoid checking every route on every simulation tick.
 
+## How painted tiles turn into reusable routes
+
+- A designation marks **acceptable/preferred tiles**, not a sequence that
+  magically eliminates A*. For repeated workshop/stockpile trips, identify
+  connected painted corridors/junctions and cache safe traversable segments
+  through them. Short approaches from a gnome to the corridor and from the
+  corridor to the actual item/job destination may still need a search.
+- Cached routes are **derived from** the designation network and actual
+  walkable terrain; don't store hardcoded instructions tied to an individual
+  worker. Invalidate the affected cache when the selection, doors, stairs,
+  structures, walkability or access rules change.
+- Maintain the original default A* when a painted route is blocked, unsafe,
+  disconnected, a large detour, or does not apply to the worker's target.
+  The existing `src/base/pathfinder.cpp` already batches some searches,
+  so benchmark before claiming reductions in CPU load.
+- A workshop linked to a preferred path should show a disruption alert when
+  a cached route becomes blocked/unreachable, and a distinct warning when
+  a fallback is available. Suppress repeated identical alerts.
+
 ## Potential pathfinding optimization — hypothesis, not a guarantee
 
 The current `src/base/pathfinder.cpp` already supports fast trivial paths,
@@ -147,23 +198,27 @@ benchmark shows they reduce CPU time and improve or preserve completed work.
 
 ## Acceptance tests
 
-1. Suggested corridor is used for compatible destinations and ignored for
+1. Preferred Path uses the existing zone selection interaction and preview:
+   select first corner, second corner, then inspect designated valid tiles.
+   Erasing/extending one area does not change neighboring farm or stockpile
+   designation ownership. Multiple zones can form branching corridors.
+2. Suggested corridor is used for compatible destinations and ignored for
    unrelated/long-detour destinations.
-2. Repeated stockpile-to-workshop hauling reuses a validated shared route
+3. Repeated stockpile-to-workshop hauling reuses a validated shared route
    without running a full A* search for each identical trunk segment.
-3. Blocked or hazardous corridor falls back to a safe ordinary path and
+4. Blocked or hazardous corridor falls back to a safe ordinary path and
    does not trap a gnome in repeated retry loops.
-4. Stockpile A supplies workshop B and workshop output goes to C; item
+5. Stockpile A supplies workshop B and workshop output goes to C; item
    filters, reservations and output capacity are respected.
-5. When the player closes a passage or removes a stockpile, linked workshops
+6. When the player closes a passage or removes a stockpile, linked workshops
    receive a single actionable blocked/unreachable alert; the map highlights
    the affected route. Alert spam is suppressed and recovery is reported.
-6. Blocked route with valid ordinary alternative remains productive and is
+7. Blocked route with valid ordinary alternative remains productive and is
    labeled **fallback active**; no valid route stops affected hauling safely.
-7. Save/load preserves route definitions and logistics links; removed buildings
+8. Save/load preserves route definitions and logistics links; removed buildings
    or tiles are resolved without corrupting jobs.
-8. With routes disabled, existing movement behavior is unchanged.
-9. Benchmark path searches, total A* nodes expanded, pathfinding CPU p95, haul
+9. With routes disabled, existing movement behavior is unchanged.
+10. Benchmark path searches, total A* nodes expanded, pathfinding CPU p95, haul
    throughput, distance walked, and idle/stuck gnomes for small and large
    colonies. Compare baseline, corridors-only, links-only and both enabled.
    Favor net improvement under representative production chains.
