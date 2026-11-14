@@ -159,3 +159,16 @@ When uncertain, leave a concrete blocker and reproduction command. **A compile-o
 6. **Acceptance:** fresh Windows build links/runs original DB/Strings bootstrap using temporary files, verifies zero real-save writes, and existing UI/input tests pass. Update this handoff with exact CI SHA/run and blockers.
 
 **Short Codex pickup instruction:** `git fetch origin; git switch feature/playable-config-startup-smoke`; read `AGENTS.md`, `CODEX_HANDOFF.md`, and PR #12; verify `git status` first and rerun CMake configure because of new `.cpp` files. Work on PLAY-01C only. Do not claim GameManager/world rendering is already integrated.
+
+## PLAY-01B2 verified DB/Strings runtime milestone and branch reconciliation — 2026-11-14
+
+**Canonical integration branch:** feature/playable-db-services-after-config, [draft PR #14](https://github.com/durpscream44-cmyk/Knomira/pull/14), based on draft PR #12 (feature/playable-config-startup-smoke), which in turn builds on PR #11 and PR #10/#8.
+
+**PASS:** [Windows Noesis-free run 43587102028](https://github.com/durpscream44-cmyk/Knomira/actions/runs/43587102028). All build and regression steps passed, including "Initialize original DB and Strings services in isolated runtime". The test links the genuine Config, DB::init(), DB::initStructs(), and Strings::init() implementations with the original staged game SQL. It confirms nonempty Items, Jobs and Translation tables; cached job and workshop lookups; an actual translated string lookup; and that no save was generated in the marked temporary test root. Existing shell, input, IO-root, Config constructor and SQL fixture tests also passed.
+
+**Branch correction:** A parallel draft PR #13 performed similar DB startup tests but inherited a competing Config-JSON refactor. It was CLOSED AS SUPERSEDED by PR #14. Later Config changes accidentally added to PR #11 were backed out, restoring PR #11 to its original test-root and real IO::createFolders protection scope. PR #12 remains the single canonical Config startup extraction. Do not port io_config.cpp or the old PR #13's changed base into this branch; that would duplicate IO::loadFile and IO::loadOriginalConfig definitions.
+
+**Next exact playable-first ticket:** Real GameManager startup/shutdown in a headless/offscreen sandboxed process. Audit EventConnector constructor and its aggregator dependencies, NewGameSettings, GameState and Util ownership before linking. Do not invoke the old src/main.cpp force-terminate shutdown logic. Separate the GUI overlay bridge from simulation startup only as needed; avoid fake manager stubs. Test actual Config -> DB -> Strings -> EventConnector/GameManager object construction and cleanup without creating a save. Then attach actual New Game/world renderer and real tile selection.
+
+**Status boundaries:** CI proves a linked original data/translation service, not a linked GameManager, not moving gnomes, not a rendered map, and not playable save/load. Keep the draft PR chain in dependency order and test on Windows after each merge.
+
