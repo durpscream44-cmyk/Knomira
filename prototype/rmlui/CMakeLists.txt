@@ -153,9 +153,11 @@ if(KNOMIRA_BUILD_GAME_SHELL)
     find_package(Qt6 6.5 REQUIRED COMPONENTS Widgets Sql)
     add_library(knomira_simulation_source_compile OBJECT
         "../../src/game/game.cpp"
+        "../../src/game/gamemanager.cpp"
         "../../src/game/newgamesettings.cpp"
         "../../src/game/techtree.cpp"
         "../../src/base/pathfinder.cpp"
+        "../../src/gui/eventconnector.cpp"
     )
     # The original game's executable compiles its sources as C++23.
     set_target_properties(knomira_simulation_source_compile PROPERTIES CXX_STANDARD 23 CXX_STANDARD_REQUIRED ON)
