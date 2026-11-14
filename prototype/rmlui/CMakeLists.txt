@@ -129,6 +129,13 @@ if(KNOMIRA_BUILD_GAME_SHELL)
     )
     target_link_libraries(knomira_input_bindings_test PRIVATE Qt6::Core Qt6::Gui)
 
+    # Lightweight deterministic transport core for future conveyors. The
+    # standalone tests do not require the proprietary game/Noesis SDK.
+    add_executable(knomira_tick_transport_line_test
+        tick_transport_line_test.cpp
+        "../../src/base/tick_transport_line.h"
+    )
+
     # UI geometry regression test: uses the real RmlUi layout engine and
     # a no-op renderer, so it runs in CI without a window or OpenGL context.
     add_executable(knomira_rmlui_layout_test controls_layout_test.cpp)
