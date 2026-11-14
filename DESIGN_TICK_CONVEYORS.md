@@ -132,9 +132,14 @@ Benchmark both CPU cost and the amount of gnome labor actually freed.
    integration with the existing `Inventory`, `StockpileManager` and
    `WorkshopManager` interfaces. First enable only *one connected straight
    line between one source and one destination*; no splitters or crossings.
-4. Add a midgame tech/research unlock and a construction recipe once the
-   authoritative game progression data has been inspected. The precise
-   materials and unlock name are not yet decided.
+4. Add a midgame unlock and construction recipe. The inspected
+   `src/game/techtree.cpp` computes item levels from the dependency graph
+   (`BaseItems` and `Crafts_Components`) and writes levels to `Items`.
+   **That is not itself proof of a player-facing research unlock system.**
+   The low-change route is a mechanical-conveyor crafting recipe that depends
+   on mid-level gears/axles/metals, placing it naturally after those materials.
+   An explicit research button/gate would be a separate progression feature.
+   Precise materials and recipe IDs remain to be confirmed against the DB.
 5. Add construction/designation and a throughput/status screen in RmlUi,
    recycling the existing tile selection pattern rather than new editors.
 6. Test capacity, filters, route breakage, power-off, parallel hauling jobs,
