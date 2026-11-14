@@ -2,11 +2,9 @@
 
 ## Current handoff / next-ticket checkpoint
 
-Before making new changes, read [CODEX_HANDOFF.md](CODEX_HANDOFF.md).
-It records verified CI status, branch/PR dependencies, unverified mouse issues,
-and a playable-first sequence of bounded tasks (PLAY-01 through PLAY-04).
-Update that handoff after a ticket with exact builds, limitations and next work.
-Do not present stand-alone compiler success as live gameplay success.
+**Read [CURRENT_CHECKPOINT.md](CURRENT_CHECKPOINT.md) FIRST.** It is the short, verified current branch/CI map and the next single playable-first task. The longer [CODEX_HANDOFF.md](CODEX_HANDOFF.md) retains prior technical findings and historical troubleshooting; some older headings there describe superseded branches. Re-read GitHub only when the checkpoint SHA differs from the current branch/CI or a new PR exists. After a ticket, update the current checkpoint with the exact commit, CI result and next blocker.
+
+Do not present standalone compiler or menu-test success as live gameplay success.
 
 ## Mission
 Your job is to turn this Ingnomia fork into a dependable, functionally complete single-player colony simulator before adding major new features. Preserve the existing game and architecture wherever practical. Prioritize correctness, save/load integrity, reachable player-facing features, and reproducible builds over refactors or feature expansion.
