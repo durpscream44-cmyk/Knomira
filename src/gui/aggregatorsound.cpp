@@ -33,7 +33,9 @@
 #include "../gui/eventconnector.h"
 #include "../gui/mainwindowrenderer.h"
 
+#include <QCoreApplication>
 #include <QDebug>
+#include <cmath>
 #include <QJsonDocument>
 
 /// @brief Opens the default OpenAL device, creates a context and listener, and pre-builds the
