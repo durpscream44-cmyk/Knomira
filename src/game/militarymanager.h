@@ -23,6 +23,7 @@
 
 #include "../base/gamestate.h"
 
+#include <QPointer>
 #include <QObject>
 #include <QRandomGenerator>
 #include <QSet>
