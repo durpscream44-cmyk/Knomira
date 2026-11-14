@@ -758,7 +758,7 @@ void NewGameSettings::setStartingItems( QVariantList sil )
 			if ( components.size() == 2 )
 			{
 				auto vmc1 = components[0].toMap();
-				auto vmc2 = components[0].toMap();
+				auto vmc2 = components[1].toMap();
 
 				QString mat1 = vmc1.value( "MaterialID" ).toString();
 				QString mat2 = vmc2.value( "MaterialID" ).toString();
