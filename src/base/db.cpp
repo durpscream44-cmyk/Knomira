@@ -50,28 +50,52 @@ QHash<QString, QSharedPointer<DBS::Job>> DB::m_jobs;
  *  splits it into individual statements, and executes each one. Must be
  *  called once at application startup before any queries.
  */
-void DB::init()
+bool DB::init()
 {
-	QMutexLocker lock( &DB::m_mutex );
+    QMutexLocker lock(&DB::m_mutex);
+    if (!Global::cfg) {
+        qCritical() << "Cannot initialize game database: Config is not ready";
+        return false;
+    }
 
-	QFile file( Global::cfg->get( "dataPath" ).toString() + "/db/" + "ingnomia.db.sql" );
-    file.open(QIODevice::ReadOnly | QIODevice::Text);
-    QString sql = file.readAll();
+    const QString path = Global::cfg->get("dataPath").toString()
+                       + QStringLiteral("/db/ingnomia.db.sql");
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        qCritical() << "Cannot open original game database" << path
+                    << file.errorString();
+        return false;
+    }
+    const QString sql = QString::fromUtf8(file.readAll());
     file.close();
+    if (sql.trimmed().isEmpty()) {
+        qCritical() << "Original game database is empty:" << path;
+        return false;
+    }
 
-	QSqlQuery destQuery( getDB() );
+    QSqlQuery query(getDB());
+    int statementIndex = 0;
+    for (const auto& statement : sql.split(QLatin1Char(';'))) {
+        const QString trimmed = statement.trimmed();
+        if (trimmed.isEmpty())
+            continue;
 
-	auto statements = sql.split( ";" );
-	for( auto s: statements )
-	{
-		auto trimmed = s.trimmed();
-		if ( trimmed.isEmpty() )
-			continue;
-		if ( !destQuery.exec( trimmed ) )
-		{
-			qDebug() << destQuery.lastError();
-		}
-	}
+        ++statementIndex;
+        if (!query.exec(trimmed)) {
+            const QString errorText = query.lastError().text();
+            // The shipped SQL begins with BEGIN TRANSACTION. A malformed
+            // statement must not leave partly imported definitions behind.
+            if (!query.exec(QStringLiteral("ROLLBACK"))) {
+                qWarning() << "Database rollback was not available:"
+                           << query.lastError().text();
+            }
+            qCritical() << "Original game database failed at SQL statement"
+                        << statementIndex << errorText
+                        << "statement prefix:" << trimmed.left(100);
+            return false;
+        }
+    }
+    return statementIndex > 0;
 }
 
 /** @brief Pre-load Workshop and Job records from the database into cached
