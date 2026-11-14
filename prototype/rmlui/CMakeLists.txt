@@ -117,6 +117,16 @@ if(KNOMIRA_BUILD_GAME_SHELL)
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
             "${CMAKE_CURRENT_SOURCE_DIR}/../../content/db/ingnomia.db.sql"
             "$<TARGET_FILE_DIR:knomira_game_shell>/content/db/ingnomia.db.sql"
+        # The original Global::loadBehaviorTrees consumes content/ai;
+        # NewGameSettings falls back to content/JSON/newgame.json.
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${CMAKE_CURRENT_SOURCE_DIR}/../../content/ai"
+            "$<TARGET_FILE_DIR:knomira_game_shell>/content/ai"
+        COMMAND ${CMAKE_COMMAND} -E make_directory
+            "$<TARGET_FILE_DIR:knomira_game_shell>/content/JSON"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${CMAKE_CURRENT_SOURCE_DIR}/../../content/JSON/newgame.json"
+            "$<TARGET_FILE_DIR:knomira_game_shell>/content/JSON/newgame.json"
         VERBATIM
     )
     if(MSVC)
@@ -185,7 +195,7 @@ if(KNOMIRA_BUILD_GAME_SHELL)
         engine_database_smoke.cpp
     )
     target_link_libraries(knomira_engine_db_bootstrap_test PRIVATE
-        Qt6::Core Qt6::Sql
+        Qt6::Core Qt6::Sql Qt6::Xml
     )
 
     # Compile-only check for real game startup and command interfaces.
