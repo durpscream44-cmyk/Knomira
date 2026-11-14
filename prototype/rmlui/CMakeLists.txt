@@ -242,7 +242,7 @@ if(KNOMIRA_BUILD_GAME_SHELL)
     target_compile_definitions(knomira_config_bootstrap_test PRIVATE
         KNOMIRA_ISOLATED_TEST_DATA_ROOT=1
     )
-    target_link_libraries(knomira_config_bootstrap_test PRIVATE Qt6::Core)
+    target_link_libraries(knomira_config_bootstrap_test PRIVATE Qt6::Core Qt6::Xml)
 
     # Compile-only check for real game startup and command interfaces.
     # No proprietary GUI libraries or precompiled headers.
