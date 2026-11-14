@@ -26,6 +26,7 @@
 #include "../game/item.h"
 
 #include <QDebug>
+#include <QFile>
 #include <QMutexLocker>
 #include <QSqlError>
 #include <QSqlField>
