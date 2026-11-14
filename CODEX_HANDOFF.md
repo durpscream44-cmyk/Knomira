@@ -1,6 +1,6 @@
 # Knomira — Codex development handoff
 
-**Last reviewed:** 2026-11-14  
+**Last reviewed:** 2026-11-14 (updated with verified DB/bootstrap milestone)  
 **Authoritative working branch for the next playable-first ticket:** `feature/playable-engine-compile-gate` (draft [PR #8](https://github.com/durpscream44-cmyk/Knomira/pull/8)).  
 **Status:** UI shell builds; real simulation **does not yet run inside the Noesis-free executable**. Keep the mission **playable -> stable -> optimized**.
 
@@ -12,7 +12,8 @@ This file is a durable "where to pick up" checkpoint for Codex or a local deskto
 |---|---|---|
 | Qt/RmlUi shell, menus, keyboard and Xbox input code | **CI pass** | Windows builds and automated input tests. Physical mouse/controller behavior still needs real-desktop confirmation, including binding click vs scrolling. |
 | Original save-slot discovery | **CI pass** | The shell reads original Ingnomia save *metadata* without loading the game simulation. It must not write to player saves merely to browse them. |
-| Real C++ simulation source with Noesis removed from compilation | **CI pass, compile-only** | Latest [Windows run 43561481732](https://github.com/durpscream44-cmyk/Knomira/actions/runs/43561481732) built `knomira_simulation_source_compile`, including `Game`, `GameManager`, `NewGameSettings`, `TechTree`, `PathFinder`, and `EventConnector`. This does **not** establish a fully linked simulation or playable world. |
+| Real C++ simulation source with Noesis removed from compilation | **CI pass, compile-only** | [Windows run 43575420551](https://github.com/durpscream44-cmyk/Knomira/actions/runs/43575420551) compiled `Game`, `GameManager`, `NewGameSettings`, `TechTree`, `PathFinder`, `EventConnector`, and original `Config`, `DB`, `Global` sources as objects without the Noesis PCH. **Not yet linked or run as a simulation.** |
+| Real game SQL bootstrap and runtime asset staging | **CI pass, isolated** | [PR #10](https://github.com/durpscream44-cmyk/Knomira/pull/10) packages original `content/db/ingnomia.db.sql` at `<appDir>/content/db/` and replays actual SQL in an in-memory SQLite smoke executable; verified in Windows run 43575420551. No original save/config was opened or written by that test. |
 | World generation, gnome AI in the RmlUi shell, actual map renderer, New Game/Load/Save | **Not integrated** | Core blockers for a playable game. |
 | Legacy world mouse-click diagnostic fix | **Draft, not verified** | [PR #9](https://github.com/durpscream44-cmyk/Knomira/pull/9) is based on `feature/controls-menu-redesign`; no original-game desktop result. |
 | Inventory search optimization, debug profiler, tick-conveyor standalone test | **Mixed: isolated CI passes** | [PR #7](https://github.com/durpscream44-cmyk/Knomira/pull/7), Windows run [43560407808](https://github.com/durpscream44-cmyk/Knomira/actions/runs/43560407808). Conveyor tests pass but there are no live conveyors. Original engine integration, saves and UPS effects are unverified. |
@@ -22,6 +23,7 @@ This file is a durable "where to pick up" checkpoint for Codex or a local deskto
 
 - [PR #6](https://github.com/durpscream44-cmyk/Knomira/pull/6): `feature/controls-menu-redesign` -> `feature/remappable-controls` (**draft**). Controls UI, layout tests and an unresolved need for physical mouse verification.
 - [PR #8](https://github.com/durpscream44-cmyk/Knomira/pull/8): `feature/playable-engine-compile-gate` -> `feature/controls-menu-redesign` (**draft; next playable integration path**).
+- [PR #10](https://github.com/durpscream44-cmyk/Knomira/pull/10): `feature/playable-db-bootstrap-smoke` -> `feature/playable-engine-compile-gate` (**draft; database/data packaging and Global source compile pass**). Integrate after review; it is a child of #8, not the main branch.
 - [PR #9](https://github.com/durpscream44-cmyk/Knomira/pull/9): `feature/map-mouse-routing-diagnostics` -> `feature/controls-menu-redesign` (**draft; separate legacy window diagnostics**).
 - [PR #7](https://github.com/durpscream44-cmyk/Knomira/pull/7): `feature/tick-conveyor-prototype` -> `feature/controls-menu-redesign` (**draft; defer feature integration**).
 
@@ -41,6 +43,12 @@ New Game must use the original settings/world generation. Load must validate the
 ## 3. Proposed next Codex tickets (small, testable, sequential)
 
 ### PLAY-01 — Linkable engine bootstrap smoke target
+
+**Completed sub-milestone, PR #10 / CI PASS:** Original `Config`, `DB`, and `Global` translation units compile without Noesis/PCH; the real checked-in SQLite SQL is staged beside the shell and passes an in-memory reload+table-population test. `src/base/global.cpp` had an orphaned `Noesis::Key` map definition no longer declared in `global.h`; PR #10 removes that stale line. **This remains an independent database executable, not an actual `GameManager` bootstrap.**
+
+**Next sub-milestone (PLAY-01B, unimplemented):** link an engine service/bootstrap target that safely initializes the actual `Global::cfg`, `DB::init()` and `DB::initStructs()`, then constructs/destructs `GameManager` with correct Qt object ownership. Do this in an isolated test data directory so `Config::Config()` calling `IO::createFolders()` cannot create or change the user's normal saves/settings. Audit `Global::reset()`, `EventConnector` aggregator dependencies, and moc/Qt signals. The original `src/main.cpp` currently calls `gameThread.terminate()` on shutdown; new bootstrap must instead use orderly thread quit/wait and object disposal. Preserve original lifecycle semantics; do not silently skip initialization by creating fake managers.
+
+
 
 1. On `feature/playable-engine-compile-gate`, review `prototype/rmlui/CMakeLists.txt`, original `src/CMakeLists.txt`, `src/game/gamemanager.*`, `src/game/game.*`, `src/gui/eventconnector.*`, `src/base/config.*`, `src/base/db.*`, and `src/base/io.*`.
 2. Extend the explicit Noesis-free source target **incrementally**, keeping the original legacy target untouched. Link an engine bootstrap/smoke executable (or equivalent real service target) rather than writing fake placeholders that look successful.
@@ -99,11 +107,22 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\prototype\rmlui\Test-GameS
 Use `-Install` only if authorized to replace the shell build, after verifying matching CI SHA. The test script's shell checks do not launch real colony simulation. The existing read-only kingdom catalog looks under `Documents\My Games\Ingnomia\save`; never delete or manipulate the user's original saves. Store logs and screenshots in the ignored build directory without credentials/other app contents.
 
 Useful verification:
-- [Engine gate CI run](https://github.com/durpscream44-cmyk/Knomira/actions/runs/43561481732): completed **success**, including compile-only real engine object target.
+- [Engine plus game DB bootstrap CI](https://github.com/durpscream44-cmyk/Knomira/actions/runs/43575420551): completed **success**, including original Config/DB/Global source compilation, original in-memory game SQL replay, and packaged DB staging. **No GameManager link, runtime world or save/load tested.**
+- [Earlier engine gate CI run](https://github.com/durpscream44-cmyk/Knomira/actions/runs/43561481732): completed **success**, compile-only game lifecycle target.
 - [Standalone transport CI run](https://github.com/durpscream44-cmyk/Knomira/actions/runs/43560407808): completed **success**, but no live inventory transfer.
 - Avoid saying map click, live world, or save/load works until tested **in the actual relevant executable**.
 
-## 6. Handoff record template (update this file after each ticket)
+## 6. Latest bounded ticket result
+
+- **Date / branch:** 2026-11-14, `feature/playable-db-bootstrap-smoke`, draft PR #10
+- **Ticket:** PLAY-01A — game database prerequisite and compile expansion
+- **Changed paths:** `src/base/config.cpp`, `src/base/db.cpp`, `src/base/global.cpp`, `prototype/rmlui/engine_database_smoke.cpp`, `prototype/rmlui/CMakeLists.txt`, `.github/workflows/noesis-free-shell.yml`.
+- **Verification:** Windows Noesis-free run [43575420551](https://github.com/durpscream44-cmyk/Knomira/actions/runs/43575420551) **PASS**: original source object compile, database fixture execution against the staged original SQL, current shell and existing UI/save/input tests, installer syntax. No desktop gameplay was attempted.
+- **Save risk:** SQL test only writes to `:memory:`; it does not construct the user-data-writing `Config` class or touch player saves. DB data staged in the packaged build only.
+- **Outstanding:** GameManager and full simulation *not linked or started*; DB::init's real startup and config paths not runtime tested, no world renderer, no save/load gameplay; no manual desktop mouse validation.
+- **Next single task:** PLAY-01B above; investigate all real dependency symbols, initialize Config/DB into a disposable test directory, link GameManager, and exercise safe shutdown; mark PARTIAL until that code runs.
+
+## 7. Handoff record template (update this file after each ticket)
 
 - **Date and branch / PR / commit:** 
 - **Ticket, tested behavior, code-path root cause:**
