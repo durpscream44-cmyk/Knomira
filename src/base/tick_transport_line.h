@@ -109,17 +109,31 @@ public:
                         std::size_t maxCompletions = 64) {
         if (!m_operational || !m_destinationAvailable || !deliverToDestination)
             return 0;
+        if (m_resetOutputSchedule) {
+            // A full/blocked destination must not release the backlog in
+            // one burst after reopening; start a fresh output rate window.
+            m_nextOutputTick = tick;
+            m_resetOutputSchedule = false;
+        }
         std::size_t delivered = 0;
-        while (delivered < maxCompletions && !m_items.empty() &&
-               m_items.front().dueTick <= tick) {
+        while (delivered < maxCompletions && !m_items.empty()) {
+            const Tick due = m_items.front().dueTick;
+            const Tick scheduled = due > m_nextOutputTick ? due : m_nextOutputTick;
+            if (scheduled > tick) break;
             const auto id = m_items.front().id;
             if (!deliverToDestination(id)) {
                 m_destinationAvailable = false;
+                m_resetOutputSchedule = true;
                 break;
             }
             m_items.pop_front();
             m_ids.erase(id);
             ++delivered;
+            // Saturate rather than wrap. At the maximum tick, there is no
+            // representable later tick for another scheduled delivery.
+            const Tick maxTick = std::numeric_limits<Tick>::max();
+            m_nextOutputTick = (scheduled > maxTick - m_config.ticksBetweenItems)
+                ? maxTick : scheduled + m_config.ticksBetweenItems;
         }
         return delivered;
     }
@@ -142,7 +156,10 @@ public:
     }
 
     void SetOperational(bool operational) { m_operational = operational; }
-    void SetDestinationAvailable(bool available) { m_destinationAvailable = available; }
+    void SetDestinationAvailable(bool available) {
+        if (available && !m_destinationAvailable) m_resetOutputSchedule = true;
+        m_destinationAvailable = available;
+    }
 
     bool Operational() const { return m_operational; }
     bool DestinationAvailable() const { return m_destinationAvailable; }
@@ -159,6 +176,8 @@ private:
     std::deque<Packet> m_items;
     std::unordered_set<ItemId> m_ids;
     Tick m_nextInputTick = 0;
+    Tick m_nextOutputTick = 0;
+    bool m_resetOutputSchedule = false;
     bool m_operational = false; // Explicit unlock/connection required.
     bool m_destinationAvailable = true;
 };
