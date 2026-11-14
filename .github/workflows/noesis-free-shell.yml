@@ -2,7 +2,7 @@ name: Knomira Noesis-Free Game Shell (Windows)
 
 on:
   push:
-    branches: [feature/noesis-free-shell, feature/remappable-controls, feature/controls-menu-redesign, feature/playable-engine-compile-gate, feature/playable-db-bootstrap-smoke, feature/playable-safe-data-root, feature/playable-config-startup-smoke, feature/playable-db-services-after-config, feature/fix-job-cache-task-scope, feature/playable-newgame-embark-smoke]
+    branches: [feature/noesis-free-shell, feature/remappable-controls, feature/controls-menu-redesign, feature/playable-engine-compile-gate, feature/playable-db-bootstrap-smoke, feature/playable-safe-data-root, feature/playable-config-startup-smoke, feature/playable-db-services-after-config, feature/fix-job-cache-task-scope, feature/playable-newgame-embark-smoke, feature/playable-db-embark-integration]
     paths:
       - "prototype/rmlui/**"
       - "content/rmlui/**"
