@@ -26,7 +26,6 @@
  */
 
 #include "io.h"
-#include "io_data_root.h"
 
 #include "../base/config.h"
 #include "../base/db.h"
@@ -129,16 +128,6 @@ bool IO::saveConfig()
 	IO::saveFile( folder + "config.json", jd );
 
 	return true;
-}
-
-/** @brief Returns the platform-specific user data folder for Ingnomia.
- *  @return On Windows: Documents/My Games/Ingnomia. On Linux: ~/.local/share/Ingnomia.
- */
-QString IO::getDataFolder()
-{
-	// Production preserves the original save location. Startup smoke tests
-	// can opt into a marked, temp-only sandbox via a test build definition.
-	return Knomira::DataPaths::userDataFolder();
 }
 
 /** @brief Returns the path to the temporary folder inside the user data directory.
