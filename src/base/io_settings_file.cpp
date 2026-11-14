@@ -12,7 +12,6 @@
 #include <QDebug>
 #include <QFile>
 #include <QJsonDocument>
-#include <QJsonParseError>
 
 /** @brief Loads the original (shipped) config.json from the application content directory.
  *  @param jd Output parameter receiving the parsed JSON document.
