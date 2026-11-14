@@ -26,6 +26,7 @@
 #include "../base/priorityqueue.h"
 #include "../game/job.h"
 
+#include <QPointer>
 #include <QColor>
 #include <QHash>
 #include <QList>
