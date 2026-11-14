@@ -2,7 +2,7 @@ name: Knomira Noesis-Free Game Shell (Windows)
 
 on:
   push:
-    branches: [feature/noesis-free-shell, feature/remappable-controls]
+    branches: [feature/noesis-free-shell, feature/remappable-controls, feature/controls-menu-redesign]
     paths:
       - "prototype/rmlui/**"
       - "content/rmlui/**"
@@ -30,13 +30,17 @@ jobs:
         run: |
           $tokens = $null
           $parseErrors = $null
-          $path = Join-Path $env:GITHUB_WORKSPACE 'prototype\rmlui\Install-Prototype.ps1'
-          [System.Management.Automation.Language.Parser]::ParseFile($path, [ref]$tokens, [ref]$parseErrors) | Out-Null
-          if ($parseErrors.Count -gt 0) {
-            $parseErrors | Format-List | Out-String | Write-Host
-            throw "Install-Prototype.ps1 has PowerShell syntax errors."
+          foreach ($name in @('Install-Prototype.ps1', 'Test-GameShell.ps1')) {
+            $path = Join-Path $env:GITHUB_WORKSPACE ('prototype\rmlui\' + $name)
+            $tokens = $null
+            $parseErrors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile($path, [ref]$tokens, [ref]$parseErrors) | Out-Null
+            if ($parseErrors.Count -gt 0) {
+              $parseErrors | Format-List | Out-String | Write-Host
+              throw "$name has PowerShell 5.1 syntax errors."
+            }
+            Write-Host "$name syntax is valid."
           }
-          Write-Host "Installer PowerShell 5.1 syntax is valid."
 
   game-shell-build:
     name: Build Noesis-free game shell
@@ -68,7 +72,7 @@ jobs:
       - name: Build Noesis-free shell
         shell: pwsh
         run: |
-          cmake --build build/rmlui-prototype --config Debug --target knomira_game_shell knomira_save_catalog_test knomira_input_bindings_test --parallel 4
+          cmake --build build/rmlui-prototype --config Debug --target knomira_game_shell knomira_save_catalog_test knomira_input_bindings_test knomira_rmlui_layout_test --parallel 4
 
       - name: Test save discovery without Noesis
         shell: pwsh
@@ -89,6 +93,35 @@ jobs:
         continue-on-error: true
         run: |
           cmake --build build/rmlui-prototype --config Debug --target knomira_world_renderer_header_compile knomira_engine_headers_compile --parallel 4
+
+      - name: Test actual RmlUi bindings layout geometry
+        shell: pwsh
+        run: |
+          & "build/rmlui-prototype/Debug/knomira_rmlui_layout_test.exe" "prototype/rmlui/game_shell.rml"
+          if ($LASTEXITCODE -ne 0) { throw "RmlUi controls layout collapsed or overlaps." }
+
+      - name: Validate readable control-menu document and action IDs
+        shell: pwsh
+        run: |
+          $file = "prototype/rmlui/game_shell.rml"
+          $document = New-Object System.Xml.XmlDocument
+          $document.Load((Resolve-Path $file).Path)
+          $nodes = @($document.SelectNodes('//*[@id]'))
+          $ids = @($nodes | ForEach-Object { $_.GetAttribute("id") })
+          $required = @(
+            "settings_panel", "controls_tab_menu", "controls_tab_world",
+            "controls_tab_panels", "controls_tab_system",
+            "controls_device_keyboard", "controls_device_xbox",
+            "bindings_list", "capture_action_name", "capture_prompt",
+            "capture_current", "capture_error", "capture_clear",
+            "capture_cancel", "controls_reset", "controls_back"
+          )
+          foreach ($id in $required) {
+            if ($ids -notcontains $id) { throw "Missing control-menu element: $id" }
+          }
+          $duplicates = $ids | Group-Object | Where-Object { $_.Count -gt 1 }
+          if ($duplicates) { throw "Duplicate RML element IDs: $($duplicates.Name -join ', ')" }
+          Write-Host "Controls screen XML and expected static IDs validated."
 
       - name: Stage Qt and FreeType runtime for desktop testing
         shell: pwsh

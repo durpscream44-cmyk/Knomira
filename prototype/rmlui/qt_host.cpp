@@ -27,6 +27,7 @@
 #ifdef KNOMIRA_GAME_SHELL
 #include "save_catalog.h"
 #include "input_bindings.h"
+#include "controls_hit_test.h"
 #include <QSet>
 #include <vector>
 #include <algorithm>
@@ -283,7 +284,8 @@ public:
             const auto selected = std::find(settingsButtonIds_.begin(), settingsButtonIds_.end(), std::string(id));
             if (selected != settingsButtonIds_.end()) {
                 selectedButton_ = int(selected - settingsButtonIds_.begin());
-                FocusSelected();
+                // Mouse already focuses the clicked element. Calling FocusSelected
+                // here would auto-scroll while the click is still in progress.
             }
             return;
         }
@@ -327,11 +329,16 @@ public:
         SetStatus(utf8.constData());
     }
 
+    // A compact, readable table inspired by category-based game keybind menus.
+    // Only one category and one input device are shown at a time, so labels
+    // and button targets are large enough for mouse and controller users.
     void ShowSettings() {
         if (!document_) return;
         showingSettings_ = true;
         confirmingExit_ = false;
         showingSaves_ = false;
+        settingsCategory_ = 0;
+        settingsGamepad_ = false;
         if (auto* menu = document_->GetElementById("menu_panel"))
             menu->SetProperty("display", "none");
         if (auto* saves = document_->GetElementById("save_browser"))
@@ -340,59 +347,132 @@ public:
             confirm->SetProperty("display", "none");
         if (auto* settings = document_->GetElementById("settings_panel"))
             settings->SetProperty("display", "block");
-        RebuildSettings();
         selectedButton_ = 0;
+        RebuildSettings();
         FocusSelected();
-        SetStatus("Controls: menu bindings are live; gameplay bindings are saved for future engine integration.");
+        SetStatus("Click a binding once to edit it, or navigate with the controller. Menu inputs are active; gameplay inputs are planned.");
+    }
+
+    QString SettingsGroup() const {
+        static const char* groups[] = {"Menu", "World (planned)", "Panels (planned)", "System (planned)"};
+        return QString::fromUtf8(groups[settingsCategory_]);
+    }
+
+    void ChangeSettingsView(const Rml::String& id) {
+        const int previousCategory = settingsCategory_;
+        const bool previousDevice = settingsGamepad_;
+        if (id == "controls_tab_menu") settingsCategory_ = 0;
+        else if (id == "controls_tab_world") settingsCategory_ = 1;
+        else if (id == "controls_tab_panels") settingsCategory_ = 2;
+        else if (id == "controls_tab_system") settingsCategory_ = 3;
+        else if (id == "controls_device_keyboard") settingsGamepad_ = false;
+        else if (id == "controls_device_xbox") settingsGamepad_ = true;
+        else return;
+        RebuildSettings();
+        // New category/device should start at the first row, not inherit
+        // a previous panel's scroll position.
+        if (previousCategory != settingsCategory_ || previousDevice != settingsGamepad_) {
+            if (auto* list = document_->GetElementById("bindings_list"))
+                list->SetScrollTop(0.f);
+        }
+        SetStatus(settingsCategory_ == 0
+            ? "Menu controls take effect immediately. Select a key to change it."
+            : "These controls are saved for the full game; gameplay actions are not connected yet.");
     }
 
     void RebuildSettings() {
-        settingsButtonIds_.clear();
         if (!document_) return;
-        Rml::Element* list = document_->GetElementById("bindings_list");
-        if (!list) return;
-        std::string markup;
-        QString lastGroup;
-        const auto& actions = controls_.actions();
-        for (int i = 0; i < actions.size(); ++i) {
-            const auto& action = actions[i];
-            if (lastGroup != action.group) {
-                lastGroup = action.group;
-                markup += "<h3 class='control-group'>" + lastGroup.toHtmlEscaped().toUtf8().toStdString() + "</h3>";
+        const std::string oldSelection = SelectedId();
+        settingsButtonIds_.clear();
+        for (const char* tab : {"controls_tab_menu", "controls_tab_world",
+                                "controls_tab_panels", "controls_tab_system",
+                                "controls_device_keyboard", "controls_device_xbox"})
+            settingsButtonIds_.push_back(tab);
+
+        if (auto* list = document_->GetElementById("bindings_list")) {
+            std::string markup;
+            const auto& actions = controls_.actions();
+            for (int i = 0; i < actions.size(); ++i) {
+                const auto& action = actions[i];
+                if (action.group != SettingsGroup()) continue;
+
+                markup += "<div class='binding-row'><div class='binding-info'>";
+                markup += "<p class='binding-name'>" +
+                    action.label.toHtmlEscaped().toUtf8().toStdString() + "</p>";
+                markup += action.activeInShell
+                    ? "<p class='binding-detail'>ACTIVE IN MENU</p>"
+                    : "<p class='binding-planned'>AVAILABLE IN FUTURE GAMEPLAY</p>";
+                markup += "</div>";
+
+                for (int slot = 0; slot < 2; ++slot) {
+                    const std::string id = std::string(settingsGamepad_ ? "control_p_" : "control_k_") +
+                        std::to_string(i) + "_" + std::to_string(slot);
+                    settingsButtonIds_.push_back(id);
+                    const QString label = settingsGamepad_
+                        ? KnomiraInput::Profile::padLabel(action.pads[slot])
+                        : KnomiraInput::Profile::keyLabel(action.keys[slot]);
+                    const bool unbound = settingsGamepad_ ? action.pads[slot].isEmpty() : action.keys[slot] == 0;
+                    // The assignment is visible as a separate, high-contrast
+                    // readout rather than relying on a button caption. The
+                    // button always says Change and remains the click target.
+                    // After FinishCapture(), RebuildSettings() refreshes both
+                    // this readout and the active action's input behavior.
+                    const QString shown = unbound ? QStringLiteral("Not assigned") : label;
+                    markup += "<div class='binding-slot' id='binding_slot_" + id + "'>";
+                    markup += "<p class='binding-value";
+                    if (unbound) markup += " unbound";
+                    markup += "'>" + shown.toHtmlEscaped().toUtf8().toStdString() + "</p>";
+                    markup += "<button class='bind-button' id='" + id + "'>";
+                    markup += "Change";
+                    markup += "</button></div>";
+                }
+                markup += "</div>";
             }
-            markup += "<div class='control-row'><p class='control-name'>";
-            markup += action.label.toHtmlEscaped().toUtf8().toStdString();
-            markup += action.activeInShell ? " (active)</p>" : " (planned)</p>";
-            for (int slot = 0; slot < 2; ++slot) {
-                const std::string id = "control_k_" + std::to_string(i) + "_" + std::to_string(slot);
-                settingsButtonIds_.push_back(id);
-                markup += "<button class='bind-button' id='" + id + "'>K";
-                markup += std::to_string(slot + 1) + ": ";
-                markup += KnomiraInput::Profile::keyLabel(action.keys[slot]).toHtmlEscaped().toUtf8().toStdString();
-                markup += "</button>";
+            list->SetInnerRML(markup);
+            for (const auto& id : settingsButtonIds_) {
+                // The first six buttons are statically authored and attached
+                // once in Initialise. Only generated fields need listeners.
+                if (id.rfind("control_", 0) != 0) continue;
+                if (auto* button = document_->GetElementById(id)) {
+                    // Mouse input is resolved directly in mousePressEvent,
+                    // before RmlUi moves focus or scrolls the list.
+                    button->AddEventListener("click", &events_); // Xbox/keyboard Click()
+                }
             }
-            for (int slot = 0; slot < 2; ++slot) {
-                const std::string id = "control_p_" + std::to_string(i) + "_" + std::to_string(slot);
-                settingsButtonIds_.push_back(id);
-                markup += "<button class='bind-button' id='" + id + "'>Pad";
-                markup += std::to_string(slot + 1) + ": ";
-                markup += KnomiraInput::Profile::padLabel(action.pads[slot]).toHtmlEscaped().toUtf8().toStdString();
-                markup += "</button>";
-            }
-            markup += "</div>";
         }
-        list->SetInnerRML(markup);
-        for (const auto& id : settingsButtonIds_) {
-            if (Rml::Element* button = document_->GetElementById(id))
-                button->AddEventListener("click", &events_);
+
+        for (int i = 0; i < 4; ++i) {
+            static const char* categoryIds[] = {
+                "controls_tab_menu", "controls_tab_world", "controls_tab_panels", "controls_tab_system"
+            };
+            if (auto* button = document_->GetElementById(categoryIds[i]))
+                button->SetClass("tab-selected", i == settingsCategory_);
+        }
+        if (auto* button = document_->GetElementById("controls_device_keyboard"))
+            button->SetClass("tab-selected", !settingsGamepad_);
+        if (auto* button = document_->GetElementById("controls_device_xbox"))
+            button->SetClass("tab-selected", settingsGamepad_);
+
+        if (auto* tip = document_->GetElementById("controls_tip")) {
+            const QString message = settingsCategory_ == 0
+                ? QStringLiteral("Menu: changes work immediately. Click Primary or Alternate, then press the new input.")
+                : QStringLiteral("Planned gameplay action: the assignment saves now and activates when the engine is connected.");
+            tip->SetInnerRML(message.toHtmlEscaped().toUtf8().toStdString());
         }
         settingsButtonIds_.push_back("controls_reset");
         settingsButtonIds_.push_back("controls_back");
-        selectedButton_ = std::min(selectedButton_, int(settingsButtonIds_.size()) - 1);
-        FocusSelected();
+        auto old = std::find(settingsButtonIds_.begin(), settingsButtonIds_.end(), oldSelection);
+        selectedButton_ = old == settingsButtonIds_.end() ? 0 : int(old - settingsButtonIds_.begin());
+        requestUpdate();
+        // Do NOT call FocusSelected() here. Forcing ScrollIntoView while a mouse
+        // button is held moves the target between down/up and loses its click.
+        // Keyboard/Xbox navigation calls FocusSelected() independently.
     }
 
+    bool IsCapturing() const { return captureAction_ >= 0; }
+
     void BeginCapture(const Rml::String& id) {
+        if (!showingSettings_ || captureAction_ >= 0) return;
         const QStringList parts = QString::fromStdString(id).split('_');
         if (parts.size() != 4 || parts[0] != "control") return;
         bool indexOk = false, slotOk = false;
@@ -404,17 +484,38 @@ public:
         captureAction_ = index;
         captureSlot_ = slot;
         captureController_ = (parts[1] == "p");
-        if (auto* panel = document_->GetElementById("binding_capture"))
-            panel->SetProperty("display", "block");
-        if (auto* prompt = document_->GetElementById("capture_prompt")) {
-            const QString message = QStringLiteral("Remapping %1 (%2 %3). Press a %4 input.")
-                .arg(controls_.actions()[index].label)
-                .arg(captureController_ ? QStringLiteral("Controller") : QStringLiteral("Keyboard"))
-                .arg(slot + 1)
-                .arg(captureController_ ? QStringLiteral("gamepad") : QStringLiteral("keyboard"));
-            prompt->SetInnerRML(message.toHtmlEscaped().toUtf8().toStdString());
+        pendingScrollToFocus_ = false; // Do not move the clicked binding.
+        const auto& action = controls_.actions()[index];
+        const QString current = captureController_
+            ? KnomiraInput::Profile::padLabel(action.pads[slot])
+            : KnomiraInput::Profile::keyLabel(action.keys[slot]);
+        const QString device = captureController_ ? "Xbox controller" : "keyboard";
+        if (auto* title = document_->GetElementById("capture_action_name"))
+            title->SetInnerRML(action.label.toHtmlEscaped().toUtf8().toStdString());
+        if (auto* previous = document_->GetElementById("capture_current")) {
+            const QString caption = QStringLiteral("%1 / %2 binding: %3")
+                .arg(device, slot == 0 ? QStringLiteral("Primary") : QStringLiteral("Alternate"), current);
+            previous->SetInnerRML(caption.toHtmlEscaped().toUtf8().toStdString());
         }
-        SetStatus("Press an input to rebind. Escape cancels keyboard capture. Clear / Cancel also available.");
+        if (auto* prompt = document_->GetElementById("capture_prompt")) {
+            const QString caption = captureController_
+                ? QStringLiteral("Press the Xbox button, trigger or stick direction you want to use.")
+                : QStringLiteral("Press the key or combination you want to use.");
+            prompt->SetInnerRML(caption.toHtmlEscaped().toUtf8().toStdString());
+        }
+        if (auto* error = document_->GetElementById("capture_error"))
+            error->SetInnerRML("");
+        if (auto* modal = document_->GetElementById("binding_capture"))
+            modal->SetProperty("display", "block");
+        SetStatus("Listening for a new input. Escape or Cancel Change keeps the old binding.");
+        requestUpdate();
+    }
+
+    void ReportCaptureError(const QString& reason) {
+        const QByteArray escaped = reason.toHtmlEscaped().toUtf8();
+        if (auto* warning = document_->GetElementById("capture_error"))
+            warning->SetInnerRML(escaped.constData());
+        SetStatusText(reason);
     }
 
     void CancelCapture() {
@@ -433,7 +534,7 @@ public:
         if (captureAction_ < 0 || captureController_) return;
         QString issue;
         if (!controls_.bindKey(captureAction_, captureSlot_, code, &issue)) {
-            SetStatusText("Cannot assign keyboard input: " + issue);
+            ReportCaptureError("That keyboard shortcut cannot be used: " + issue);
             return;
         }
         FinishCapture();
@@ -443,7 +544,7 @@ public:
         if (captureAction_ < 0 || !captureController_) return;
         QString issue;
         if (!controls_.bindPad(captureAction_, captureSlot_, token, &issue)) {
-            SetStatusText("Cannot assign controller input: " + issue);
+            ReportCaptureError("That controller input cannot be used: " + issue);
             return;
         }
         FinishCapture();
@@ -456,7 +557,15 @@ public:
     }
 
     void FinishCapture() {
-        const QString actionLabel = controls_.actions()[captureAction_].label;
+        const auto& action = controls_.actions()[captureAction_];
+        const QString actionLabel = action.label;
+        const QString device = captureController_ ? QStringLiteral("Xbox") : QStringLiteral("Keyboard");
+        const QString slot = captureSlot_ == 0 ? QStringLiteral("Primary") : QStringLiteral("Alternate");
+        const QString assignment = captureController_
+            ? (action.pads[captureSlot_].isEmpty() ? QStringLiteral("Not assigned")
+                                                   : KnomiraInput::Profile::padLabel(action.pads[captureSlot_]))
+            : (action.keys[captureSlot_] == 0 ? QStringLiteral("Not assigned")
+                                               : KnomiraInput::Profile::keyLabel(action.keys[captureSlot_]));
         captureAction_ = -1;
         captureSlot_ = -1;
         captureController_ = false;
@@ -464,10 +573,13 @@ public:
             panel->SetProperty("display", "none");
         QString error;
         if (!controls_.save(&error))
-            SetStatusText("Binding changed for " + actionLabel + ", but saving failed: " + error);
+            SetStatusText("Changed " + actionLabel + " / " + device + " / " + slot +
+                          " to " + assignment + ", but saving failed: " + error);
         else
-            SetStatusText("Binding saved for " + actionLabel + ".");
+            SetStatusText("Saved " + actionLabel + " / " + device + " / " + slot +
+                          ": " + assignment + ". The value is now shown in the table.");
         RebuildSettings();
+        FocusSelected(); // Only after capture completes, not during mouse-down.
     }
 
     void ResetControls() {
@@ -574,8 +686,42 @@ protected:
     }
 
     void mousePressEvent(QMouseEvent* event) override {
+#ifdef KNOMIRA_GAME_SHELL
+        pendingScrollToFocus_ = false; // Never auto-scroll under a mouse click.
+#endif
         if (context_) {
             const double scale = devicePixelRatio();
+#ifdef KNOMIRA_GAME_SHELL
+            // RmlUi normally focuses (and can scroll) an element before its
+            // mousedown event is delivered. A number of controls can therefore
+            // move out from under the pointer before their click fires.
+            //
+            // A direct left-click on a binding value OR its Change button
+            // should always open the intended capture dialog. Resolve the
+            // hovered target first, without relying on RmlUi's focus/click
+            // event dispatch. Keep other menu buttons using normal RmlUi.
+            if (event->button() == Qt::LeftButton && showingSettings_ &&
+                captureAction_ < 0) {
+                // Render() already refreshes the RmlUi layout every frame
+                // with the GL context current. Do not invoke Update() from
+                // input handling without a current GL context.
+                const Rml::Vector2f pointer{
+                    float(std::lround(event->position().x() * scale)),
+                    float(std::lround(event->position().y() * scale))};
+                // Use RmlUi's direct geometry hit-test, not its mouse hover
+                // events. Those can change focus and initiate scrolling.
+                const std::string binding = KnomiraInput::FindBindingIdAtHover(
+                    context_->GetElementAtPoint(pointer));
+                if (!binding.empty()) {
+                    SelectFromClick(binding);
+                    BeginCapture(binding);
+                    swallowBindingMouseRelease_ = true;
+                    event->accept();
+                    requestUpdate();
+                    return; // Do not trigger RmlUi mouse focus/auto-scroll.
+                }
+            }
+#endif
             context_->ProcessMouseMove(
                 int(std::lround(event->position().x() * scale)),
                 int(std::lround(event->position().y() * scale)),
@@ -588,7 +734,24 @@ protected:
     }
 
     void mouseReleaseEvent(QMouseEvent* event) override {
+#ifdef KNOMIRA_GAME_SHELL
+        if (event->button() == Qt::LeftButton && swallowBindingMouseRelease_) {
+            // The corresponding down was handled directly. Do not forward an
+            // orphaned up to the new capture dialog (Clear/Cancel buttons).
+            swallowBindingMouseRelease_ = false;
+            event->accept();
+            requestUpdate();
+            return;
+        }
+#endif
         if (context_) {
+            // RmlUi's click requires down/up over the same element. Update
+            // cursor coordinates even when Qt did not emit a move in between.
+            const double scale = devicePixelRatio();
+            context_->ProcessMouseMove(
+                int(std::lround(event->position().x() * scale)),
+                int(std::lround(event->position().y() * scale)),
+                Modifiers(event->modifiers()));
             const int button = MouseButton(event->button());
             if (button >= 0)
                 context_->ProcessMouseButtonUp(button, Modifiers(event->modifiers()));
@@ -633,13 +796,13 @@ protected:
             const int chord = KnomiraInput::Profile::normalizeKey(
                 event->key(), int(event->modifiers()));
             if (event->key() == Qt::Key_Escape) BackToMenu(); // always recover
+            else if (event->key() == Qt::Key_Tab || event->key() == Qt::Key_Backtab)
+                Navigate((event->key() == Qt::Key_Backtab ||
+                          (event->modifiers() & Qt::ShiftModifier)) ? -1 : 1);
             else if (controls_.keyMatches("menu_prev", chord)) Navigate(-1);
             else if (controls_.keyMatches("menu_next", chord)) Navigate(1);
             else if (controls_.keyMatches("menu_accept", chord)) ActivateSelected();
             else if (controls_.keyMatches("menu_back", chord)) BackToMenu();
-            else if (event->key() == Qt::Key_Tab || event->key() == Qt::Key_Backtab)
-                Navigate((event->key() == Qt::Key_Backtab ||
-                          (event->modifiers() & Qt::ShiftModifier)) ? -1 : 1);
             else {
                 event->ignore();
                 return;
@@ -818,6 +981,10 @@ private:
                         break;
                     }
                 }
+            } else if (justPressed.contains("B") || justPressed.contains("Back")) {
+                // A controller can escape keyboard-only capture without a
+                // physical keyboard. Controller captures still allow B/Back.
+                CancelCapture();
             }
             return;
         }
@@ -930,6 +1097,9 @@ private:
             back->AddEventListener("click", &events_);
         for (const char* id : {"exit_cancel", "exit_yes",
                                "controls_reset", "controls_back",
+                               "controls_tab_menu", "controls_tab_world",
+                               "controls_tab_panels", "controls_tab_system",
+                               "controls_device_keyboard", "controls_device_xbox",
                                "capture_clear", "capture_cancel"}) {
             if (auto* option = document_->GetElementById(id))
                 option->AddEventListener("click", &events_);
@@ -981,12 +1151,15 @@ private:
     bool showingSaves_ = false;
     bool confirmingExit_ = false;
     bool showingSettings_ = false;
+    int settingsCategory_ = 0; // Menu, World, Panels, System
+    bool settingsGamepad_ = false; // Keyboard or Xbox columns
     KnomiraInput::Profile controls_;
     std::vector<std::string> settingsButtonIds_;
     int captureAction_ = -1;
     int captureSlot_ = -1;
     bool captureController_ = false;
     bool pendingScrollToFocus_ = false;
+    bool swallowBindingMouseRelease_ = false;
     QSet<QString> lastPadTokens_;
 #endif
 #ifdef _WIN32
@@ -1010,6 +1183,20 @@ void MenuEvents::ProcessEvent(Rml::Event& event) {
     Rml::Element* element = event.GetCurrentElement();
     if (!element) return;
     const Rml::String& id = element->GetId();
+
+#ifdef KNOMIRA_GAME_SHELL
+    // Native mouse input selects bindings directly from geometry in
+    // QtMenuWindow::mousePressEvent. Only synthetic/keyboard/controller Click()
+    // events are handled here; these never depend on pointer focus.
+    if (event.GetType() != "click") return;
+    if (window_->IsCapturing()) {
+        // The modal owns input. Underlying controls must not activate.
+        if (id == "capture_cancel") window_->CancelCapture();
+        else if (id == "capture_clear") window_->ClearCapture();
+        return;
+    }
+#endif
+
     window_->SelectFromClick(id);
     if (id == "quit") {
 #ifdef KNOMIRA_GAME_SHELL
@@ -1040,8 +1227,11 @@ void MenuEvents::ProcessEvent(Rml::Event& event) {
         window_->CancelCapture();
     } else if (id == "capture_clear") {
         window_->ClearCapture();
+    } else if (id.rfind("controls_tab_", 0) == 0 ||
+               id.rfind("controls_device_", 0) == 0) {
+        window_->ChangeSettingsView(id);
     } else if (id.rfind("control_", 0) == 0) {
-        window_->BeginCapture(id);
+        window_->BeginCapture(id); // Controller/keyboard activation (Click).
     } else if (id == "exit_yes") {
         window_->close();
     } else if (id.rfind("save_entry_", 0) == 0) {

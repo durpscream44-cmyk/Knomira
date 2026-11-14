@@ -129,6 +129,11 @@ if(KNOMIRA_BUILD_GAME_SHELL)
     )
     target_link_libraries(knomira_input_bindings_test PRIVATE Qt6::Core Qt6::Gui)
 
+    # UI geometry regression test: uses the real RmlUi layout engine and
+    # a no-op renderer, so it runs in CI without a window or OpenGL context.
+    add_executable(knomira_rmlui_layout_test controls_layout_test.cpp)
+    target_link_libraries(knomira_rmlui_layout_test PRIVATE RmlUi::RmlUi)
+
     # The game's world renderer header must not drag in NoesisGUI transitively.
     # Compile-only test: the actual engine implementation is not linked here.
     add_library(knomira_world_renderer_header_compile OBJECT

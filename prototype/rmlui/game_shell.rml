@@ -2,51 +2,128 @@
 <head>
   <title>Knomira | Noesis-Free Shell</title>
   <style>
-    body { margin: 0; background-color: #151f24; color: #e6dfca; font-family: "Segoe UI"; font-size: 18px; }
+    body { margin: 0; background-color: #121c24; color: #e6e3d6; font-family: "Segoe UI"; font-size: 17px; }
     #screen { width: 100%; height: 100%; display: flex; flex-direction: column;
               align-items: center; justify-content: center; }
-    .panel { width: 640px; padding: 38px; background-color: #28343a;
-             border: 3px solid #b5935b; }
-    .eyebrow { color: #d0aa72; font-size: 15px; letter-spacing: 2px; }
-    h1 { font-size: 60px; color: #f2e4c4; margin: 6px 0px 12px 0px; }
-    h2 { font-size: 29px; color: #f2e4c4; margin: 8px 0px 16px 0px; }
-    .subtitle { color: #adbbb7; margin-bottom: 26px; }
-    button { display: block; width: 100%; min-height: 52px; margin-bottom: 10px;
-             padding: 7px; border: 2px solid #92794f; background-color: #384a4b;
-             color: #f4e8cd; font-family: "Segoe UI"; font-size: 19px;
-             text-align: center; }
-    button:hover { background-color: #526462; border-color: #dcc084; }
-    button:focus { background-color: #586750; border-color: #fff0ac; }
-    button:focus-visible { background-color: #586750; border-color: #fff0ac; }
-    button:active { background-color: #6d785e; }
-    #save_browser { display: none; }
-    #exit_confirm { display: none; }
-    #exit_confirm h2 { color: #f2e4c4; }
-    #exit_confirm p { color: #c5c9ba; margin: 10px 0px 22px 0px; }
-    #exit_yes { border-color: #a36e55; }
-    #settings_panel { display: none; }
-    #bindings_list { height: 390px; overflow-y: auto; background-color: #172326;
-                     padding: 10px; margin-bottom: 10px; }
-    .control-group { color: #e3bb7b; font-size: 19px; margin: 14px 0 7px 0;
-                     border-bottom: 1px solid #63726b; padding-bottom: 5px; }
-    .control-row { background-color: #27383b; margin-bottom: 9px; padding: 8px; }
-    .control-name { margin: 0px 0px 7px 0px; font-size: 16px; color: #e5e1d2; }
-    button.bind-button { display: inline-block; width: 47%; margin: 1%; min-height: 36px;
-                         padding: 4px; font-size: 13px; text-align: center; }
-    #binding_capture { display: none; background-color: #323b33; border: 1px solid #d5b077;
-                       padding: 10px; margin-bottom: 12px; }
-    #capture_prompt { color: #ffe0ac; font-size: 15px; margin: 0px 0px 7px 0px; }
-    button.capture-button { display: inline-block; width: 46%; margin: 1%; min-height: 38px;
-                            font-size: 15px; }
-    button.control-footer { font-size: 16px; min-height: 42px; }
+    .panel { display: block; width: 640px; padding: 32px; background-color: #26343e;
+             border: 2px solid #bc9760; }
+    .eyebrow { display: block; color: #d5b178; font-size: 14px; letter-spacing: 2px; margin: 0px 0px 6px 0px; }
+    h1 { display: block; font-size: 57px; color: #faf0d5; margin: 0px 0px 10px 0px; }
+    h2 { display: block; font-size: 30px; color: #faf0d5; margin: 0px 0px 10px 0px; }
+    .subtitle { display: block; font-size: 16px; color: #d1d9d5; margin: 0px 0px 20px 0px; }
+    button { display: block; width: 100%; min-height: 52px; margin: 0px 0px 10px 0px;
+             padding: 8px; border: 2px solid #9b8055; background-color: #3a5055;
+             color: #fff4df; font-family: "Segoe UI"; font-size: 19px; text-align: center;
+             cursor: pointer; }
+    button:hover { background-color: #536b70; border-color: #e4bd78; }
+    button:focus { background-color: #576f65; border-color: #fff1b0; }
+    button:focus-visible { background-color: #576f65; border-color: #fff1b0; }
+    button:active { background-color: #6e836d; }
+    #save_browser, #exit_confirm, #settings_panel, #binding_capture { display: none; }
+    #exit_yes { border-color: #c88977; }
+    #save_list { height: 265px; overflow-y: auto; margin-bottom: 12px;
+                 background-color: #17252a; padding: 12px; }
+    #save_list button { text-align: left; font-size: 16px; min-height: 44px; }
 
-    #save_list { height: 260px; overflow-y: auto; margin-bottom: 12px; padding: 9px;
-                 background-color: #192629; }
-    #save_list button { text-align: left; font-size: 16px; min-height: 42px; }
-    #status { width: 640px; margin-top: 14px; padding: 15px;
-              border: 1px solid #6b775f; background-color: #192629;
-              color: #b5c6c4; font-size: 15px; }
-    #footer { margin-top: 15px; color: #899b98; font-size: 13px; }
+    /* Category tabs and separate device views keep one action per row readable. */
+    #settings_panel { width: 1020px; padding: 26px; }
+    .settings-top { display: flex; flex-direction: row; justify-content: space-between;
+                    align-items: center; margin-bottom: 12px; }
+    #settings_header { width: 720px; }
+    #settings_hint { display: block; font-size: 15px; color: #d0dcd8; margin: 0px 0px 14px 0px; }
+    #settings_state { font-size: 14px; border: 1px solid #6b958d;
+                      padding: 9px 12px; color: #d1e6de; background-color: #18312f; }
+    .tab-strip { display: flex; flex-direction: row; margin-bottom: 12px; }
+    .tab-button { flex: 1; width: auto; min-height: 45px; margin: 0px 6px 0px 0px;
+                  padding: 6px; font-size: 16px; background-color: #273941;
+                  border-color: #53666b; }
+    .tab-button.tab-selected { background-color: #665338; color: #fff4d9;
+                               border-color: #f4c77d; }
+    /* Category navigation uses explicit wide buttons, not flex:1.
+       RmlUi may size flex:auto items to text width, bunching all four left. */
+    .category-label { display: block; margin: 2px 0px 8px 0px; color: #d8c4a3;
+                      font-size: 14px; letter-spacing: 1px; }
+    .category-strip { display: flex; flex-direction: row; width: 100%;
+                      justify-content: space-between; margin-bottom: 18px; }
+    button.category-button { display: block; flex-grow: 0; flex-shrink: 0;
+                             flex-basis: 220px; width: 220px; min-width: 220px;
+                             min-height: 64px;
+                             padding: 12px 8px; margin: 0px; border: 2px solid #779196;
+                             background-color: #314854; color: #f6ecda;
+                             font-size: 21px; font-weight: bold; text-align: center; }
+    button.category-button:hover { background-color: #4c6570;
+                                   border-color: #f4ce88; }
+    button.category-button:focus { border-color: #fff0ac;
+                                   background-color: #526c6b; }
+    button.category-button.tab-selected { background-color: #79613c;
+                                         border: 3px solid #f5cc84;
+                                         color: #fff5df; }
+    .tab-device { font-size: 17px; min-height: 47px; }
+    /* RmlUi defaults display to INLINE (including divs); a scroll container
+       without display:block and a definite row width collapsed these flex
+       columns to near zero. Use real block boxes and pixel-sized columns. */
+    .table-header { display: flex; flex-direction: row; flex-wrap: nowrap;
+                    width: 960px; box-sizing: border-box; padding: 8px;
+                    background-color: #17262c; border-bottom: 2px solid #8f7959; }
+    .column-action { display: block; flex-shrink: 0; width: 315px; }
+    .column-binding { display: block; flex-shrink: 0; width: 300px; margin-left: 13px; }
+    .table-header p { margin: 0px; color: #f4dab1; font-size: 16px; }
+    #bindings_list { display: block; box-sizing: border-box; width: 100%;
+                     height: 304px; overflow-y: auto; padding: 6px;
+                     background-color: #16262d; border: 1px solid #44545d; }
+    .binding-row { display: flex; flex-direction: row; flex-wrap: nowrap;
+                   box-sizing: border-box; width: 960px; min-width: 960px;
+                   min-height: 74px; align-items: center; padding: 8px;
+                   margin-bottom: 6px; background-color: #293c44; }
+    .binding-row:hover { background-color: #354a51; }
+    .binding-info { display: block; flex-shrink: 0;
+                    width: 315px; min-width: 315px; }
+    .binding-name { display: block; color: #faf0dd;
+                    font-size: 17px; margin: 0px 0px 5px 0px; }
+    .binding-detail { display: block; color: #b0cdc6; font-size: 13px; margin: 0px; }
+    .binding-planned { display: block; color: #cbb995; font-size: 13px; margin: 0px; }
+    /* Each slot permanently shows its value next to a large Change button. */
+    .binding-slot { display: flex; flex-direction: row; flex-wrap: nowrap;
+                    flex-shrink: 0; box-sizing: border-box;
+                    width: 300px; min-width: 300px; margin-left: 13px;
+                    min-height: 58px; align-items: center;
+                    background-color: #182f3b; border: 1px solid #748d8b; }
+    .binding-value { display: block; flex-shrink: 0; box-sizing: border-box;
+                     width: 192px; min-width: 192px; margin: 0px; padding: 6px;
+                     white-space: nowrap; overflow: hidden;
+                     color: #fff2c6; font-size: 17px; font-weight: bold; }
+    .binding-value.unbound { color: #d1c9b7; font-style: italic; font-size: 15px; }
+    button.bind-button { display: block; flex-shrink: 0; box-sizing: border-box;
+                         width: 99px; min-width: 99px; margin: 0px; min-height: 54px;
+                         padding: 5px; font-size: 15px; background-color: #3c5e62;
+                         color: #fff6de; text-align: center;
+                         border: 2px solid #9cae9d; }
+    button.bind-button:hover { background-color: #608081; border-color: #ffe2a3; }
+    button.bind-button:focus { background-color: #827347; border-color: #ffefa7; }
+    #controls_tip { margin: 10px 0px 14px 0px; font-size: 15px; color: #d1dfdc; }
+    .settings-footer { display: flex; flex-direction: row; justify-content: flex-end; }
+    .settings-footer button { width: 230px; margin-left: 12px; min-height: 46px;
+                              font-size: 16px; }
+    #controls_reset { background-color: #424d4a; }
+    #controls_back { background-color: #78613b; }
+
+    /* Separate modal: no ambiguity about which control is being captured. */
+    #binding_capture { position: absolute; left: 0px; top: 0px; width: 100%; height: 100%;
+                       background-color: #081119e8; }
+    #capture_card { position: absolute; left: 50%; top: 50%; margin-left: -310px;
+                    margin-top: -170px; width: 620px; padding: 26px;
+                    background-color: #273943; border: 3px solid #f2ca83; }
+    #capture_action_name { color: #fff4db; font-size: 26px; margin: 0px 0px 10px 0px; }
+    #capture_prompt { color: #f8d28c; font-size: 18px; margin: 0px 0px 14px 0px; }
+    #capture_current { color: #d4e0dc; font-size: 16px; margin: 0px 0px 14px 0px; }
+    #capture_error { color: #ffbfae; font-size: 16px; margin-bottom: 9px; }
+    .capture-options { display: flex; flex-direction: row; }
+    .capture-options button { width: 48%; margin: 0px 2% 0px 0px; font-size: 17px; min-height: 48px; }
+    #capture_cancel { background-color: #70603e; }
+    #status { width: 920px; margin-top: 13px; padding: 11px 16px;
+              background-color: #17262c; border: 1px solid #61756f;
+              color: #d4e1de; font-size: 14px; }
+    #footer { margin-top: 10px; color: #a7b8b6; font-size: 13px; }
   </style>
 </head>
 <body>
@@ -54,7 +131,7 @@
     <div id="menu_panel" class="panel">
       <p class="eyebrow">THE WORLD IS WAITING</p>
       <h1>KNOMIRA</h1>
-      <p class="subtitle">Noesis-free engine bootstrap — Phase 4</p>
+      <p class="subtitle">Noesis-free engine bootstrap</p>
       <button id="new_game">New Game (not connected)</button>
       <button id="load_game">Browse Existing Saves</button>
       <button id="settings">Settings / Controls</button>
@@ -74,20 +151,52 @@
       <button id="exit_yes">Yes, Exit Knomira</button>
     </div>
     <div id="settings_panel" class="panel">
-      <p class="eyebrow">CUSTOMIZE YOUR INPUT</p>
-      <h2>Controls and Keybindings</h2>
-      <p class="subtitle">Keyboard and Xbox primary / alternate inputs. Planned actions are saved for gameplay.</p>
-      <div id="binding_capture">
-        <p id="capture_prompt">Press a new key or controller input.</p>
-        <button class="capture-button" id="capture_clear">Clear binding</button>
-        <button class="capture-button" id="capture_cancel">Cancel</button>
+      <div class="settings-top">
+        <div id="settings_header">
+          <p class="eyebrow">SETTINGS / INPUT</p>
+          <h2>Controls &amp; Keybindings</h2>
+        </div>
+        <div id="settings_state">Changes save automatically</div>
+      </div>
+      <p id="settings_hint">Choose a category and device, then select a binding to change it.</p>
+      <p class="category-label">CONTROL CATEGORY</p>
+      <div class="category-strip">
+        <button class="tab-button category-button" id="controls_tab_menu">Menu</button>
+        <button class="tab-button category-button" id="controls_tab_world">World</button>
+        <button class="tab-button category-button" id="controls_tab_panels">Panels</button>
+        <button class="tab-button category-button" id="controls_tab_system">System</button>
+      </div>
+      <div class="tab-strip">
+        <button class="tab-button tab-device" id="controls_device_keyboard">Keyboard</button>
+        <button class="tab-button tab-device" id="controls_device_xbox">Xbox Controller</button>
+      </div>
+      <div class="table-header">
+        <p class="column-action">ACTION</p>
+        <p class="column-binding">PRIMARY</p>
+        <p class="column-binding">ALTERNATE</p>
       </div>
       <div id="bindings_list"></div>
-      <button class="control-footer" id="controls_reset">Restore Default Controls</button>
-      <button class="control-footer" id="controls_back">Return to Main Menu</button>
+      <p id="controls_tip">Select a binding to change it. Escape cancels a change; Tab always navigates.</p>
+      <div class="settings-footer">
+        <button id="controls_reset">Restore Defaults</button>
+        <button id="controls_back">Done / Back to Menu</button>
+      </div>
     </div>
-    <div id="status">Use keyboard or Xbox controller to navigate.</div>
-    <p id="footer">Read-only testing. Your game files are never modified.</p>
+    <div id="binding_capture">
+      <div id="capture_card">
+        <p class="eyebrow">EDIT CONTROL</p>
+        <h2 id="capture_action_name">Selected Action</h2>
+        <p id="capture_prompt">Press a key or controller button to assign it.</p>
+        <p id="capture_current">Current binding:</p>
+        <p id="capture_error"></p>
+        <div class="capture-options">
+          <button id="capture_clear">Unbind This Slot</button>
+          <button id="capture_cancel">Cancel Change</button>
+        </div>
+      </div>
+    </div>
+    <div id="status">Use mouse, keyboard or Xbox controller to navigate.</div>
+    <p id="footer">Test shell — original game saves are never modified.</p>
   </div>
 </body>
 </rml>
