@@ -173,6 +173,7 @@ if(KNOMIRA_BUILD_GAME_SHELL)
         "../../src/base/gamestate.cpp"
         "../../src/base/global.cpp"
         "../../src/base/io.cpp"
+        "../../src/base/io_data_root.cpp"
         "../../src/game/gamemanager.cpp"
         "../../src/gui/strings.cpp"
         "../../src/game/newgamesettings.cpp"
@@ -211,7 +212,10 @@ if(KNOMIRA_BUILD_GAME_SHELL)
 
     # Test the same data-folder resolver used by IO::getDataFolder, but with
     # test-only compile guard. Production keeps Documents/My Games/Ingnomia.
-    add_executable(knomira_io_data_root_test io_data_root_test.cpp)
+    add_executable(knomira_io_data_root_test
+        io_data_root_test.cpp
+        "../../src/base/io_data_root.cpp"
+    )
     target_compile_definitions(knomira_io_data_root_test PRIVATE
         KNOMIRA_ISOLATED_TEST_DATA_ROOT=1
     )
@@ -219,7 +223,10 @@ if(KNOMIRA_BUILD_GAME_SHELL)
 
     # Second compilation of the same test with NO test-only macro verifies
     # the shipping default ignores KNOMIRA_TEST_DATA_ROOT.
-    add_executable(knomira_io_data_root_production_test io_data_root_test.cpp)
+    add_executable(knomira_io_data_root_production_test
+        io_data_root_test.cpp
+        "../../src/base/io_data_root.cpp"
+    )
     target_link_libraries(knomira_io_data_root_production_test PRIVATE Qt6::Core)
 
     # Compile-only check for real game startup and command interfaces.
