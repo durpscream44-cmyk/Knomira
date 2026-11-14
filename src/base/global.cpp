@@ -56,7 +56,6 @@ QMap<QString, QVariantMap> Global::m_windowParams;
 
 QMap<QString, QSet<QString>> Global::allowedInContainer;
 
-QHash<Qt::Key, Noesis::Key> Global::keyConvertMap;
 
 int Global::dimX     = 100;
 int Global::dimY     = 100;
