@@ -173,7 +173,6 @@ if(KNOMIRA_BUILD_GAME_SHELL)
         "../../src/base/gamestate.cpp"
         "../../src/base/global.cpp"
         "../../src/base/io.cpp"
-        "../../src/base/io_config.cpp"
         "../../src/base/io_data_root.cpp"
         "../../src/game/gamemanager.cpp"
         "../../src/gui/strings.cpp"
@@ -229,20 +228,6 @@ if(KNOMIRA_BUILD_GAME_SHELL)
         "../../src/base/io_data_root.cpp"
     )
     target_link_libraries(knomira_io_data_root_production_test PRIVATE Qt6::Core)
-
-    # First linked use of the real original Config constructor, JSON save and
-    # reload methods, and IO::createFolders. Only test-compiled IO is linked,
-    # so accidental access to player saves fails closed.
-    add_executable(knomira_config_bootstrap_test
-        config_bootstrap_test.cpp
-        "../../src/base/config.cpp"
-        "../../src/base/io_config.cpp"
-        "../../src/base/io_data_root.cpp"
-    )
-    target_compile_definitions(knomira_config_bootstrap_test PRIVATE
-        KNOMIRA_ISOLATED_TEST_DATA_ROOT=1
-    )
-    target_link_libraries(knomira_config_bootstrap_test PRIVATE Qt6::Core Qt6::Xml)
 
     # Compile-only check for real game startup and command interfaces.
     # No proprietary GUI libraries or precompiled headers.
