@@ -111,7 +111,7 @@ jobs:
       - name: Compile real simulation source without Noesis or legacy PCH
         shell: pwsh
         run: |
-          cmake --build build/rmlui-prototype --config Debug --target knomira_simulation_source_compile knomira_engine_db_bootstrap_test knomira_io_data_root_test --parallel 4
+          cmake --build build/rmlui-prototype --config Debug --target knomira_simulation_source_compile knomira_engine_db_bootstrap_test knomira_io_data_root_test knomira_io_data_root_production_test --parallel 4
           if ($LASTEXITCODE -ne 0) { throw "Real engine source compile gate failed." }
 
       - name: Verify original game SQL loads into memory without writing saves
@@ -125,6 +125,8 @@ jobs:
         run: |
           & "build/rmlui-prototype/Debug/knomira_io_data_root_test.exe"
           if ($LASTEXITCODE -ne 0) { throw "Unsafe game data-root override detected." }
+          & "build/rmlui-prototype/Debug/knomira_io_data_root_production_test.exe"
+          if ($LASTEXITCODE -ne 0) { throw "Production save path unexpectedly changed." }
 
       - name: Test actual RmlUi bindings layout geometry
         shell: pwsh
