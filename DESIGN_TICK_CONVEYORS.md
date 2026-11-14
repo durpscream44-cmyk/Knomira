@@ -1,5 +1,12 @@
 # Knomira — Mid-Game Conveyor / Tick Logistics Design
 
+> **Updated direction:** The simpler player-requested inlet/outlet stockpile
+> logistics network is now the preferred first implementation. See
+> [Inlet/Outlet Stockpile Logistics](DESIGN_INLET_OUTLET_LOGISTICS.md).
+> This page remains as the alternative for physical belts or later
+> travel-time transport; the existing `TickTransportLine` is only a
+> standalone tested prototype and is not required by the simpler network.
+
 **State:** transport-core implementation and standalone tests; **not live gameplay**.
 **Branch:** `feature/tick-conveyor-prototype`, based on the RmlUi integration work.
 This is a design for a later in-game system. No tech-tree unlock, recipe, belt
