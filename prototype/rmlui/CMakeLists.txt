@@ -183,7 +183,11 @@ if(KNOMIRA_BUILD_GAME_SHELL)
         "../../src/gui/eventconnector.cpp"
     )
     # The original game's executable compiles its sources as C++23.
-    set_target_properties(knomira_simulation_source_compile PROPERTIES CXX_STANDARD 23 CXX_STANDARD_REQUIRED ON)
+    # Compile the real Qt signal/slot meta-object code alongside the game's
+    # sources; otherwise a compile-only gate can conceal moc errors until link.
+    set_target_properties(knomira_simulation_source_compile PROPERTIES
+        CXX_STANDARD 23 CXX_STANDARD_REQUIRED ON AUTOMOC ON
+    )
     target_include_directories(knomira_simulation_source_compile PRIVATE
         "${CMAKE_CURRENT_SOURCE_DIR}/../../3rdparty/glad/include"
     )
