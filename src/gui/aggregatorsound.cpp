@@ -21,6 +21,7 @@
  *         camera, and line-of-sight occlusion via low-pass filters.
  */
 #include "aggregatorsound.h"
+#include "openalwrapper.h"
 
 #include "../base/config.h"
 #include "../base/db.h"
