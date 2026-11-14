@@ -1,6 +1,7 @@
 // Copyright (C) 2026 Knomira contributors.
 // Standalone test for the EXACT resolver used by original IO::getDataFolder.
-// Compiled both with and without the test-only guard; never writes real saves.
+// Compiled in both configurations; calls real IO::getDataFolder, not just helper.
+#include "../../src/base/io.h"
 #include "../../src/base/io_data_root.h"
 
 #include <QCoreApplication>
@@ -43,7 +44,7 @@ int main(int argc, char** argv)
     if (!qputenv("KNOMIRA_TEST_DATA_ROOT", sandbox.path().toLocal8Bit()))
         return 5;
 #ifdef KNOMIRA_ISOLATED_TEST_DATA_ROOT
-    const QString selected = Knomira::DataPaths::userDataFolder();
+    const QString selected = IO::getDataFolder();
     if (selected != expected)
         return 6;
 
@@ -67,7 +68,7 @@ int main(int argc, char** argv)
 #else
     // Shipping binaries must ignore the test-only environment variable,
     // even when it points to a perfectly valid marked sandbox.
-    const QString selected = Knomira::DataPaths::userDataFolder();
+    const QString selected = IO::getDataFolder();
 #ifdef Q_OS_WIN
     const QString standard = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation)
                            + QStringLiteral("/My Games/Ingnomia");
