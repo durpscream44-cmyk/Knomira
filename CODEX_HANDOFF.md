@@ -138,3 +138,18 @@ When uncertain, leave a concrete blocker and reproduction command. **A compile-o
 
 **Acceptance checklist for Codex before declaring this ticket done:** Windows CI passes both root-mode tests and original source compile; no real save/settings path writes; PR #11 remains draft until review; the next linked engine startup test must assert exactly which paths were written inside the temporary root; only call a game playable after a world is generated, rendered, given a genuine job, and save/reload works.
 
+
+## 8. PLAY-01B next increment — original Config and JSON IO linked smoke (2026-11-14)
+
+**Branch:** `feature/playable-safe-data-root`, draft PR #11 (child of PR #10). This increment moves **real** original `Config` startup out of the giant save/load link boundary, without generating a game world.
+
+**Implementation (committed):**
+- Extracted unchanged definitions of `IO::saveConfig`, `IO::loadOriginalConfig`, the `IO::saveFile` JSON overloads, and `IO::loadFile` from `src/base/io.cpp` into new `src/base/io_config.cpp` (the original root `src/CMakeLists.txt` recursively includes `*.cpp`). This permits linking configuration without all of the world-save dependencies.
+- Added `prototype/rmlui/config_bootstrap_test.cpp`, which creates an explicit marked `QTemporaryDir`, sets the fail-closed `KNOMIRA_TEST_DATA_ROOT`, constructs the **real original** `Config` with `IO::createFolders`, checks packaged defaults and `dataPath`, changes `XpMod` through `Config::set`, checks the real JSON write, reloads the real `Config`, and verifies there are no save files.
+- A minimal `Global::cfg` static-member definition exists only inside the test binary because the original `IO::saveConfig` requires it; **this is not an alternative GameManager/Global implementation**. The compiled target links real Config, IO data-root, and IO config methods with QtCore and QtXml.
+- CMake source compile target now includes `io_config.cpp`. Windows workflow builds/runs `knomira_config_bootstrap_test` alongside existing bootstrap and save-root tests.
+
+**CI at writing:** new test run was queued as [43585718231](https://github.com/durpscream44-cmyk/Knomira/actions/runs/43585718231); do **not** call this particular increment verified until its `Run real Config startup and persistence in marked temp sandbox` step has passed. If it fails, fetch that workflow job log and fix only the concrete compile/link/test failure. Continue protecting original saves.
+
+**Next after green:** PLAY-01B2: link original `DB::init()` / `DB::initStructs()` and `Strings::init()` with a real `Config` and an isolated test folder; compare database data to the existing in-memory SQL fixture. Then audit GameManager dependencies and Qt ownership before a real constructor/destructor smoke test. Do not skip DB or substitute fake game state to report playability.
+
