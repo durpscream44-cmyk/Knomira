@@ -25,6 +25,7 @@
 #include "../base/tile.h"
 
 #include <QObject>
+#include <QPointer>
 #include <QVector>
 
 class Game;
