@@ -186,6 +186,12 @@ if(KNOMIRA_BUILD_GAME_SHELL)
     set_target_properties(knomira_simulation_source_compile PROPERTIES
         CXX_STANDARD 23 CXX_STANDARD_REQUIRED ON AUTOMOC ON
     )
+    # This is a compile-only integration/test target, never the shipping game.
+    # Ensure any future smoke executable reusing these objects cannot silently
+    # create files in Documents/My Games/Ingnomia.
+    target_compile_definitions(knomira_simulation_source_compile PRIVATE
+        KNOMIRA_ISOLATED_TEST_DATA_ROOT=1
+    )
     target_include_directories(knomira_simulation_source_compile PRIVATE
         "${CMAKE_CURRENT_SOURCE_DIR}/../../3rdparty/glad/include"
     )
