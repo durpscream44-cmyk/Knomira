@@ -122,11 +122,9 @@ if(KNOMIRA_BUILD_GAME_SHELL)
         COMMAND ${CMAKE_COMMAND} -E copy_directory
             "${CMAKE_CURRENT_SOURCE_DIR}/../../content/ai"
             "$<TARGET_FILE_DIR:knomira_game_shell>/content/ai"
-        COMMAND ${CMAKE_COMMAND} -E make_directory
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${CMAKE_CURRENT_SOURCE_DIR}/../../content/JSON"
             "$<TARGET_FILE_DIR:knomira_game_shell>/content/JSON"
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "${CMAKE_CURRENT_SOURCE_DIR}/../../content/JSON/newgame.json"
-            "$<TARGET_FILE_DIR:knomira_game_shell>/content/JSON/newgame.json"
         VERBATIM
     )
     if(MSVC)
