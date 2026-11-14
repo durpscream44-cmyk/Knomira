@@ -1,9 +1,9 @@
 # Knomira — CURRENT DEVELOPMENT CHECKPOINT
 
-**Checkpoint:** CP-2026-11-14-01 · **Last checked:** 2026-11-14  
+**Checkpoint:** CP-2026-11-14-02 · **Last checked:** 2026-11-14  
 **Verified base branch:** `feature/playable-db-services-after-config` (draft [PR #14](https://github.com/durpscream44-cmyk/Knomira/pull/14))  
-**Base commit checked:** `ec33accfae2e089d1da535e52761e92801ed0a10`  
-**CI at that SHA:** [Noesis-free Windows #43587626704](https://github.com/durpscream44-cmyk/Knomira/actions/runs/43587626704), [Qt-hosted #43587626702](https://github.com/durpscream44-cmyk/Knomira/actions/runs/43587626702), [RmlUi prototype #43587626706](https://github.com/durpscream44-cmyk/Knomira/actions/runs/43587626706) — all **success**.
+**Base commit checked:** `cd875ac6f9997e4751302cb73c2f1841eb13e24e`  
+**CI at that SHA:** [Noesis-free Windows #43644873881](https://github.com/durpscream44-cmyk/Knomira/actions/runs/43644873881), [Qt-hosted #43644873902](https://github.com/durpscream44-cmyk/Knomira/actions/runs/43644873902), [RmlUi prototype #43644873948](https://github.com/durpscream44-cmyk/Knomira/actions/runs/43644873948) — all **success**.
 
 ## Read this first, not the whole conversation
 
@@ -50,4 +50,5 @@ Alternate larger next step: directly link `GameManager` / `EventConnector` / agg
 
 ## Short checkpoint log
 
-- **CP-2026-11-14-01:** Reconciled PRs 6–14, verified PR #14 head and three green Windows workflows. Noted real NewGameSettings constructor as a bounded next initialization step. No simulation or world renderer linked.
+- **CP-2026-11-14-02:** Rechecked PR #14 at commit `cd875ac6f9997e4751302cb73c2f1841eb13e24e` and verified all three Windows workflows green, including real Config/DB/Strings isolated startup and existing input/save catalog tests. **Do not restart DB/Strings ticket from the prior chat handoff.** Next bounded task remains NewGameSettings constructor smoke under the guarded data root (PLAY-01C), then genuine GameManager lifecycle. No playable map yet.
+- **CP-2026-11-14-01:** Reconciled PRs 6–14, verified prior PR #14 head and three green Windows workflows. Noted real NewGameSettings constructor as a bounded next initialization step.
