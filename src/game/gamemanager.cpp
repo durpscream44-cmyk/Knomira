@@ -83,7 +83,7 @@ GameManager::GameManager( QObject* parent ) :
 
 	m_eventConnector = new EventConnector( this );
 	Global::eventConnector = m_eventConnector;
-	Global::util = new Util( nullptr );
+	resetUtil( nullptr );
 
 	Global::newGameSettings = new NewGameSettings( this );
 
@@ -98,6 +98,22 @@ GameManager::~GameManager()
 	{
 		delete m_game;
 	}
+	// Selection is a child of Game; Util is not a QObject. The manager owns
+	// the latter explicitly, while globals are only non-owning access points.
+	Global::sel = nullptr;
+	if ( Global::eventConnector == m_eventConnector )
+	{
+		Global::eventConnector = nullptr;
+		Global::newGameSettings = nullptr;
+	}
+	if ( Global::util == m_util.get() )
+		Global::util = nullptr;
+}
+
+void GameManager::resetUtil( Game* game )
+{
+	m_util = std::make_unique<Util>( game );
+	Global::util = m_util.get();
 }
 
 /** @brief Returns the event connector used for GUI signal routing.
@@ -131,7 +147,7 @@ void GameManager::endCurrentGame()
 	{
 		delete m_game;
 		Global::sel = nullptr;
-		Global::util = new Util( nullptr );
+		resetUtil( nullptr );
 	}
 }
 
@@ -191,12 +207,7 @@ void GameManager::continueLastGame()
 /** @brief Resets global state and reinitializes GameState and translation strings. */
 void GameManager::init()
 {
-	m_eventConnector->emitStopGame();
-
-	if ( m_game )
-	{
-		delete m_game;
-	}
+	endCurrentGame();
 	// reset everything and initialize components;
 	Global::reset();
 	
@@ -223,7 +234,7 @@ void GameManager::loadGame( QString folder )
 	connect( &io, &IO::signalStatus, this, &GameManager::onGeneratorMessage );
 	if ( io.load( folder ) )
 	{
-		Global::util = new Util( m_game );
+		resetUtil( m_game );
 		Global::sel = new Selection( m_game );
 
 		postCreationInit();
@@ -244,7 +255,7 @@ void GameManager::createNewGame()
 	m_eventConnector->setGamePtr( m_game );
 	m_game->generateWorld( Global::newGameSettings );
 	
-	Global::util = new Util( m_game );
+	resetUtil( m_game );
 	Global::sel = new Selection( m_game );
 
 	GameState::peaceful = Global::newGameSettings->isPeaceful();

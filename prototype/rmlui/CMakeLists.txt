@@ -297,4 +297,21 @@ if(KNOMIRA_BUILD_GAME_SHELL)
     target_link_libraries(knomira_engine_headers_compile PRIVATE
         Qt6::Core Qt6::Gui Qt6::Xml
     )
+
+    # PLAY-01D: link and execute the actual GameManager/EventConnector tree.
+    include(engine_lifecycle.cmake)
+
+    enable_testing()
+    foreach(smoke_target IN ITEMS
+        knomira_save_catalog_test knomira_input_bindings_test
+        knomira_engine_config_bootstrap_test knomira_engine_services_bootstrap_test
+        knomira_newgame_settings_bootstrap_test knomira_io_data_root_test
+        knomira_io_data_root_production_test knomira_engine_lifecycle_test)
+        add_test(NAME ${smoke_target} COMMAND ${smoke_target})
+        set_tests_properties(${smoke_target} PROPERTIES TIMEOUT 60)
+    endforeach()
+    add_test(NAME knomira_engine_db_bootstrap_test COMMAND knomira_engine_db_bootstrap_test
+        "${CMAKE_CURRENT_SOURCE_DIR}/../../content/db/ingnomia.db.sql")
+    add_test(NAME knomira_rmlui_layout_test COMMAND knomira_rmlui_layout_test
+        "${CMAKE_CURRENT_SOURCE_DIR}/game_shell.rml")
 endif()
