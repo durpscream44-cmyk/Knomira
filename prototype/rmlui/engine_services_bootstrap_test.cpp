@@ -102,6 +102,48 @@ int main(int argc, char** argv)
         return 11;
     }
 
+    // Regression: DB::initStructs must not attach ALL Jobs_Tasks and
+    // Jobs_SpriteID rows to every cached job. Both tables have an ID column
+    // naming the owner job. This previously multiplied cached tasks and
+    // sprite records and could make unrelated job actions execute.
+    const auto rawJobs = DB::selectRows(QStringLiteral("Jobs"));
+    qint64 cachedTaskCount = 0;
+    qint64 cachedSpriteCount = 0;
+    for (const auto& rawJob : rawJobs) {
+        const QString jobId = rawJob.value(QStringLiteral("ID")).toString();
+        const auto cachedJob = DB::job(jobId);
+        if (cachedJob.isNull()) {
+            qCritical() << "Missing cached job" << jobId;
+            Global::cfg = nullptr;
+            return 13;
+        }
+        const int expectedTasks = DB::selectRows(QStringLiteral("Jobs_Tasks"), jobId).size();
+        const int expectedSprites = DB::selectRows(QStringLiteral("Jobs_SpriteID"), jobId).size();
+        if (cachedJob->tasks.size() != expectedTasks ||
+            cachedJob->sprites.size() != expectedSprites) {
+            qCritical() << "Job cache includes another job's tasks/sprites"
+                        << jobId << "tasks" << cachedJob->tasks.size() << expectedTasks
+                        << "sprites" << cachedJob->sprites.size() << expectedSprites;
+            Global::cfg = nullptr;
+            return 14;
+        }
+        cachedTaskCount += cachedJob->tasks.size();
+        cachedSpriteCount += cachedJob->sprites.size();
+    }
+    const qint64 actualTaskCount = DB::numRows(QStringLiteral("Jobs_Tasks"));
+    const qint64 actualSpriteCount = DB::numRows(QStringLiteral("Jobs_SpriteID"));
+    if (cachedTaskCount != actualTaskCount ||
+        cachedSpriteCount != actualSpriteCount) {
+        qCritical() << "Job cache task/sprite totals differ from raw DB"
+                    << cachedTaskCount << actualTaskCount
+                    << cachedSpriteCount << actualSpriteCount;
+        Global::cfg = nullptr;
+        return 15;
+    }
+    qInfo() << "Verified per-job task/sprite scope across" << rawJobs.size()
+            << "jobs:" << cachedTaskCount << "tasks,"
+            << cachedSpriteCount << "sprites";
+
     // Config/DB reads must not create a test save; the sandbox is disposable.
     if (!QDir(QDir(expected).filePath(QStringLiteral("save"))).isEmpty()) {
         qCritical() << "Engine service bootstrap unexpectedly created a save";
