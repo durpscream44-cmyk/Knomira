@@ -70,6 +70,12 @@ AggregatorSound::AggregatorSound( QObject* parent ) :
 /// @brief Destructor.
 AggregatorSound::~AggregatorSound()
 {
+	// The QObject tree is destroyed on the game thread. Release AL objects
+	// while their context is current there, before destroying the context.
+	AL::Context::Lock lock( m_audioContext );
+	m_activeEffects.clear();
+	m_buffers.clear();
+	m_occlusionFilter.clear();
 }
 
 /// @brief Binds the aggregator to a Game instance, sets the master volume from config, and

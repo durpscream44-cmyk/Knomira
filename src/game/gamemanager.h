@@ -26,11 +26,13 @@
 #include <QObject>
 #include <QString>
 #include <QThread>
+#include <memory>
 
 class Game;
 class EventConnector;
 class NewGameSettings;
 class SpriteFactory;
+class Util;
 
 /** @brief High-level game lifecycle manager.
  *
@@ -72,6 +74,8 @@ private:
 	//SpriteFactory* m_sf = nullptr;
 
 	QPointer<Game> m_game;
+	std::unique_ptr<Util> m_util;
+	void resetUtil( Game* game );
 	
 	void init();
 	void createNewGame();

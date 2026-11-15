@@ -23,6 +23,7 @@
 #include "aggregatorsettings.h"
 
 #include "../base/config.h"
+#include "../base/global.h"
 
 #include <QDebug>
 

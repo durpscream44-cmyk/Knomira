@@ -94,4 +94,41 @@ kit's windeployqt.exe manually with --release --dir install/windows against
 install/windows/Ingnomia.exe, then inspect the resulting files. This is a pending
 validation item, not a verified workaround in this environment.
 
-No game launch, gameplay smoke testing or T02 work was performed.
+No game launch, gameplay smoke testing or T02 work was performed in that baseline.
+
+## PLAY-01D: Noesis-free lifecycle regression
+
+The standalone `prototype/rmlui` project now links the original GameManager,
+EventConnector, all 15 aggregators and their original simulation dependencies
+into `knomira_engine_lifecycle_test`. It requires Qt Core/Gui/Widgets/Xml/Sql,
+GLFW, FreeType and OpenAL Soft (vcpkg package `openal-soft:x64-windows`).
+No Steam or Noesis SDK, tilesheets, audio assets, or graphics context are needed
+for this startup/shutdown test. FastNoise and exprtk use the bundled sources.
+The test engine has a small Qt-only PCH; the existing source compile gate still
+checks its selected original sources without any PCH.
+
+```powershell
+cmake -S prototype/rmlui -B build/lifecycle -G 'Visual Studio 17 2022' -A x64 `
+  "-DCMAKE_TOOLCHAIN_FILE=$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" `
+  "-DCMAKE_PREFIX_PATH=$env:QT_ROOT_DIR" -DKNOMIRA_BUILD_GAME_SHELL=ON
+cmake --build build/lifecycle --config Debug --target knomira_engine_lifecycle_test --parallel 4
+# Make matching Qt and OpenAL DLLs/plugins discoverable in this process.
+$env:PATH = "$env:QT_ROOT_DIR/bin;$env:VCPKG_ROOT/installed/x64-windows/debug/bin;$env:PATH"
+$env:QT_PLUGIN_PATH = "$env:QT_ROOT_DIR/plugins"
+ctest --test-dir build/lifecycle -C Debug -R '^knomira_engine_lifecycle_test$' --output-on-failure
+```
+
+The executable creates and marks its own QTemporaryDir before constructing
+Config or any engine object, and verifies `KNOMIRA_TEST_DATA_ROOT` with the
+existing data-root safeguard. Only test objects have
+`KNOMIRA_ISOLATED_TEST_DATA_ROOT`; the production save path and format are
+unchanged. OpenAL Soft uses its real null output backend. Three cycles verify
+the original objects, parent/worker-thread affinity, queued menu/no-save/exit
+replies, deletion of every QObject, cleared globals, and `quit`/`wait` shutdown.
+No test visits `Documents/My Games/Ingnomia`.
+
+Build the other test targets (or the standalone default target) and run
+`ctest --test-dir build/lifecycle -C Debug --output-on-failure` for the registered
+Config, DB rollback/job-cache, two-material embark, data-root, save-catalog,
+input, layout and lifecycle regressions. This proves engine startup and teardown;
+it does not prove a playable colony or a connected RmlUi world view.
