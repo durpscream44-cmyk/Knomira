@@ -253,7 +253,7 @@ void MilitaryManager::init()
 		for ( auto entry : sl )
 		{
 			Squad squad( g->m_creatureManager->types(), entry.toMap() );
-			m_squads.insert( squad.id, squad );
+			m_squads.append( squad );
 
 			for( auto gnome : squad.gnomes )
 			{
@@ -455,7 +455,7 @@ unsigned int MilitaryManager::addSquad()
 		squad.priorities.append( tp );
 	}
 
-	m_squads.insert( squad.id, squad );
+	m_squads.append( squad );
 	return squad.id;
 }
 

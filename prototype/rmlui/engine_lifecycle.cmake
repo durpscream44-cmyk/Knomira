@@ -46,3 +46,11 @@ add_custom_command(TARGET knomira_engine_lifecycle_test POST_BUILD
         "${CMAKE_CURRENT_SOURCE_DIR}/../../content/ai"
         "$<TARGET_FILE_DIR:knomira_engine_lifecycle_test>/content/ai"
     VERBATIM)
+
+# PLAY-01E is an asset-dependent follow-up, reusing the same guarded original
+# engine. Assets remain external and are never committed or uploaded by this target.
+add_executable(knomira_colony_lifecycle_test colony_lifecycle_test.cpp)
+target_link_libraries(knomira_colony_lifecycle_test PRIVATE knomira_lifecycle_engine)
+set_target_properties(knomira_colony_lifecycle_test PROPERTIES CXX_STANDARD 23)
+# The startup target stages the shared original DB/JSON/AI beside both binaries.
+add_dependencies(knomira_colony_lifecycle_test knomira_engine_lifecycle_test)
