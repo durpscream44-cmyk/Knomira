@@ -1,3 +1,11 @@
+# ARCHIVED — earlier Demi-Dragonkin concept (superseded)
+
+**DO NOT USE AS CANONICAL ART:** The user's later explicit approval of the **heritage-expanded Dragonkin (Dragonborn)** image replaces this preliminary lightly scaled, mostly-human candidate as the race-design baseline. See [DEMI_HUMAN_DRAGONKIN_BASELINE_V1.md](DEMI_HUMAN_DRAGONKIN_BASELINE_V1.md) and the unchanged image `Demi_Human_Dragonkin_Heritage_APPROVED.png` in ChatGPT Library. The user wants substantial **horns, scaled dragon tails, shoulder and thigh scales, and strong muscular abs** on humanlike faces—not the minimal thigh-only scales below.
+
+**Historical content follows for provenance only; all 'pending approval' or 'next step' instructions below are now obsolete.**
+
+---
+
 # Demi-Dragonkin (Female) — Design Candidate v1.0 (Awaiting User Approval)
 
 **Status:** **NEW GENERATION / PENDING APPROVAL**, NOT part of the approved race list yet. A more focused image was generated after an initial busy Foxkin+Dragonkin+Demi composite; use **this standalone second version** as candidate, not the mixed collage.
