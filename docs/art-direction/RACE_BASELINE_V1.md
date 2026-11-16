@@ -1,4 +1,4 @@
-# Knomira Race Design Baseline v1.3 — Rabbitkin, Tanukikin, Mousekin + Moosekin + Arachnikin + Elfkin
+# Knomira Race Design Baseline v1.4 — approved concept races (including Wolfkin)
 
 **Status:** Approved **concept-art** direction; game runtime sprite-placement and new race implementation are **not verified**.
 
@@ -60,3 +60,13 @@ and `/Knomira/Sprite Design/Race Baselines v1/Elfkin/Dark_Elfkin_Gothic_APPROVED
 **Forest Elfkin candidate (NOT YET APPROVED):** `/Knomira/Sprite Design/Race Baselines v1/Elfkin/Forest_Elfkin_ATHLETIC_CONCEPT_PENDING_APPROVAL.png`; tan/deep-brown complexion options, Hishi Amazon–influenced athletic/tomboyish energy, long pointed elf ears, fieldwork/woodland material culture and clothing, lean toned muscular silhouette. This draft is a distinct forest branch and is **not currently an approved art baseline**. Do not derive production sprites until the user approves/adjusts it.
 
 All are design references only; do not write runtime species logic or change tile sheet IDs without the ART-01A atlas audit.
+
+## Approved Wolfkin (Female) — human-sized feral canine race
+
+**Canonical design:** [WOLFKIN_BASELINE_V1.md](WOLFKIN_BASELINE_V1.md), backed by the **exact original approved image** `/Knomira/Sprite Design/Race Baselines v1/Wolfkin/Wolfkin_Female_APPROVED.png` in ChatGPT Library. Original **1448 × 1086** RGB PNG, SHA-256 `3e0302dbfcf9746e3bdc41e97539c5c347d6321575c95f484aad8d2dfe11e509`.
+
+**Anatomy:** Adult female **fully anthropomorphic wolves**, not humans with pasted-on ears. Human-scale ~**1.6–1.8 m** *concept illustration* (unverified in engine), bipedal with strong canine muzzle and nose, triangular wolf ears, shaggy furry neck/shoulders, distinctive furry legs and paw feet, long plumed bushy tail. **Toned, lean-muscular, physically powerful and feral** while preserving mature feminine contours; distinct from the shorter, rounder Rabbitkin/Tanukikin and feline-muzzled Felikin.
+
+**Image style lock:** Classic six-role Worker, Warrior, Ranger, Mage, Tinkerer, Elder lineup; ear/muzzle/tail/fur pattern palettes, eight expressions, front/side/back shape turnarounds; dark-gold parchment ornamental frame, rich clustered sharp pixel-art textures and fine equipment. Gray, white, black, brown, rust, sable coats. Preserve the exact approved reference for future concept generations and treat game placement/animation as **NOT YET VERIFIED**.
+
+**Naming:** Wolfkin and Felikin are distinct canine/feline *anthro races*; Wolfkin should not inherit the Felikin cat tail or cat muzzle.
