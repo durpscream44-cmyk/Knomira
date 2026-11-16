@@ -1,4 +1,4 @@
-# Knomira Race Design Baseline v1.4 — approved concept races (including Wolfkin)
+# Knomira Race Design Baseline v1.5 — approved concept races (including Harpykin)
 
 **Status:** Approved **concept-art** direction; game runtime sprite-placement and new race implementation are **not verified**.
 
@@ -70,3 +70,13 @@ All are design references only; do not write runtime species logic or change til
 **Image style lock:** Classic six-role Worker, Warrior, Ranger, Mage, Tinkerer, Elder lineup; ear/muzzle/tail/fur pattern palettes, eight expressions, front/side/back shape turnarounds; dark-gold parchment ornamental frame, rich clustered sharp pixel-art textures and fine equipment. Gray, white, black, brown, rust, sable coats. Preserve the exact approved reference for future concept generations and treat game placement/animation as **NOT YET VERIFIED**.
 
 **Naming:** Wolfkin and Felikin are distinct canine/feline *anthro races*; Wolfkin should not inherit the Felikin cat tail or cat muzzle.
+
+## Approved Harpykin (Female) — lower-back-winged avian humanoids
+
+**Canonical artwork:** [HARPYKIN_BASELINE_V1.md](HARPYKIN_BASELINE_V1.md) with the exact **second/final revised** PNG preserved in ChatGPT Library at `/Knomira/Sprite Design/Race Baselines v1/Harpykin/Harpykin_Female_Lower_Back_Wings_APPROVED.png` (1448×1086 RGB PNG; SHA-256 `44a42b56d349cfffeb61968fe6b9c6fd42839fd4779fde92bbb88e6d38e3333b`). This approved revision **supersedes** the initial first Harpykin image; do not use the latter as canonical.
+
+**Mandatory anatomy:** Adult female avian humanoids with normal arms and **separate feathered wings emerging from the LOWER BACK near the hip/pelvic region**, *not* shoulder blades. Legs end in clawed talons and feathered tails are visible. Front, 3/4, side and back views must agree about wing root placement. Humanlike upright upper body; approx. 1.6–1.8 m concept-only scale, not validated game heights.
+
+**Four approved variants:** **Falcon** (tribal tan/brown, light and lithe scout), **American Eagle** (athletic, broad dark/white wings, armed guardian), **Dove** (slender elegant pale lilac/ivory healer/diplomat), and **Owl** (intentionally pudgy, voluptuous, thickly feathered nocturnal scholar). Falcon/Eagle/Dove are appreciably *lither* than the original generation while retaining their **approved mature feminine chest proportions**. Only Owl keeps the very rounded soft, full-bodied figure. Maintain the common Knomira crisp pixel-art/gold-parchment styling and their separate wing/tail/feather variants.
+
+**Art only:** No active engine sprite sheet, wing animations, flight physics, game species integration, atlas indices or tested gameplay. Complete ART-01A audit and engine-specific layering/pivot plan before implementation; avoid changes to `feature/playable-db-embark-integration` / PLAY-01D.
