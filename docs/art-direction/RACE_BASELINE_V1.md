@@ -1,4 +1,4 @@
-# Knomira Race Design Baseline v1.1 — Rabbitkin, Tanukikin, Mousekin + Moosekin
+# Knomira Race Design Baseline v1.2 — Rabbitkin, Tanukikin, Mousekin + Moosekin + Arachnikin
 
 **Status:** Approved **concept-art** direction; game runtime sprite-placement and new race implementation are **not verified**.
 
@@ -38,3 +38,10 @@ Adult female Mousekin, gnome-scale but slightly taller than Tanukikin; slim/comp
 **Do not confuse Moosekin with Mousekin.** The latter are slender bipedal mousefolk. Moosekin are *female antlered centaurs*, using the original Knomira female centaur reference sheets as the primary anatomy/size family, plus the shared crunchy pixel-art style language. Body plan: compact humanoid adult upper half, moose-like four-legged lower half, palmated antlers, cloven hooves, broad back/rump, moose ears, short tuft tail.
 
 Five approved aesthetic variants: **Woodland (Standard), Great Bullhorn (Heavy), Marshkin (Pastoral), Frosthorn (Northern), Trailrunner (Scout)**. See the dedicated document for exact variant palettes, visual roles, expressions, coat designs, modular antlers, turnarounds, and Codex constraints. All remain *visual concepts*, not wired game species, texture IDs, or animation data.
+
+## Additional approved arachnid-centaur baseline — Arachnikin (Female)
+**Canonical sheet:** [ARACHNIKIN_BASELINE_V1.md](ARACHNIKIN_BASELINE_V1.md) and original PNG in ChatGPT Library at `/Knomira/Sprite Design/Race Baselines v1/Arachnikin/Arachnikin_Female_Elven_Ears_APPROVED.png` (1448×1086, SHA-256 `afd50f9ce7811f6a8f9e1aa549f26e8bafebf3d07139ba68cbeaed0656cb9a59`). This **revised** image is authoritative, superseding the earlier version's ears.
+
+**Anatomy:** compact adult female upper torso joined as one body with a robust **eight-legged spider lower half** and patterned abdomen, matching the original female Centaur family's stylized proportions and equipment quality. **Short pointed elvish ears** (shorter than conventional elf ears), not human round/animal ears. No horse body or separate mount. Concept sheet gives c. **1.4–1.7 m total height** and **1.1–1.3 m withers**; unverified in engine.
+
+Five distinct approved variants: **Webspinner (Standard), Widowkin (Dark), Jumperkin (Athletic), Silkweaver (Pastoral), Frostweb (Northern)**. Preserve expressions, body turnarounds, spider-leg and spinneret shapes, abdomen/web markings, color palettes, and six illustrative role costumes. This is a **concept-art registration**, not an implemented species, sprite mapping or playable feature. ART-01A atlas audit and validation remain prerequisites for any game asset placement.
