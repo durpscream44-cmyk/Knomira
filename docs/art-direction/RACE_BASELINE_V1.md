@@ -1,4 +1,4 @@
-# Knomira Race Design Baseline v1.6 — approved concept races (including Foxkin and Dragonkin)
+# Knomira Race Design Baseline v1.7 — Dragonkin canonical reference corrected
 
 **Status:** Approved **concept-art** direction; game runtime sprite-placement and new race implementation are **not verified**.
 
@@ -93,3 +93,13 @@ All are design references only; do not write runtime species logic or change til
 
 ## Demi-Dragonkin (Female) — candidate, pending approval
 [Candidate specification](DEMI_DRAGONKIN_CANDIDATE_V1.md). **Not an approved baseline yet.** Exact standalone new image `/Knomira/Sprite Design/Race Baselines v1/Dragonkin/Demi_Dragonkin_Female_CANDIDATE.png` (1536×1024 RGB, SHA-256 `7d37f8ee35a2fa8ea6a12282c5bc7e794a703cbe1283640ffc4debde6e76700e`). User requested **mostly human adult female**, muscular abs and regal Dragonkin style, with only claw-like fingers/toes and small localized colorful upper-thigh/hip scales; avoid full snouts, prominent dragon horns, wings, long tails and extensive body scales. **Do not register as approved until user reviews.**
+
+## Dragonkin canonical correction — user's top-right Dragonborn panel
+**IMPORTANT supersession:** The user confirmed the **top-right panel labeled Dragonkin (Dragonborn)** from the composite Foxkin/Dragonkin/Demi-Dragonkin illustration is **exactly** the dragon-to-human balance desired for future canonical Dragonkin race sheets. It is **not** "too dragon-like." Earlier assertions to that effect are wrong. This later user confirmation takes precedence over the previous full dragon-headed Dragonkin baseline.
+
+- **New canonical reference:** `/Knomira/Sprite Design/Race Baselines v1/Dragonkin/Dragonkin_Dragonborn_TOP_RIGHT_CANONICAL.png` (original exact crop from user-uploaded image; 836×610; SHA-256 `888095a4f7aaa83ff09481ed2d5e0ddc4923e3baf16c23fdba4e8f7c26f0094b`).
+- **Canonical updated spec:** [DRAGONKIN_BASELINE_V1.md](DRAGONKIN_BASELINE_V1.md) **v2.0**, which supersedes the preceding description in this index's earlier "Approved full Dragonkin" section. Use the latest reference and spec where they disagree.
+- **Body style:** humanlike faces/hair with prominent horns, substantial draconic scales on shoulders/arms/legs, strong visible abs, powerful female anatomy, thick curled scaled tail, optional wings and high-fantasy armor. More draconic than the separate mostly human Demi-Dragonkin but not a fully reptilian dragon head.
+- **Superseded image:** `Dragonkin_Full_Female_APPROVED.png` is now an *archived alternative only*, no longer canonical for standard Dragonkin.
+- **Do not confuse:** `DEMI_DRAGONKIN_CANDIDATE_V1.md` is still an unapproved *separate* race design, not the top-right canonical Dragonkin.
+- **Scope:** illustration reference only; not engine sprite or gameplay implementation.
