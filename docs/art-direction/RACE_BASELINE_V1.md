@@ -1,4 +1,4 @@
-# Knomira Race Design Baseline v2.0 — Human females approved; Gnome candidate logged
+# Knomira Race Design Baseline v2.1 — Gnome, Feral Hyenakin and Revised Demi-Hyenakin approved
 
 **Status:** Approved **concept-art** direction; game runtime sprite-placement and new race implementation are **not verified**.
 
@@ -118,6 +118,19 @@ The older standalone `Dragonkin_Full_Female_APPROVED.png` shows **fully reptilia
 
 **Exact reference:** [HUMAN_BASELINE_V1.md](HUMAN_BASELINE_V1.md) and unmodified approved image at `/Knomira/Sprite Design/Race Baselines v1/Human/Human_Female_Original_APPROVED.png` (1536×1024 RGB, SHA-256 `f595427faa3f08444022b95c3116ae1d26727c8894a270b15657780c94fdb80c`). Mature ordinary **human** anatomy, no animal traits, and diversity of natural **pale, fair, olive, tan, brown, deep, dark, ebony** skin-tone illustrations; all colors available across all roles/body types. Six visual role examples Worker, Warrior, Ranger, Mage, Tinkerer, Elder; expressive facial samples, hair/eye options and athletic, curvy, fuller and strong builds. The illustrated ~1.55–1.80m height is a concept-only annotation, not engine scale. **Do not** attribute ability, temperament, ethnicity or profession to skin tone.
 
-## Female Gnome — new design candidate, NOT YET APPROVED
+## Approved Gnome (Female)
 
-**Exact candidate:** [GNOME_CANDIDATE_V1.md](GNOME_CANDIDATE_V1.md), image `/Knomira/Sprite Design/Race Baselines v1/Gnome/Gnome_Female_CANDIDATE.png` (1536×1024 RGB, SHA-256 `048f8b18a2f6d620892c818b5d22c624bbc0fa12ec9100b7f22eec8fb2c273c5`). Compact, sturdy adult gnomes with short pointed ears, larger expressive features, vibrant hair, rich work/equipment detail and six role costumes. Image indicates concept-scale ~0.90–1.20 m; not validated in game. **Await user's review** of ear length, body shape and style before promoting to approved baseline. No gnome species/game sprite changes.
+**Canonical:** [GNOME_BASELINE_V1.md](GNOME_BASELINE_V1.md), exact `/Knomira/Sprite Design/Race Baselines v1/Gnome/Gnome_Female_APPROVED.png` (1536×1024 RGB, SHA-256 `048f8b18a2f6d620892c818b5d22c624bbc0fa12ec9100b7f22eec8fb2c273c5`). **User explicitly approved the previous candidate without revisions**. Short adult sturdy and curvy silhouettes, pointed gnome ears, elaborate practical work gear, goggles, hairstyles and natural skin tones. Six illustrated roles and turnarounds. `GNOME_CANDIDATE_V1.md` is a historical superseded proposal. Art approval only, native game scale unverified.
+
+
+## Approved Feral Hyenakin (Female) — fully anthropomorphic
+
+**Canonical reference:** [HYENAKIN_BASELINE_V1.md](HYENAKIN_BASELINE_V1.md), original unmodified image `/Knomira/Sprite Design/Race Baselines v1/Hyenakin/Hyenakin_Feral_Female_APPROVED.png` (1536×1024 RGB PNG, SHA-256 `c44e3b8db4934f47e4687495f3d62c3ccc113da68992134570b4e5fc1e55df70`). **Feral Hyenakin have true hyena snouts/jaws, fully furred body, strong digitigrade/pawed limbs, spotted/striped coat, large furry mane and tail**, typically strong/muscular but with lithe and plump adult variants. The iconic toothy laugh/grin is key, with a range of expressions; six role costumes, full art/anatomy modules, multiple coat colors. Distinct from Wolfkin and Feral Tigerkin.
+
+## Approved Demi-Hyenakin (Female) — revised, 90%-human hybrid
+
+**Canonical reference:** [DEMI_HYENAKIN_BASELINE_V1.md](DEMI_HYENAKIN_BASELINE_V1.md), exact latest revised image `/Knomira/Sprite Design/Race Baselines v1/Demi_Hyenakin/Demi_Hyenakin_Female_Revised_APPROVED.png` (1536×1024 RGB PNG, SHA-256 `5180f5cf05ceb56d4abe6941d8ec44cca9630033b0b97f5dbe5149b09c091ebc`). **This revised design was approved. The initial animal-muzzled Demi attempt is rejected.**
+
+**MANDATORY:** **Human female face, nose, cheeks, mouth, hair and 90% human anatomy**, but rounded hyena ears, subtle fangs/ever-present recognizable mischievous grin, dark spots/rosettes/stripe patterns on darker **caramel/bronze/umber/ebony** skin, ample fuzzy fur at outer thighs/hips and forearms/wrists/paw-gloves, a prominent hyena tail and tasteful claws on mostly human hands/feet. Adult body variants lithe/toned, balanced, strong/muscular, plump/voluptuous, with six art-role examples, expressions and anatomy panels. Do not generate full hyena snouts or all-over anthro fur for Demi. Darker complexions and patterns are **cosmetic**, not ability/temperament linked.
+
+**Race separation:** Hyenakin and Demi-Hyenakin are **two independent approved visual races** with different facial morphology and fur distribution. No gameplay race IDs, native sprites, animation or traits are verified; remain on art branch and do not disturb `feature/playable-db-embark-integration` (PLAY-01D).
