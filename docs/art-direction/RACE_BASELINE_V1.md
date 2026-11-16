@@ -1,4 +1,4 @@
-# Knomira Race Design Baseline v1.9 — Tiger Demi-Human Kin and Feral Tigerkin added
+# Knomira Race Design Baseline v2.0 — Human females approved; Gnome candidate logged
 
 **Status:** Approved **concept-art** direction; game runtime sprite-placement and new race implementation are **not verified**.
 
@@ -113,3 +113,11 @@ The older standalone `Dragonkin_Full_Female_APPROVED.png` shows **fully reptilia
 **Exact approved source:** [FERAL_TIGERKIN_BASELINE_V1.md](FERAL_TIGERKIN_BASELINE_V1.md), with canonical `/Knomira/Sprite Design/Race Baselines v1/Feral_Tigerkin/Feral_Tigerkin_Female_APPROVED.png` (1536×1024 RGB PNG; SHA-256 `50194fafba99f60f5bbf07d0695e0eb19a6390c8466d6a36e03bd44d6fe46f0a`). Latest user instruction explicitly approved this as **a different base race** from Tiger Demi-Human Kin. Full tiger muzzles/fangs and head fur, muscular fully furred striped limbs, wide feline paw pads/claws, thick ringed/striped tails. Adult female silhouette stays powerfully muscular with strong thighs and broad hips/glutes. Eight coat variants: Classic, White Tiger, Golden, Black Tiger, Red Tiger, Silver, Sable and Arcane. Three robust body build studies; six illustrative profession costumes, expression, tail, ear, paw, muzzle, pattern and body turnaround references.
 
 **CRITICAL distinction:** **Tiger Demi-Human Kin = primarily human-faced with tiger features**; **Feral Tigerkin = fully furred tiger-headed anthropomorphic bodies**. Neither should substitute for the other. Both remain **approved visual concepts only**, not yet gameplay species or native sprite sheets. ART-01A audit required for actual placement. No gameplay-stabilization changes.
+
+## Approved Human (Female) — natural skin-tone variants
+
+**Exact reference:** [HUMAN_BASELINE_V1.md](HUMAN_BASELINE_V1.md) and unmodified approved image at `/Knomira/Sprite Design/Race Baselines v1/Human/Human_Female_Original_APPROVED.png` (1536×1024 RGB, SHA-256 `f595427faa3f08444022b95c3116ae1d26727c8894a270b15657780c94fdb80c`). Mature ordinary **human** anatomy, no animal traits, and diversity of natural **pale, fair, olive, tan, brown, deep, dark, ebony** skin-tone illustrations; all colors available across all roles/body types. Six visual role examples Worker, Warrior, Ranger, Mage, Tinkerer, Elder; expressive facial samples, hair/eye options and athletic, curvy, fuller and strong builds. The illustrated ~1.55–1.80m height is a concept-only annotation, not engine scale. **Do not** attribute ability, temperament, ethnicity or profession to skin tone.
+
+## Female Gnome — new design candidate, NOT YET APPROVED
+
+**Exact candidate:** [GNOME_CANDIDATE_V1.md](GNOME_CANDIDATE_V1.md), image `/Knomira/Sprite Design/Race Baselines v1/Gnome/Gnome_Female_CANDIDATE.png` (1536×1024 RGB, SHA-256 `048f8b18a2f6d620892c818b5d22c624bbc0fa12ec9100b7f22eec8fb2c273c5`). Compact, sturdy adult gnomes with short pointed ears, larger expressive features, vibrant hair, rich work/equipment detail and six role costumes. Image indicates concept-scale ~0.90–1.20 m; not validated in game. **Await user's review** of ear length, body shape and style before promoting to approved baseline. No gnome species/game sprite changes.
