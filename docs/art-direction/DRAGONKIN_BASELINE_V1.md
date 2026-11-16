@@ -1,17 +1,31 @@
-# Dragonkin (Female, Full Dragonfolk) — Approved Knomira Race Concept Baseline v1.0
+# Dragonkin / Dragonborn (Female) — CORRECTED Canonical Knomira Baseline v2.0
 
-**Status:** The user explicitly approved the original **full Dragonkin** image; it is the authoritative reference, **separate from** the subsequent mostly-human Demi-Dragonkin experiment.
-**Canonical original:** `/Knomira/Sprite Design/Race Baselines v1/Dragonkin/Dragonkin_Full_Female_APPROVED.png` in ChatGPT Library. Original 1448×1086 RGB PNG; SHA-256 `111abf19cb60a5a9b39b43c59e30573001f4fcc22d1c0aed098be42308f527a3`.
+**Most recent approval / clarification:** The user's exact instruction: "**the sheet on the top right**" of the three-panel Foxkin / Dragonkin / Demi-Dragonkin concept image "**[is] the perfect amount of dragon**" and "**that's what I want for our character sheets for our race**." **This explicitly supersedes** the prior assumption that this image was "too dragon-like" and replaces the earlier full-dragonheaded standalone sheet as canonical Dragonkin art direction.
 
-## Full Dragonkin — canonical silhouette
-- Tall **fully anthropomorphic draconic adult females**, not human faces with scales. Elongated dragon snouts/jaws, prominent crown/crested horns, expressive reptilian eyes, segmented colored dragon scales and belly plating, robust clawed hands and feet, large muscular tails, broad heroic physique.
-- **Powerful visible abdominal muscles**, muscular shoulders and legs, yet proportioned as strong regal mature female warriors; stern/commanding/wise postures. Standard concept scale **about 1.80–2.30 m** in the sheet, not verified in engine.
-- Detailed gold ornamental armor, red-and-violet royal vestments, cloth over plates, weapons and profession tools; maintain rich material contrast and crisp stepped clusters rather than smooth shading.
-- Seven illustrative dragon-scale heritages: **Red/Fire**, **Black/Obsidian**, **White/Frost**, **Green/Forest**, **Blue/Storm**, **Gold/Royal**, **Obsidian/Shadow**. Scale and horn/tail patterns should distinguish variants; don't assume colors confer mechanics.
-- Illustrated six professions: Worker, Warrior, Ranger, Mage, Tinkerer, Elder. Keep horn, tail, claw and muscular body variants; expression grid; front/side/back turns; scale/pattern palette, robust anatomical consistency.
-- Universal reference: `RABBITKIN_STYLE_LOCK.md` (ornate retro-fantasy pixel art, warm parchment/gold framed encyclopedia, dark contours, layered details and disciplined dithering).
+## CANONICAL ORIGINAL — USE THIS IMAGE
+**Library:** `/Knomira/Sprite Design/Race Baselines v1/Dragonkin/Dragonkin_Dragonborn_TOP_RIGHT_CANONICAL.png`
+**Source:** Exact crop from user-uploaded `1000032894.png` at pixel rectangle (700, 0, 1536, 610), preserving all original source pixels; no AI redraw.
+**Dimensions:** 836 × 610 RGB PNG.
+**SHA-256:** `888095a4f7aaa83ff09481ed2d5e0ddc4923e3baf16c23fdba4e8f7c26f0094b`
+**Reference pack:** `/Knomira/Sprite Design/Race Baselines v1/Dragonkin/Knomira_Dragonkin_Corrected_Baseline_v2.zip`
+**Visual label:** `Dragonkin (Dragonborn) — Character & Role Examples` (upper-right source panel).
 
-## Reusable prompt
-> Knomira full female Dragonkin race compendium, fully anthro regal dragon women with draconic snouts, sculpted horn crests, scale plating, claws, powerful tapering tails, defined muscular abs and strong athletic female proportions; noble and intimidating personalities, layered gilded armor and royal red/plum/gold fantasy outfits. Red, black, white, green, blue, gold and obsidian scale variants. Six role costumes, horn/hand/tail/body options and 4-view turnarounds in crisp ornate crunchy pixel art with dark stepped contours, gold decorative parchment border and readable equipment. Full dragonfolk, NOT demi-human or mostly-human.
+Use this exact visual first for concept prompts and any future native sprite study. Do **not** use or blend in the lower-left Demi-Dragonkin sheet or the far-left Foxkin sheet. Preserve the original earlier standalone dragon-headed race image as an alternate/historical design, not the main Dragonkin baseline.
 
-**Implementation boundary:** Concept art only; do not introduce new runtime race, mechanics, or guessed sprite IDs. Complete ART-01A source atlas audit before implementing. Remain separate from playable stabilization.
+## Corrected anatomy and style lock
+- Adult female Dragonkin are **regal humanoid dragonfolk**, with **humanlike elegant faces, noses/lips, hair and expressive eyes** plus **substantial draconic horns**, pointed/dragon ear accents, visible scales, draconic tails, and optional wings.
+- **Defined sculpted abs**, muscular legs/arms, powerful warrior physique and mature feminine silhouette with proportions as depicted in top-right reference; neither fully lizard-headed nor trivial "human with tiny thigh scales".
+- Draconic **scale clusters and plating** appear prominently on shoulders/arms, upper thighs/hips, legs and portions of the long curved scaled tails. Keep strong dragon anatomy and visual authority, not delicate minimalist Demi-Dragonkin-only traits.
+- Color schemes and lineage variations: red/gold, white/gray/ivory, green/teal, purple/black, warm rust and metallic-gold accents, with large horns, dragon-symbol shields and layered royal ornate armor. Follow the exact source rather than overgeneralizing.
+- Wing variations in right-side panel are **optional** (none/small/medium/large), not required on every character.
+- Six original concept roles remain Worker, Warrior, Ranger, Mage, Tinkerer, Elder, with comparable equipment and silhouettes; expression samples, horn and scale patterns, wing options and front/side/back anatomy turnarounds.
+- Universal visual language: `RABBITKIN_STYLE_LOCK.md`; dense but readable **chunky retro pixel-art** clusters, dark stepped outlines, cream parchment, intricate gold frames and fantasy clothing. Avoid smooth rendering and excessive generic non-draconic features.
+- The source panel contains some small-label text errors; preserve image pixels during cropping and avoid inventing corrected character lore/mechanics from those labels. Height indication in artwork is not a verified engine measurement.
+
+## Important difference from other race variants
+- **Dragonkin (canonical v2):** humanlike facial features **PLUS** unmistakable horns, substantial scale coverage and long thick dragon tail; strong abs and royal builds. This upper-right sheet is canonical.
+- **Demi-Dragonkin (separate candidate):** largely human anatomy with only localized thigh-scale patches and claw-like fingertips, as per `DEMI_DRAGONKIN_CANDIDATE_V1.md`; **not yet approved**.
+- **Fully reptilian dragon-headed artwork:** previous image in Library `Dragonkin_Full_Female_APPROVED.png` is now **superseded as primary** due to the user's clarified choice. Keep archived for possible future alternate variant but do **not** use to regenerate the main Dragonkin race without specific instruction.
+
+## Codex scope
+This is an **approved concept reference**, not a production-native atlas or implemented playable species. Before creating or placing engine sprites, perform **ART-01A** read-only inspection of real game assets and sprite consumers, including native dimensions, pivots, indices and animation frames. Never infer exact placement from this presentation. Do not modify `feature/playable-db-embark-integration` or gameplay stabilization for the art task.
