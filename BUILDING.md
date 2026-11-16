@@ -98,7 +98,7 @@ No game launch, gameplay smoke testing or T02 work was performed in that baselin
 
 ## PLAY-01D: Noesis-free lifecycle regression
 
-The standalone `prototype/rmlui` project now links the original GameManager,
+The standalone `prototype/rmlui` project (CMake 3.25 or newer) links the original GameManager,
 EventConnector, all 15 aggregators and their original simulation dependencies
 into `knomira_engine_lifecycle_test`. It requires Qt Core/Gui/Widgets/Xml/Sql,
 GLFW, FreeType and OpenAL Soft (vcpkg package `openal-soft:x64-windows`).
@@ -132,3 +132,43 @@ Build the other test targets (or the standalone default target) and run
 Config, DB rollback/job-cache, two-material embark, data-root, save-catalog,
 input, layout and lifecycle regressions. This proves engine startup and teardown;
 it does not prove a playable colony or a connected RmlUi world view.
+
+## PLAY-01E: asset-dependent colony roundtrip
+
+`knomira_colony_lifecycle_test` reuses the guarded engine from PLAY-01D. It
+generates a 64 x 64 x 130 world with seed 120531 and one settler, advances real
+timer ticks with heartbeat acknowledgments, verifies pause, creates a pending
+tree-felling job through EventConnector, saves and reloads the colony, resumes
+ticks, lets the settler complete the restored order and produce wood, and saves
+a second slot. It checks population/inventory/clock, pending
+job identity, squad order, deleted session objects and SHA256 preservation of
+the first save. The squad test covers the New Game crash caused by treating a
+squad's entity ID as a QList insertion index.
+The settings seed and initial C RNG seed are fixed. Some original subsystems
+still reseed internally from the clock, so this test checks within-run roundtrip
+invariants; population details can vary across runs. It does not establish
+fully deterministic world generation.
+
+```powershell
+cmake --build build/lifecycle --config Debug --target knomira_colony_lifecycle_test --parallel 4
+# Existing, authorized, read-only asset source; must contain tilesheet/*.png.
+$env:KNOMIRA_TEST_CONTENT_DIR = 'C:/YourAuthorizedGameContent/content'
+ctest --test-dir build/lifecycle -C Debug -R '^knomira_colony_lifecycle_test$' --output-on-failure
+```
+
+Qt/OpenAL PATH and QT_PLUGIN_PATH setup is the same as above. The test chooses
+Qt's offscreen platform and OpenAL Soft's null output. It reads the supplied
+tilesheets without copying or modifying them. Missing optional audio files
+under the executable's content folder produce the original engine's warnings;
+audible playback is not verified. To exercise buffer/source cleanup as well,
+stage authorized audio under the test executable's `content/audio` directory.
+No proprietary assets are added to Git or CI
+artifacts. If the content variable is absent, CTest reports **Skipped** (exit
+77); an explicitly supplied invalid or incomplete directory fails. Asset-free
+CI can compile this target and verify the skip contract, but cannot claim a
+colony runtime pass. All saves and settings remain in the marked temporary root.
+
+This is a local simulation smoke test, not a full playtest: the RmlUi shell
+still needs a session bridge and world renderer. Broader jobs, malformed-save
+recovery, multi-season stability and legacy save compatibility remain separate
+verification work.

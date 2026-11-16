@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.24)
+cmake_minimum_required(VERSION 3.25) # FindOpenAL's imported target.
 project(KnomiraRmlUiPrototype VERSION 0.1 LANGUAGES CXX)
 
 # Standalone experiment: no dependency on the game's Noesis-based CMake.
@@ -314,4 +314,7 @@ if(KNOMIRA_BUILD_GAME_SHELL)
         "${CMAKE_CURRENT_SOURCE_DIR}/../../content/db/ingnomia.db.sql")
     add_test(NAME knomira_rmlui_layout_test COMMAND knomira_rmlui_layout_test
         "${CMAKE_CURRENT_SOURCE_DIR}/game_shell.rml")
+    add_test(NAME knomira_colony_lifecycle_test COMMAND knomira_colony_lifecycle_test)
+    set_tests_properties(knomira_colony_lifecycle_test PROPERTIES
+        TIMEOUT 180 SKIP_RETURN_CODE 77 LABELS "requires-authorized-tilesheets")
 endif()
