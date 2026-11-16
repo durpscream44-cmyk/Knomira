@@ -1,4 +1,4 @@
-# Knomira Race Design Baseline v1.2 — Rabbitkin, Tanukikin, Mousekin + Moosekin + Arachnikin
+# Knomira Race Design Baseline v1.3 — Rabbitkin, Tanukikin, Mousekin + Moosekin + Arachnikin + Elfkin
 
 **Status:** Approved **concept-art** direction; game runtime sprite-placement and new race implementation are **not verified**.
 
@@ -45,3 +45,18 @@ Five approved aesthetic variants: **Woodland (Standard), Great Bullhorn (Heavy),
 **Anatomy:** compact adult female upper torso joined as one body with a robust **eight-legged spider lower half** and patterned abdomen, matching the original female Centaur family's stylized proportions and equipment quality. **Short pointed elvish ears** (shorter than conventional elf ears), not human round/animal ears. No horse body or separate mount. Concept sheet gives c. **1.4–1.7 m total height** and **1.1–1.3 m withers**; unverified in engine.
 
 Five distinct approved variants: **Webspinner (Standard), Widowkin (Dark), Jumperkin (Athletic), Silkweaver (Pastoral), Frostweb (Northern)**. Preserve expressions, body turnarounds, spider-leg and spinneret shapes, abdomen/web markings, color palettes, and six illustrative role costumes. This is a **concept-art registration**, not an implemented species, sprite mapping or playable feature. ART-01A atlas audit and validation remain prerequisites for any game asset placement.
+
+## Additional approved elven-family baselines — Regular Elfkin and Dark Elfkin
+
+Two approved elven visual designs share the universal art standard but **must not be conflated**:
+
+- **[Regular Elfkin (slender approved revision)](ELFKIN_BASELINE_V1.md)** — tall, slender elegant adult female elf body plan, c. 1.6–1.8 m concept scale, long pointed ears, narrow shoulders and limbs, understated curves, conventional leafy/fantasy cloth and armor. **The user's second, thinner Elfkin illustration is the canonical source**; the first thick Elfkin render is superseded.
+- **[Dark Elfkin (gothic approved version)](DARK_ELFKIN_BASELINE_V1.md)** — based on the slender Elfkin anatomy but with fuller, more curvaceous proportions, dusky lavender/violet skin, dramatic silver hair and red/violet eyes, fitted gothic black leather, dark capes and gold filigree. **Approved by user**, not to be blended into the regular elf palette.
+
+**Canonical images in ChatGPT Library:**
+`/Knomira/Sprite Design/Race Baselines v1/Elfkin/Elfkin_Regular_Slender_APPROVED.png` (1536×1024, SHA-256 `11b809a95365d1c4f91cb1d0aa5c88bd3d41ff2c063c4c411f08aa198b214a76`)
+and `/Knomira/Sprite Design/Race Baselines v1/Elfkin/Dark_Elfkin_Gothic_APPROVED.png` (1448×1086, SHA-256 `a97cc26fbddf68f249644dbb93bc05dd0b651c09480ff9964631c6ccea25443b`).
+
+**Forest Elfkin candidate (NOT YET APPROVED):** `/Knomira/Sprite Design/Race Baselines v1/Elfkin/Forest_Elfkin_ATHLETIC_CONCEPT_PENDING_APPROVAL.png`; tan/deep-brown complexion options, Hishi Amazon–influenced athletic/tomboyish energy, long pointed elf ears, fieldwork/woodland material culture and clothing, lean toned muscular silhouette. This draft is a distinct forest branch and is **not currently an approved art baseline**. Do not derive production sprites until the user approves/adjusts it.
+
+All are design references only; do not write runtime species logic or change tile sheet IDs without the ART-01A atlas audit.
