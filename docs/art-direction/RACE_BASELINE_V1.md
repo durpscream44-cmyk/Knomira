@@ -1,4 +1,4 @@
-# Knomira Race Design Baseline v1.0 — Rabbitkin, Tanukikin, Mousekin
+# Knomira Race Design Baseline v1.1 — Rabbitkin, Tanukikin, Mousekin + Moosekin
 
 **Status:** Approved **concept-art** direction; game runtime sprite-placement and new race implementation are **not verified**.
 
@@ -31,3 +31,10 @@ Adult female Mousekin, gnome-scale but slightly taller than Tanukikin; slim/comp
 2. Keep the image baseline as **visual reference**, not game-ready atlas cells.
 3. Before creating new sprites, perform ART-01A read-only audit of the actual installed original sprite sheets and engine index/caller code, then validate native-resolution silhouettes and palette on a separate art branch.
 4. No automatic overwriting, tile ID changes, unverified atlas placement, new playable race mechanics, or modification to the `feature/playable-db-embark-integration` stabilization branch.
+
+## Additional approved centaur-family baseline — Moosekin (Female)
+**Canonical design:** [MOOSEKIN_BASELINE_V1.md](MOOSEKIN_BASELINE_V1.md). The approved 1536×1024 source image is in ChatGPT Library at `/Knomira/Sprite Design/Race Baselines v1/Moosekin/Moosekin_Female_Original_APPROVED.png`; SHA-256 `d9a82d1fe6b72f3b22e5d765282b3053743e4f4fcf6cd876381124e40f9e56b4`.
+
+**Do not confuse Moosekin with Mousekin.** The latter are slender bipedal mousefolk. Moosekin are *female antlered centaurs*, using the original Knomira female centaur reference sheets as the primary anatomy/size family, plus the shared crunchy pixel-art style language. Body plan: compact humanoid adult upper half, moose-like four-legged lower half, palmated antlers, cloven hooves, broad back/rump, moose ears, short tuft tail.
+
+Five approved aesthetic variants: **Woodland (Standard), Great Bullhorn (Heavy), Marshkin (Pastoral), Frosthorn (Northern), Trailrunner (Scout)**. See the dedicated document for exact variant palettes, visual roles, expressions, coat designs, modular antlers, turnarounds, and Codex constraints. All remain *visual concepts*, not wired game species, texture IDs, or animation data.
