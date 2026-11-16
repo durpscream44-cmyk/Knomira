@@ -1,4 +1,4 @@
-# Knomira Race Design Baseline v1.8 — Demi-Human Dragonkin heritage baseline approved
+# Knomira Race Design Baseline v1.9 — Tiger Demi-Human Kin and Feral Tigerkin added
 
 **Status:** Approved **concept-art** direction; game runtime sprite-placement and new race implementation are **not verified**.
 
@@ -105,3 +105,11 @@ The older standalone `Dragonkin_Full_Female_APPROVED.png` shows **fully reptilia
 - **Superseded image:** `Dragonkin_Full_Female_APPROVED.png` is now an *archived alternative only*, no longer canonical for standard Dragonkin.
 - **Do not confuse:** `DEMI_DRAGONKIN_CANDIDATE_V1.md` is an **archived, superseded** minimally scaled concept; the latest heritage-expanded sheet above is the currently approved design.
 - **Scope:** illustration reference only; not engine sprite or gameplay implementation.
+
+## Approved Tiger Demi-Human Kin (Female) — predominantly humanoid tigerfolk
+**Exact approved source:** [TIGER_DEMI_HUMAN_KIN_BASELINE_V1.md](TIGER_DEMI_HUMAN_KIN_BASELINE_V1.md), with canonical `/Knomira/Sprite Design/Race Baselines v1/Tiger_Demi_Human_Kin/Tiger_Demi_Human_Kin_Female_APPROVED.png` (1536×1024 RGB PNG; SHA-256 `244e47033c87211c9e7b38171c2f3514728a4ed321bee437127559b9901ac9f9`). This earlier design has **humanlike faces** with tiger ears, visible stripes, feline claw/paw accents and tails; strong thick thighs/hips and mature powerful feminine proportions. Eight coats including White Tiger. The generated original title said Tigerkin/Feral Tigerkin, but the user explicitly renamed it **Tiger Demi-Human Kin**. Do not conflate with full-anthro Feral Tigerkin below.
+
+## Approved Feral Tigerkin (Female) — fully anthropomorphic tigerfolk
+**Exact approved source:** [FERAL_TIGERKIN_BASELINE_V1.md](FERAL_TIGERKIN_BASELINE_V1.md), with canonical `/Knomira/Sprite Design/Race Baselines v1/Feral_Tigerkin/Feral_Tigerkin_Female_APPROVED.png` (1536×1024 RGB PNG; SHA-256 `50194fafba99f60f5bbf07d0695e0eb19a6390c8466d6a36e03bd44d6fe46f0a`). Latest user instruction explicitly approved this as **a different base race** from Tiger Demi-Human Kin. Full tiger muzzles/fangs and head fur, muscular fully furred striped limbs, wide feline paw pads/claws, thick ringed/striped tails. Adult female silhouette stays powerfully muscular with strong thighs and broad hips/glutes. Eight coat variants: Classic, White Tiger, Golden, Black Tiger, Red Tiger, Silver, Sable and Arcane. Three robust body build studies; six illustrative profession costumes, expression, tail, ear, paw, muzzle, pattern and body turnaround references.
+
+**CRITICAL distinction:** **Tiger Demi-Human Kin = primarily human-faced with tiger features**; **Feral Tigerkin = fully furred tiger-headed anthropomorphic bodies**. Neither should substitute for the other. Both remain **approved visual concepts only**, not yet gameplay species or native sprite sheets. ART-01A audit required for actual placement. No gameplay-stabilization changes.
