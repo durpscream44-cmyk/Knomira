@@ -1,3 +1,9 @@
+# HISTORICAL CANDIDATE — APPROVED AS GNOME BASELINE
+
+**2026-11-16 user decision:** Gnomes are good and should be saved as an approved baseline. This older candidate document's "awaiting approval" statement and its speculative suggestion to revise the ears/body are **superseded**. Use [GNOME_BASELINE_V1.md](GNOME_BASELINE_V1.md) and the exact original image `Gnome_Female_APPROVED.png` in ChatGPT Library. Retain this file as an audit trail only.
+
+---
+
 # Gnome (Female) — Knomira Design Candidate v1.0 (AWAITING APPROVAL)
 
 **Status:** Newly generated in response to the request to recreate female gnomes in Knomira's established art style. **Not yet approved**; preserve the exact image as a candidate, not the canonical race baseline.
