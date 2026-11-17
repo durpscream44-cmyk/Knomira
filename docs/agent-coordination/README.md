@@ -28,15 +28,16 @@ Goal: keep multiple coding services productive **without** duplicate edits, prem
 - `agent:review`: code/report ready for independent review; **not** merged/done.
 - `agent:blocked`: needs a decision, missing assets, authentication, CI, etc.
 - `agent:done`: accepted integrated work, with evidence.
-- `agent:provider:jules`: eligible for optional cloud dispatch once enabled.
+- `agent:provider:gemini`, `agent:provider:kilo`, `agent:provider:opencode`: local CLI worker assignments; profiles and runtime checks still apply.
 - `priority:P0`, `priority:P1`, `priority:P2`: scheduling priority.
 
 Do not mark `agent:review` as `agent:done` automatically. Treat expired or orphaned claims as blocked and investigate before retrying because network timeouts may have already created a remote coding session.
 
-## Automation
-`.github/workflows/agent-queue.yml` runs a read-only scan by default (manually and periodically). A maintainer can bootstrap labels via its manual `bootstrap` input. To enable Jules, connect the repository in Jules, set secret `JULES_API_KEY`, repository variable `JULES_SOURCE` to its **actual** `sources/...` identifier returned by List Sources, and variable `AGENT_JULES_ENABLED` to `true`. Dispatcher then reconciles existing sessions, claims **at most one** newly approved issue and submits it for an automatically created PR. All PRs still require review. See [SETUP.md](SETUP.md).
+## Capability gating and resumable sessions
+Agents must read [profiles.json](profiles.json), [AGENT_ROLES.md](AGENT_ROLES.md) and [CODEX_DELEGATION.md](CODEX_DELEGATION.md). Each issue specifies Task kind, Required capabilities, Allowed paths and Risk. The agent declines when the actual environment or quota cannot complete it. All agents commit/push early and leave a GitHub handoff before context exhaustion. A model claiming it finished without a pushed commit, PR or reproducible work report is not complete.
 
-This is a provider adapter, not unlimited free model switching. Gemini/Kilo/OpenCode can use the same issue protocol manually or via a future authenticated local runner; no invisible quota bypass, no cross-agent chat replay, and no uncontrolled API spend.
+## Automation
+GitHub Actions does read-only queue scans and manual label initialization. Jules was made read-only November 11, 2026, so the earlier Jules auto-dispatch prototype is retired. A local CLI runner may be explicitly enabled on a home PC for Gemini, OpenCode or Kilo; it still requires live authorization, capability verification and a human/Codex review. See [SETUP.md](SETUP.md).
 
 ## Guardrails
 No direct pushes to protected development branches, no force pushes, no auto merge, no broad refactors, no edits of local real saves, no fabricated CI, no credential logging. For Jules remote Linux execution, Windows-specific Qt/Noesis/OpenAL and user-owned assets may be unavailable: report limitations honestly and rely on existing Windows Actions/desktop checks for integration.

@@ -1,0 +1,118 @@
+{
+  "schema_version": 1,
+  "note": "Conservative task permissions. Actual shell, model quota, Git access, Qt and Windows tools must also be checked per run.",
+  "agents": {
+    "codex": {
+      "execution": "manual",
+      "allowed_kinds": [
+        "audit",
+        "docs",
+        "tests",
+        "tooling",
+        "cpp-isolated",
+        "engine-integration",
+        "windows-runtime"
+      ],
+      "role": "Primary engine integrator, reviewer, and handoff planner."
+    },
+    "gemini": {
+      "execution": "local_cli",
+      "command": [
+        "gemini",
+        "--output-format",
+        "json",
+        "-p"
+      ],
+      "allowed_kinds": [
+        "audit",
+        "docs",
+        "tests",
+        "tooling",
+        "cpp-isolated"
+      ],
+      "role": "Bounded tests, small C++ changes and tooling on verified local checkout."
+    },
+    "opencode": {
+      "execution": "local_cli",
+      "command": [
+        "opencode",
+        "run"
+      ],
+      "allowed_kinds": [
+        "audit",
+        "docs",
+        "tests",
+        "tooling",
+        "cpp-isolated"
+      ],
+      "role": "Small source/tests/tooling tasks with configured model."
+    },
+    "kilo": {
+      "execution": "local_cli",
+      "command": [
+        "kilo",
+        "run"
+      ],
+      "allowed_kinds": [
+        "audit",
+        "docs",
+        "tests",
+        "tooling",
+        "cpp-isolated"
+      ],
+      "role": "Small source/tests/tooling tasks with configured model."
+    },
+    "antigravity": {
+      "execution": "manual",
+      "allowed_kinds": [
+        "audit",
+        "docs",
+        "tests",
+        "tooling",
+        "cpp-isolated"
+      ],
+      "role": "Manually supervised IDE tasks; remote free quotas not assumed."
+    },
+    "freebuff": {
+      "execution": "manual",
+      "allowed_kinds": [
+        "audit",
+        "docs",
+        "tests"
+      ],
+      "role": "Only non-sensitive snippets and manual work, no assumed Git writing."
+    },
+    "jules": {
+      "execution": "disabled",
+      "allowed_kinds": [],
+      "role": "Read-only since 2026-11-11; shuts down 2026-12-31; never dispatch."
+    }
+  },
+  "runtime_capabilities": [
+    "git",
+    "github",
+    "windows",
+    "cmake",
+    "qt",
+    "assets",
+    "gui"
+  ],
+  "auto_denied_kinds": [
+    "engine-integration",
+    "windows-runtime",
+    "art-asset"
+  ],
+  "protected_patterns": [
+    ".env",
+    "*.key",
+    "*.pem",
+    "*secret*",
+    "*license*",
+    "content/tilesheet/",
+    "content/audio/",
+    "steamworks_sdk/",
+    "noesis_sdk/",
+    "build/",
+    "install/"
+  ]
+}

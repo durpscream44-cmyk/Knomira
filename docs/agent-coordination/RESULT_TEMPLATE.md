@@ -28,3 +28,10 @@ Specific next action, dependency and files. Another agent must be able to resume
 
 ## Integration status
 Isolated test only | PR awaiting review | Merged at SHA (with proof). Do **not** label work merged if PR remains draft/open.
+
+## Mandatory context/quota boundary
+- Last actually pushed branch and commit (or NOT PUSHED):
+- Local-only worktree or patch location:
+- What the next agent MUST NOT repeat:
+- Exact resume command, missing tests and blockers:
+- Provider/context/quota reason for stopping:

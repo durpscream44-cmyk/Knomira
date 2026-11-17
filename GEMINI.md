@@ -1,6 +1,6 @@
 @AGENTS.md
 
-# Gemini CLI entry point
-Follow AGENTS.md and docs/agent-coordination/README.md first.
-Check GitHub state before touching code. Only take a task approved and free of an active claim.
-Leave the required GitHub task log and result handoff; do not merge PRs.
+# Gemini CLI provider restrictions
+Read docs/agent-coordination/profiles.json, AGENT_ROLES.md and CODEX_DELEGATION.md. Only take approved tasks fitting this agent's actual machine, Git access and usage budget. Do not accept core engine lifecycle or licensed-asset jobs unattended.
+
+Commit/push an early WIP milestone; prepare the complete GitHub issue handoff before 50-70% of task budget is consumed. At quota/context warning immediately stop expansion and record a pushed SHA or BLOCKED with local-only path. Do not merge.
