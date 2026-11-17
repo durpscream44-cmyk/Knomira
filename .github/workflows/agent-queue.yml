@@ -4,18 +4,13 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "scan (no writes), bootstrap (create labels), or run (optional Jules dispatcher)"
+        description: scan or bootstrap labels
         type: choice
         required: true
         default: scan
-        options:
-          - scan
-          - bootstrap
-          - run
+        options: [scan, bootstrap]
   schedule:
     - cron: '17 */6 * * *'
-  issues:
-    types: [labeled]
 
 permissions:
   contents: read
@@ -26,29 +21,24 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  coordinator:
+  queue:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-      - name: Select queue mode
-        id: mode
-        shell: bash
-        env:
-          EVENT_NAME: ${{ github.event_name }}
-          INPUT_MODE: ${{ inputs.mode }}
-        run: |
-          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
-            echo "mode=$INPUT_MODE" >> "$GITHUB_OUTPUT"
-          else
-            echo "mode=run" >> "$GITHUB_OUTPUT"
-          fi
-      - name: Check queue and optionally dispatch Jules
-        shell: bash
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate and scan
         env:
           GITHUB_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-          JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
-          JULES_SOURCE: ${{ vars.JULES_SOURCE }}
-          AGENT_JULES_ENABLED: ${{ vars.AGENT_JULES_ENABLED }}
-        run: python scripts/agent_queue.py --mode "${{ steps.mode.outputs.mode }}"
+          INPUT_MODE: ${{ inputs.mode }}
+        shell: bash
+        run: |
+          python -m unittest discover -s scripts -p 'test_agent_queue.py' -v
+          if [ "$INPUT_MODE" = "bootstrap" ]; then
+            python scripts/agent_queue.py --mode bootstrap
+          else
+            python scripts/agent_queue.py --mode scan
+          fi
