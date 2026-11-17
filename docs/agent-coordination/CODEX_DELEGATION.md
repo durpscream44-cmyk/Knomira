@@ -14,7 +14,7 @@ Applies to Codex and every other coding agent. No model can reliably inspect its
 4. Identify work the next agent MUST NOT redo. Link any draft PR and its exact base; a new agent must resume from repo state rather than inaccessible chat history.
 
 ## Codex delegates before ending
-Codex may prepare up to three bounded task packets using TASK_TEMPLATE.md with Base branch, tested SHA, open stacked PRs, Task kind, Required capabilities, Allowed paths, Risk, acceptance commands, exclusions and provider. Codex does **not** automatically approve the tasks it proposes. A maintainer applies agent:approved and agent:ready. Core engine/gameplay integration and save-format changes remain with Codex/human reviewers. No auto-merging.
+Codex may prepare up to three bounded task packets using TASK_TEMPLATE.md with Base branch, tested SHA, open stacked PRs, Task kind, Required capabilities, Allowed paths, Risk, acceptance commands, exclusions and provider. **If GitHub Issues is disabled, place proposed packets in PROPOSED_TASKS.md on a separate documentation branch and open a draft PR; never assume the disabled issue queue will claim them.** Codex does **not** automatically approve the tasks it proposes. A maintainer applies agent:approved and agent:ready. Core engine/gameplay integration and save-format changes remain with Codex/human reviewers. No auto-merging.
 
 ## Definition of successful handoff
 A reviewable committed/pushed WIP branch plus reproducible report, even when incomplete. Compilation only proves compilation; no claim of a playable game until actual runtime tests pass.
