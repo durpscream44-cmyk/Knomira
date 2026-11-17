@@ -122,6 +122,13 @@ def main():
     if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repo) or not token:
         p.error("GITHUB_REPOSITORY and GITHUB_TOKEN required")
     if a.mode == "bootstrap":
+        try:
+            api(repo, token, "/issues?state=open&per_page=1")
+        except urllib.error.HTTPError as err:
+            if err.code == 410:
+                print("GitHub Issues are disabled: enable in Settings > General > Features.")
+                return
+            raise
         for label in LABELS:
             try:
                 api(repo, token, "/labels/" + urllib.parse.quote(label, safe=""))
@@ -132,7 +139,15 @@ def main():
                     {"name": label, "color": "c5def5"})
             print("label ready:", label)
         return
-    queue = issues(repo, token, "agent:ready")
+    try:
+        queue = issues(repo, token, "agent:ready")
+    except urllib.error.HTTPError as err:
+        if err.code == 410:
+            print("GitHub Issues are disabled in this repository. "
+                  "Enable Issues under Settings > General > Features before dispatching tasks.")
+            print("Read proposed assignments in docs/agent-coordination/PROPOSED_TASKS.md.")
+            return
+        raise
     cfg = profiles()
     print("Read-only queue scan; zero AI sessions launched")
     for agent, spec in cfg["agents"].items():

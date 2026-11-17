@@ -2,6 +2,8 @@
 
 Jules became **read-only November 11, 2026** and is shutting down December 31. The previously proposed Jules API dispatch is disabled.
 
+**Current blocker verified on November 16, 2026:** GitHub returned HTTP 410 "Issues has been disabled in this repository." The task queue and local runner cannot claim assignments until the repository owner enables **Settings > General > Features > Issues**. This does not change any game branch. A file-backed proposed-task list is maintained in [PROPOSED_TASKS.md](PROPOSED_TASKS.md) for planning until Issues can be enabled.
+
 1. Review and merge the coordination draft PR. Scheduled GitHub Actions only run from default branch.
 2. Run Actions > Agent queue coordinator > Run workflow > bootstrap to create labels. The 6-hour schedule **only scans** for work and never launches a model.
 3. Open AI agent development issues with exact Base branch, Task kind, Required capabilities, Allowed paths, Risk, relevant stacked PRs and test acceptance.
