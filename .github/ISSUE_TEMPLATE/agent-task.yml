@@ -1,0 +1,61 @@
+name: AI agent development task
+description: Scoped Knomira task; creating it never approves automation
+title: "[AGENT] "
+body:
+  - type: markdown
+    attributes:
+      value: "Read AGENTS.md, profiles.json and CODEX_DELEGATION.md. Check stacked PRs before accepting."
+  - type: input
+    id: base
+    attributes:
+      label: Base branch
+      placeholder: completion/play01e-colony-roundtrip
+    validations:
+      required: true
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Task kind
+      options: [audit, docs, tests, tooling, cpp-isolated, engine-integration, windows-runtime, art-asset]
+    validations:
+      required: true
+  - type: input
+    id: caps
+    attributes:
+      label: Required capabilities
+      placeholder: git, github
+    validations:
+      required: true
+  - type: input
+    id: paths
+    attributes:
+      label: Allowed paths
+      description: Comma-separated exact paths or directory prefixes
+      placeholder: tests/, scripts/
+    validations:
+      required: true
+  - type: dropdown
+    id: risk
+    attributes:
+      label: Risk
+      options: [low, high]
+    validations:
+      required: true
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal and exclusions
+    validations:
+      required: true
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Existing work and dependencies
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance and verification
+    validations:
+      required: true

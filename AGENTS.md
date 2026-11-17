@@ -93,3 +93,15 @@ For the first completion release:
 
 ## Completion gate
 Do not label the project functionally complete until a fresh checkout can be built using written instructions and a clean-install smoke test plus a long-session test have passed. Save/load must be tested during active jobs, carried items, agriculture, combat/death, and trader/event activity.
+
+
+## Multi-agent coordination (Knomira; all AI agents)
+Before making edits, read [docs/agent-coordination/README.md](docs/agent-coordination/README.md), [profiles.json](docs/agent-coordination/profiles.json), and [CODEX_DELEGATION.md](docs/agent-coordination/CODEX_DELEGATION.md). This protocol supplements all rules above; it does not replace them.
+
+- Check current GitHub issues, open/closed PRs, their bases, commit SHAs, CI evidence, and recent agent reports **before** claiming a task. Existing work may be stacked and unmerged. Never equate "PR open" with "merged."
+- Check Task kind, Risk, Required capabilities, Allowed paths, live machine tools and the provider profile. Decline impossible assignments before spending tokens. Prefer a GitHub issue labeled `agent:approved` + `agent:ready`. Do not self-authorize unlabeled or ambiguous jobs; do not take another agent's in-progress issue.
+- One issue, one bounded scope, one branch/worktree, one reviewable PR. Never push directly to `master` or another agent's branch and never auto-merge.
+- Commit and push an early WIP milestone, then checkpoint before 50-70% of task budget and at every context/quota warning. If push fails, mark BLOCKED with exact local recovery path. Log investigation, changed files, tests actually run, pushed or local-only SHA, blockers, PR/CI links and next steps using the result template. Leave a usable handoff before ending a session or approaching a context/quota limit.
+- Protect user saves, credentials, licensing materials, proprietary assets and all uncommitted work. Tests use marked disposable data roots. No real user saves, even in smoke tests.
+- Prioritize playable -> stable -> optimized. The existing RmlUi migration is approved; do not expand gameplay scope to new races, caravans, multiplayer, etc. until core gameplay is verified.
+- For current gameplay state, verify the active development PR stack (including PLAY-01D / PLAY-01E) and read the checkpoint on the relevant branch. Old `CODEX_TICKETS.md` is historical guidance, not a claim that all numbered tickets remain open.
