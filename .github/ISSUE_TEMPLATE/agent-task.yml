@@ -1,0 +1,36 @@
+name: AI agent development task
+description: Bounded Knomira task for Codex, Jules, Gemini, Kilo or another contributor
+title: "[AGENT] "
+body:
+  - type: markdown
+    attributes:
+      value: "Read AGENTS.md and docs/agent-coordination/README.md before working. Creating this issue does not approve automation."
+  - type: input
+    id: base
+    attributes:
+      label: Base branch
+      description: Exact, existing Git branch (especially important for stacked PRs)
+      placeholder: completion/play01e-colony-roundtrip
+    validations:
+      required: true
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal and boundaries
+      description: Exact goal, paths in scope and excluded files
+    validations:
+      required: true
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Existing work and dependencies
+      description: Related PR/issue URLs and checkpoint SHA, including unmerged changes
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance and verification
+      description: Exact tests, Windows/asset requirements and expected results
+    validations:
+      required: true

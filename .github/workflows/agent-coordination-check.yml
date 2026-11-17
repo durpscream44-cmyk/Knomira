@@ -1,0 +1,24 @@
+name: Agent coordination tests
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/agent_queue.py'
+      - 'scripts/test_agent_queue.py'
+      - '.github/workflows/agent-queue.yml'
+      - '.github/workflows/agent-coordination-check.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m py_compile scripts/agent_queue.py
+      - run: python -m unittest discover -s scripts -p 'test_agent_queue.py' -v

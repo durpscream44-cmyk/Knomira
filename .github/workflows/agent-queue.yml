@@ -1,0 +1,54 @@
+name: Agent queue coordinator
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "scan (no writes), bootstrap (create labels), or run (optional Jules dispatcher)"
+        type: choice
+        required: true
+        default: scan
+        options:
+          - scan
+          - bootstrap
+          - run
+  schedule:
+    - cron: '17 */6 * * *'
+  issues:
+    types: [labeled]
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: knomira-agent-queue
+  cancel-in-progress: false
+
+jobs:
+  coordinator:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select queue mode
+        id: mode
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_MODE: ${{ inputs.mode }}
+        run: |
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            echo "mode=$INPUT_MODE" >> "$GITHUB_OUTPUT"
+          else
+            echo "mode=run" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Check queue and optionally dispatch Jules
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
+          JULES_SOURCE: ${{ vars.JULES_SOURCE }}
+          AGENT_JULES_ENABLED: ${{ vars.AGENT_JULES_ENABLED }}
+        run: python scripts/agent_queue.py --mode "${{ steps.mode.outputs.mode }}"
