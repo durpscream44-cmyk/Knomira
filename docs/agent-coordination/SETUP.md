@@ -2,7 +2,7 @@
 
 Jules became **read-only November 11, 2026** and is shutting down December 31. The previously proposed Jules API dispatch is disabled.
 
-**Current blocker verified on November 16, 2026:** GitHub returned HTTP 410 "Issues has been disabled in this repository." The task queue and local runner cannot claim assignments until the repository owner enables **Settings > General > Features > Issues**. This does not change any game branch. A file-backed proposed-task list is maintained in [PROPOSED_TASKS.md](PROPOSED_TASKS.md) for planning until Issues can be enabled.
+**Update November 17, 2026:** GitHub Issues is now enabled. The first task tickets are [COORD-01 #25](https://github.com/durpscream44-cmyk/Knomira/issues/25), [COORD-02 #26](https://github.com/durpscream44-cmyk/Knomira/issues/26), and [PLAY-01F #27](https://github.com/durpscream44-cmyk/Knomira/issues/27). They remain proposals, **not approved or ready** for automatic dispatch. [PROPOSED_TASKS.md](PROPOSED_TASKS.md) indexes their live locations. PR #24 remains draft/unmerged.
 
 1. Review and merge the coordination draft PR. Scheduled GitHub Actions only run from default branch.
 2. Run Actions > Agent queue coordinator > Run workflow > bootstrap to create labels. The 6-hour schedule **only scans** for work and never launches a model.

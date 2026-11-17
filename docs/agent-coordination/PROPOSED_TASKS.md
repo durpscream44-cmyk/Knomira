@@ -1,30 +1,22 @@
-# Proposed Knomira assignments — not approved for execution
+# Knomira agent task registry — live GitHub Issues
 
-These durable task packets exist because GitHub Issues were disabled when the multi-agent coordination PR was created. They are **proposals only**, not ready-to-run jobs. After enabling Issues and reviewing PR #24, copy relevant packets into GitHub Issues with the new task form. Do not auto-run without maintainer authorization and a capability check.
+GitHub Issues was enabled on November 17, 2026. The earlier file-only proposed tasks have now been converted to **unapproved** GitHub Issues:
 
-## COORD-01 — Windows runner acceptance test (Codex/human)
-- Status: PROPOSED / BLOCKED by disabled GitHub Issues and no Windows execution in this chat.
-- Base branch: `feature/multi-agent-github-coordinator` (read live SHA before starting).
-- Task kind: windows-runtime; Risk: high.
-- Required capabilities: git, github, windows, cmake; review-only unless explicitly approved.
-- Allowed paths: `scripts/`, `docs/agent-coordination/`, `.github/workflows/`.
-- Dependencies: [draft PR #24](https://github.com/durpscream44-cmyk/Knomira/pull/24). No gameplay PR changes.
-- Acceptance: Windows test matrix for Python parser, protected paths, interruption/timeout, Git auth failures, duplicate-task refusal, PR creation, log preservation, no unauthorized pushes. Verify actual Gemini/Kilo/OpenCode CLI invocation separately; do not spend provider quota without consent. Leave a real SHA and RESULT_TEMPLATE.md report.
+| Task | GitHub Issue | Status | Assigned work |
+| --- | --- | --- | --- |
+| COORD-01 | [#25](https://github.com/durpscream44-cmyk/Knomira/issues/25) | Proposed / manual safety review | Codex/Windows acceptance and runner security |
+| COORD-02 | [#26](https://github.com/durpscream44-cmyk/Knomira/issues/26) | Proposed / dependent on COORD-01 | Gemini/OpenCode candidate for mock-only tests |
+| PLAY-01F | [#27](https://github.com/durpscream44-cmyk/Knomira/issues/27) | Proposed / Codex high-risk | Audit the next live RmlUi-to-colony integration blocker |
 
-## COORD-02 — Expand agent-runner mock unit tests (Gemini or OpenCode)
-- Status: PROPOSED / not approved, must depend on COORD-01 review if security-sensitive.
-- Base branch: the accepted coordinator implementation branch at a recorded SHA.
-- Task kind: tests; Risk: low after review.
-- Required capabilities: git, github.
-- Allowed paths: `scripts/test_agent_queue.py`, `scripts/test_local_agent_runner.py`.
-- Acceptance: mock repo/network/CLI without using model requests or changing real GitHub state; cover malformed task form, missing capabilities, protected path refusal, incomplete handoff. Independent CI proves the new tests actually run.
+Do not create duplicate issues from these historical packets. **Do not apply agent:approved or agent:ready** until the safety review and specific scope approval. Pull request [#24](https://github.com/durpscream44-cmyk/Knomira/pull/24) is a draft, unmerged, and the local CLI worker has NOT been validated on the user's Windows computer.
 
-## PLAY-01F — Find the next *real* playable-shell integration blocker (Codex)
-- Status: PROPOSED / BLOCKED pending exact PR and CI reconciliation.
-- Candidate base: verify stacked [PLAY-01D PR #21](https://github.com/durpscream44-cmyk/Knomira/pull/21) and [PLAY-01E PR #22](https://github.com/durpscream44-cmyk/Knomira/pull/22); **do not assume either is merged**.
-- Task kind: engine-integration; Risk: high; provider: Codex with Windows C++/Qt testing.
-- Goal: read-only audit first of RmlUi shell -> real GameManager/colony/world renderer bridge, scoped to one actual next blocker. Do not self-assign implementation until a tested branch/commit is known.
-- Acceptance: small evidence-backed task packet, actual call paths and Windows-specific reproduction; no unverified playable claim.
+## Existing gameplay stack
+- [PLAY-01D #21](https://github.com/durpscream44-cmyk/Knomira/pull/21) — real GameManager lifecycle, draft, not merged.
+- [PLAY-01E #22](https://github.com/durpscream44-cmyk/Knomira/pull/22) — original colony save/reload smoke, stacked draft, not merged.
+- Do not infer a playable RmlUi frontend from these isolated tests.
 
-## Shared rule
-Codex may propose up to three next tasks before hitting quota/context limits. It must include existing branches, commit SHA, possible duplicate PRs, tests, out-of-scope files and a complete interruption handoff. Other agents decline tasks that they cannot perform with their current tools. Never infer success from a chat transcript.
+## Queue workflow
+The GitHub Actions queue-scanning workflow is proposed in draft #24 and is **not yet scheduled** (must be reviewed and merged to default branch). Initial `bootstrap` label setup must run only after the workflow becomes available on `master`.
+
+## Session continuity
+All agents follow [CODEX_DELEGATION.md](CODEX_DELEGATION.md) and [RESULT_TEMPLATE.md](RESULT_TEMPLATE.md). A report that lacks a pushed SHA or an explicit unsynced local recovery path is incomplete.
