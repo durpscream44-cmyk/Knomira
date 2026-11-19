@@ -1,4 +1,4 @@
-# Knomira Race Design Baseline v2.3 — Lizardkin Female approved
+# Knomira Race Design Baseline v2.4 — Mothkin approved
 
 **Status:** Approved **concept-art** direction; game runtime sprite-placement and new race implementation are **not verified**.
 
@@ -152,3 +152,11 @@ The older standalone `Dragonkin_Full_Female_APPROVED.png` shows **fully reptilia
 **Cultural visual theme:** Elaborate *Mesoamerican-inspired fantasy* feathers, jade/teal jewels, geometric gold ornaments, red-and-cream textiles, sun-serpent accessories and patterned round shields. Six costume roles Worker, Warrior, Ranger, Mage, Tinkerer, Elder; expressions, crest/tail/scale pattern options, jewelry, 6 coat-color busts and direction turnarounds.
 
 **Technical status:** Exact art approved as a **visual baseline**, not a native game sprite or runtime playable race. The source's ~1.65–1.85 m is a concept annotation, not a validated scale. No racial trait gameplay implementation. ART-01A sprite atlas audit required; playable stabilization branch remains untouched.
+
+## Approved Mothkin (Female) — fluffy nocturnal moth insectoids
+
+**Canonical original sheet:** [MOTHKIN_BASELINE_V1.md](MOTHKIN_BASELINE_V1.md) and unmodified original `/Knomira/Sprite Design/Race Baselines v1/Mothkin/Mothkin_Female_APPROVED.png` (1536 × 1024 RGB PNG, SHA-256 `e5230aae5ca5730b83a1dfcb818b4d6f83a4219a11652a792ab1d4818c70b1b5`). Explicitly approved on 2026-11-18.
+
+**Appearance:** Lithe, toned and gently shapely adult insectoid female figures with **plumed soft antennae, luminous violet eyes, abundant soft thorax/collar fluff, delicate natural chitin and broad richly patterned moth wings**. Distinct from armored sturdy Beetlekin and sleeker/harder-chitin Antkin. Preserve the **six fantasy roles Worker, Warrior, Ranger, Mage, Tinkerer, Elder**, with nighttime work/herbalism/scouting/magic represented in outfit and accessory design, plus expression, antenna, wing pattern, ruff, chitin and turnaround studies. Palette/clan names: **Ivory, Amber, Rosy, Luna, Umbral, Jade, Sable, Luminous**.
+
+**Implementation status:** Approved **visual concept only**, no actual playable species, atlas, sprite animation, flight mechanic or verified night-vision game bonuses. Printed dimensions are concept illustrative. Do not rebuild canonical reference from a generated all-race collage; preserve the original pixel-perfect PNG. ART-01A native atlas audit remains required; no changes to game stabilization branch.
