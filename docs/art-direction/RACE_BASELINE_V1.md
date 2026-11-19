@@ -1,4 +1,4 @@
-# Knomira Race Design Baseline v2.1 — Gnome, Feral Hyenakin and Revised Demi-Hyenakin approved
+# Knomira Race Design Baseline v2.2 — Female Vampirekin registered
 
 **Status:** Approved **concept-art** direction; game runtime sprite-placement and new race implementation are **not verified**.
 
@@ -134,3 +134,11 @@ The older standalone `Dragonkin_Full_Female_APPROVED.png` shows **fully reptilia
 **MANDATORY:** **Human female face, nose, cheeks, mouth, hair and 90% human anatomy**, but rounded hyena ears, subtle fangs/ever-present recognizable mischievous grin, dark spots/rosettes/stripe patterns on darker **caramel/bronze/umber/ebony** skin, ample fuzzy fur at outer thighs/hips and forearms/wrists/paw-gloves, a prominent hyena tail and tasteful claws on mostly human hands/feet. Adult body variants lithe/toned, balanced, strong/muscular, plump/voluptuous, with six art-role examples, expressions and anatomy panels. Do not generate full hyena snouts or all-over anthro fur for Demi. Darker complexions and patterns are **cosmetic**, not ability/temperament linked.
 
 **Race separation:** Hyenakin and Demi-Hyenakin are **two independent approved visual races** with different facial morphology and fur distribution. No gameplay race IDs, native sprites, animation or traits are verified; remain on art branch and do not disturb `feature/playable-db-embark-integration` (PLAY-01D).
+
+## Approved Vampirekin (Female) — gothic humanlike vampires
+
+**Exact canonical visual reference:** [VAMPIREKIN_BASELINE_V1.md](VAMPIREKIN_BASELINE_V1.md), original unaltered `/Knomira/Sprite Design/Race Baselines v1/Vampirekin/Vampirekin_Female_APPROVED.png` (**1448 × 1086 RGB PNG**, SHA-256 `b349306d99a7568c147d890d782959ce5df7a951ee3e1119bcd215d6e9424945`). User approved this image as an official **art reference** for Knomira's Vampirekin on 2026-11-18.
+
+**Appearance:** Primarily normal human-faced adult women with subtle varying fangs, crimson/wine-red/amber/violet eyes, long black/silver hair, elegant aristocratic expressions, **black gothic corsets**, dark lace, fitted thigh-high legwear, deep burgundy cloaks, gold chains and rose jewelry. Example complexions Pale Ivory, Porcelain, Dusk Rose and Olive Dusk. Preserve the six original visual role costumes, expression tiles, eye/fang, hair and cape variants and anatomical turnarounds. Remain **distinct from Succubuskin and Demonkin**; no default horns, animal ears, large wings, or tails. Natural skin tone variation does not determine abilities or morality.
+
+**Status:** Approved **visual concept only**. Printed height ~1.60–1.78 m is not game-verified. No new gameplay species, mechanics, sprite sheets or animations. ART-01A native atlas audit remains a prerequisite. Do not alter the playable-stabilization branch for race-art registration.
