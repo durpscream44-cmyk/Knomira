@@ -1,4 +1,4 @@
-# Knomira Race Design Baseline v2.2 — Female Vampirekin registered
+# Knomira Race Design Baseline v2.3 — Lizardkin Female approved
 
 **Status:** Approved **concept-art** direction; game runtime sprite-placement and new race implementation are **not verified**.
 
@@ -142,3 +142,13 @@ The older standalone `Dragonkin_Full_Female_APPROVED.png` shows **fully reptilia
 **Appearance:** Primarily normal human-faced adult women with subtle varying fangs, crimson/wine-red/amber/violet eyes, long black/silver hair, elegant aristocratic expressions, **black gothic corsets**, dark lace, fitted thigh-high legwear, deep burgundy cloaks, gold chains and rose jewelry. Example complexions Pale Ivory, Porcelain, Dusk Rose and Olive Dusk. Preserve the six original visual role costumes, expression tiles, eye/fang, hair and cape variants and anatomical turnarounds. Remain **distinct from Succubuskin and Demonkin**; no default horns, animal ears, large wings, or tails. Natural skin tone variation does not determine abilities or morality.
 
 **Status:** Approved **visual concept only**. Printed height ~1.60–1.78 m is not game-verified. No new gameplay species, mechanics, sprite sheets or animations. ART-01A native atlas audit remains a prerequisite. Do not alter the playable-stabilization branch for race-art registration.
+
+## Approved Lizardkin (Female) — smooth-scaled Mesoamerican-inspired lizardfolk
+
+**Canonical image/specification:** [LIZARDKIN_BASELINE_V1.md](LIZARDKIN_BASELINE_V1.md), original exact image `/Knomira/Sprite Design/Race Baselines v1/Lizardkin/Lizardkin_Female_APPROVED.png`, 1448 × 1086 RGB PNG, SHA-256 `07e8ae71fd7449b33ffa433646aa5cb7f6e92639db2a99ac9a75c722c5387a24`. Approved by the user after the 2026-11-18 generation.
+
+**Body design:** Adult upright feminine **lizard-headed** humanoids with **softer small reptilian snouts**, long balancing lizard tails and clawed extremities, **primarily smooth scales** with stronger block/mosaic accent patches on shoulders/upper arms and upper thighs/hips. Distinct from both full Dragonkin and Demi-Human Dragonkin: **not large dragon snouts, big horns or mandatory wings**. Color families: Emerald, Turquoise, Sandy, Obsidian, Ivory, Jungle.
+
+**Cultural visual theme:** Elaborate *Mesoamerican-inspired fantasy* feathers, jade/teal jewels, geometric gold ornaments, red-and-cream textiles, sun-serpent accessories and patterned round shields. Six costume roles Worker, Warrior, Ranger, Mage, Tinkerer, Elder; expressions, crest/tail/scale pattern options, jewelry, 6 coat-color busts and direction turnarounds.
+
+**Technical status:** Exact art approved as a **visual baseline**, not a native game sprite or runtime playable race. The source's ~1.65–1.85 m is a concept annotation, not a validated scale. No racial trait gameplay implementation. ART-01A sprite atlas audit required; playable stabilization branch remains untouched.
