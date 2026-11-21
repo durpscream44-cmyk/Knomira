@@ -61,7 +61,7 @@ QUEUE_CFG = {"agents": {"gemini": {"execution": "local_cli",
 
 
 def queue_task():
-    return {"number": 28, "state": "open",
+    return {"number": 28, "title": "Mock queue issue", "state": "open",
             "labels": [{"name": label} for label in
                        ("agent:approved", "agent:ready", "agent:provider:gemini")],
             "body": ("### Base branch\n\nmaster\n### Task kind\n\ntests\n"
