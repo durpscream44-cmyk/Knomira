@@ -71,7 +71,8 @@ def queue_task():
 
 
 class QueueProbes(unittest.TestCase):
-    def test_sec07_manual_only_28_and_29_are_not_currently_eligible(self):
+    def test_sec07_missing_automatic_approval_is_ineligible(self):
+        # Only checks the missing-approval gate, not a manual-label override.
         for number in (28, 29):
             with self.subTest(issue=number):
                 issue = queue_task()
@@ -80,16 +81,24 @@ class QueueProbes(unittest.TestCase):
                 self.assertFalse(queue.eligible(issue, "gemini", QUEUE_CFG))
 
     @unittest.expectedFailure
-    def test_sec07_manual_ready_must_override_accidental_auto_labels(self):
-        issue = queue_task()
-        issue["labels"].append({"name": "manual:ready"})
-        self.assertFalse(queue.eligible(issue, "gemini", QUEUE_CFG))
+    def test_sec07_manual_ready_overrides_conflicting_auto_labels(self):
+        for number in (28, 29):
+            issue = queue_task()
+            issue["number"] = number
+            self.assertTrue(queue.eligible(issue, "gemini", QUEUE_CFG))
+            issue["labels"].append({"name": "manual:ready"})
+            with self.subTest(issue=number):
+                self.assertFalse(queue.eligible(issue, "gemini", QUEUE_CFG))
 
     @unittest.expectedFailure
-    def test_sec07_manual_kilo_must_override_accidental_auto_labels(self):
-        issue = queue_task()
-        issue["labels"].append({"name": "manual:kilo"})
-        self.assertFalse(queue.eligible(issue, "gemini", QUEUE_CFG))
+    def test_sec07_manual_kilo_overrides_conflicting_auto_labels(self):
+        for number in (28, 29):
+            issue = queue_task()
+            issue["number"] = number
+            self.assertTrue(queue.eligible(issue, "gemini", QUEUE_CFG))
+            issue["labels"].append({"name": "manual:kilo"})
+            with self.subTest(issue=number):
+                self.assertFalse(queue.eligible(issue, "gemini", QUEUE_CFG))
 
     def test_sec08_queue_scan_is_get_only(self):
         calls = []
