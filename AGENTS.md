@@ -93,3 +93,9 @@ For the first completion release:
 
 ## Completion gate
 Do not label the project functionally complete until a fresh checkout can be built using written instructions and a clean-install smoke test plus a long-session test have passed. Save/load must be tested during active jobs, carried items, agriculture, combat/death, and trader/event activity.
+
+## Universal Knomira check-in (all AI providers)
+
+When the user says **"Check in for Knomira"**, **"Continue Knomira"**, **"Check in as coordinator"**, or similar, use [START_HERE.md](START_HERE.md) and the [check-in protocol](docs/agent-coordination/CHECKIN_PROTOCOL.md). Read the **live** GitHub issue/PR/branch state, identify actual capabilities, state the mission and boundaries, create or resume a tiny evidence-backed roadmap, and perform safe authorized work. Checkpoint early and sign off with a verifiable resume pointer. Do not treat the check-in phrase as permission for unattended execution, paid usage, security changes, automatic claims, production merges or working outside an issue's allowed paths.
+
+The coordination protocol in [draft PR #24](https://github.com/durpscream44-cmyk/Knomira/pull/24) remains separate and is **not automatically deployed**. Manual-only Kilo issues and all existing safety gates still apply. A chat-only AI with no GitHub write/terminal access can contribute **proposed** patches, test designs, reviews and task packets; it must never claim they were applied or run.
