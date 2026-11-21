@@ -44,6 +44,13 @@ If no eligible execution task exists, choose a **read-only** valuable contributi
 - The playable/RmlUi work includes stacked draft PRs [#21](https://github.com/durpscream44-cmyk/Knomira/pull/21) and [#22](https://github.com/durpscream44-cmyk/Knomira/pull/22). Check actual bases/heads before working; do not assume code from either is on `master`.
 - `CODEX_TICKETS.md` and `CODEX_MASTER_INSTRUCTIONS.md` provide historical context. The old "always start T01" instruction has been **retired** as the default check-in policy. Verify current issues before assigning anything.
 
+## Integration guard: overlapping onboarding drafts
+
+- [PR #31](https://github.com/durpscream44-cmyk/Knomira/pull/31) is the candidate **canonical one-phrase check-in entry point** in this file. [PR #30](https://github.com/durpscream44-cmyk/Knomira/pull/30), stacked on draft [PR #24](https://github.com/durpscream44-cmyk/Knomira/pull/24), independently edits `START_HERE.md`. Reviewers must reconcile both versions into one canonical entry point; neither should silently overwrite the other.
+- Preserve PR #30's fail-closed `scripts/local_agent_runner.py` `--execute` refusal and `scripts/test_runner_execution_gate.py` regression when integrating coordinator code. Do not expose the unreviewed runner from PR #24. Independent security review [issue #25](https://github.com/durpscream44-cmyk/Knomira/issues/25) and explicit owner approval are prerequisites to enabling execution.
+- This onboarding is on a **draft branch**, not yet deployed to `master`. Until merged, test using the explicit branch URL; the check-in phrase alone is not proof that the default branch includes this protocol.
+- If all open issues are restricted, blocked, or not authorized for this provider, an ordinary check-in must complete useful **read-only** work and record a durable checkpoint. It does not grant ChatGPT a coding assignment.
+
 ## Efficiency and safety policy
 
 - Prioritize **regular ChatGPT and free/freemium agents** for planning, documentation, static analysis, deterministic tests, and bounded implementation. Default **$0 extra spending** unless owner approves otherwise.
