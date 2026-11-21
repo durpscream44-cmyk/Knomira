@@ -1,19 +1,59 @@
-# Start Here: Using Codex on the Ingnomia Fork
+# Knomira — Start Here (Universal AI Check-in)
 
-1. Put the Ingnomia source under Git and create a working fork/branch.
-2. Copy `CODEX_MASTER_INSTRUCTIONS.md` into the repository root (you may rename it to `AGENTS.md` if your Codex workflow automatically reads that file).
-3. Copy `CODEX_TICKETS.md` into `docs/` or the repository root.
-4. Give Codex only **T01** first. Do not ask it to execute the entire queue in one run.
-5. Review its diff and build/test report before moving to the next ticket.
-6. For T03 and later runtime tickets, require a reproduction before accepting a fix.
-7. Commit known-good work after each ticket so a bad agent change can be reverted cleanly.
+**One-command check-in:** "Check in for Knomira."
 
-## First prompt to Codex
+Official repository: https://github.com/durpscream44-cmyk/Knomira  
+Project mission: make the Ingnomia-derived single-player colony game **playable, functionally complete, stable, and performant** before expanding scope. Preserve save integrity and working gameplay.
 
-Read `CODEX_MASTER_INSTRUCTIONS.md` completely. Work only on **T01 — Reproducible Windows build** from `CODEX_TICKETS.md`.
+This is the entry point for ordinary ChatGPT/Copilot/Grok/Gemini chats, coding CLIs, Codex, reviewers, and planning coordinators. A check-in is **not** permission to run an unattended agent, bypass review, spend money, change security settings, or merge code.
 
-Before editing anything, inspect the repository's CMake files, CI configuration, submodule/dependency declarations, and current documentation. Report your build plan and the files you expect to change. Then execute the plan.
+## Fast route (read in this order)
 
-Do not make gameplay changes. Do not remove features just to make the build pass. Use the actual source/build configuration as authoritative when it conflicts with old documentation.
+1. Read `AGENTS.md` on the **actual target branch**; its scope and safety rules are binding.
+2. Read [CHECKIN_PROTOCOL.md](docs/agent-coordination/CHECKIN_PROTOCOL.md) for task selection, role boundaries, mission/checklist, checkpointing, and sign-off.
+3. Check **live** GitHub issues, open/draft/closed PRs, branch heads, recent issue comments, and relevant CI results. Old handoffs are clues, not current truth.
+4. Read only the **task-specific** issue, reference files, and checkpoint needed for the selected job. Do not dump the whole repo into context.
+5. Declare a 1–3 sentence mission, what is allowed/forbidden, starting branch/SHA, and a miniature numbered roadmap; then **perform the authorized work**.
+6. Update the checklist with evidence after every meaningful step. Before ending, produce the [checkpoint](docs/agent-coordination/CHECKPOINT_TEMPLATE.md) with the **NEXT EXACT ACTION**.
 
-When finished, report status, exact files changed, build commands and results, remaining blockers/risks, and whether T01 meets its acceptance criteria. Stop after T01 and wait for review.
+Use [CHAT_TASK_PACKET_TEMPLATE.md](docs/agent-coordination/CHAT_TASK_PACKET_TEMPLATE.md) when an AI cannot inspect the repository itself. Do not invent file contents or commits if access fails.
+
+## Understand what "check in" means
+
+| User says | Required action |
+| --- | --- |
+| **Check in for Knomira** / **Find work on Knomira** | Verify live state and own capabilities; select a suitable already-authorized low-risk task, or carry out useful read-only investigation and produce a proposed task packet. Start allowed work without lengthy re-explanation. |
+| **Continue my Knomira work** | Identify the assigned issue and latest verified checkpoint; compare to remote state, then resume from the first unfinished step. |
+| **Check in as coordinator** | Examine dependencies, overlap, blockers and quotas; prepare bounded assignments and handoffs. Do not approve your own changes. |
+| **Check in as reviewer** | Examine review-ready PR diffs and evidence, report PASS/CHANGES NEEDED/BLOCKED; no implied permission to merge. |
+| **Knomira status** | Summarize verified vs proposed vs untested work, branch/PR state, blockers and next action. |
+
+If the user asks you to check in, **do not stop at a plan** if a permitted, useful task can be completed in the current environment.
+
+## Hard gate: assignment authority
+
+**Read-only investigation and a proposed patch/task packet are always the default.** To edit repository files, the assigned issue must authorize the service/role, scope, base branch, writable paths, and acceptance evidence; use an isolated branch and PR. Never equate an open GitHub issue, an available label, or writable Git credentials with authorization to execute it.
+
+A manually launched task is not automatically available to a random AI. Specifically, [#28](https://github.com/durpscream44-cmyk/Knomira/issues/28) and [#29](https://github.com/durpscream44-cmyk/Knomira/issues/29) were designated **manual Kilo-only launch and Codex review** as of 2026-11-20. [#25](https://github.com/durpscream44-cmyk/Knomira/issues/25) is a high-risk coordinator security gate; [#26](https://github.com/durpscream44-cmyk/Knomira/issues/26) depends on it; [#27](https://github.com/durpscream44-cmyk/Knomira/issues/27) is Codex/supervised engine audit. Re-check their current contracts; **never dispatch them just because they appear in a queue**.
+
+If no eligible execution task exists, choose a **read-only** valuable contribution: investigate an unclaimed bug hypothesis, review a patch, prepare tests as proposed code, identify a dependency, draft an issue/task packet, or update a copyable handoff. Make clear what has NOT been applied or tested.
+
+## Historical versus current branches
+
+- The existing [multi-agent coordinator draft PR #24](https://github.com/durpscream44-cmyk/Knomira/pull/24) is on `feature/multi-agent-github-coordinator` and was **not merged** when this entry point was written. Its `docs/agent-coordination/README.md`, `TASK_TEMPLATE.md`, `RESULT_TEMPLATE.md`, and `CODEX_DELEGATION.md` are important **draft references**, not deployed execution authorization.
+- The playable/RmlUi work includes stacked draft PRs [#21](https://github.com/durpscream44-cmyk/Knomira/pull/21) and [#22](https://github.com/durpscream44-cmyk/Knomira/pull/22). Check actual bases/heads before working; do not assume code from either is on `master`.
+- `CODEX_TICKETS.md` and `CODEX_MASTER_INSTRUCTIONS.md` provide historical context. The old "always start T01" instruction has been **retired** as the default check-in policy. Verify current issues before assigning anything.
+
+## Efficiency and safety policy
+
+- Prioritize **regular ChatGPT and free/freemium agents** for planning, documentation, static analysis, deterministic tests, and bounded implementation. Default **$0 extra spending** unless owner approves otherwise.
+- Reserve premium Codex/high-capability engineering for serious integration, architecture, security, concurrency, persistence, and defects that free models cannot reliably resolve.
+- The cheapest response is not automatically the cheapest **accepted change**. Track rework and review cost.
+- Protect local saves, secrets, license files, third-party assets, repository branches, and other agents' work. A fork/worktree is **not** an OS security sandbox.
+- No automation, no unrestricted command permissions, no self-approval, no auto-merge, no invented CI/test success.
+
+**Required final output:** mission; provider/model (or unknown); issue/base SHA; checklist with VERIFIED versus only COMPLETED; changed/proposed files; actual tests and NOT RUN; exact remote commit or NOT PUSHED; blockers; and **NEXT EXACT ACTION**. A link to a chat without a durable checkpoint is not an adequate handoff.
+
+## Legacy Codex onboarding
+
+Earlier versions of this file instructed Codex to run `T01` from `CODEX_TICKETS.md`. That was a historical starting workflow, not a standing assignment. Use it only when explicitly requested and after confirming the current repository state.
