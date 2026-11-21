@@ -37,7 +37,7 @@ Do not mark `agent:review` as `agent:done` automatically. Treat expired or orpha
 Agents must read [profiles.json](profiles.json), [AGENT_ROLES.md](AGENT_ROLES.md) and [CODEX_DELEGATION.md](CODEX_DELEGATION.md). Each issue specifies Task kind, Required capabilities, Allowed paths and Risk. The agent declines when the actual environment or quota cannot complete it. All agents commit/push early and leave a GitHub handoff before context exhaustion. A model claiming it finished without a pushed commit, PR or reproducible work report is not complete.
 
 ## Automation
-GitHub Actions does read-only queue scans and manual label initialization. Jules was made read-only November 11, 2026, so the earlier Jules auto-dispatch prototype is retired. A local CLI runner may be explicitly enabled on a home PC for Gemini, OpenCode or Kilo; it still requires live authorization, capability verification and a human/Codex review. See [SETUP.md](SETUP.md).
+GitHub Actions does read-only queue scans and manual label initialization. Jules was made read-only November 11, 2026, so the earlier Jules auto-dispatch prototype is retired. The local CLI runner's execution path is disabled on the onboarding branch pending independent issue #25 security acceptance and explicit approval. Its dry-run/queue concepts do not authorize a model launch. See [SETUP.md](SETUP.md).
 
 ## Guardrails
 No direct pushes to protected development branches, no force pushes, no auto merge, no broad refactors, no edits of local real saves, no fabricated CI, no credential logging. For Jules remote Linux execution, Windows-specific Qt/Noesis/OpenAL and user-owned assets may be unavailable: report limitations honestly and rely on existing Windows Actions/desktop checks for integration.
