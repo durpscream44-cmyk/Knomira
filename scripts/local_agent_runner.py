@@ -174,6 +174,8 @@ def main():
     parser.add_argument("--once", action="store_true", help="At most one task")
     parser.add_argument("--execute", action="store_true", help="Allow actual CLI and Git writes")
     args = parser.parse_args()
+    if args.execute:
+        parser.error("--execute is disabled pending issue #25 security acceptance and explicit maintainer approval")
     root = Path.cwd().resolve()
     repo, token = os.getenv("GITHUB_REPOSITORY", ""), os.getenv("GITHUB_TOKEN", "")
     if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repo) or not token:
