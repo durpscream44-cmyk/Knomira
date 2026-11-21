@@ -48,6 +48,20 @@ class GateAndPathProbes(unittest.TestCase):
             with self.subTest(candidate=candidate):
                 self.assertFalse(runner.permitted(candidate, [CHANGED], CFG["protected_patterns"]))
 
+    def test_sec05_protected_patterns_with_broad_allowed_directory(self):
+        # The positive control isolates protected globs from the path allowlist.
+        cases = (("scripts/secret.key", "scripts/", "*.key"),
+                 ("scripts/auth.pem", "scripts/", "*.pem"),
+                 ("scripts/secret.txt", "scripts/", "*secret*"),
+                 ("src/gui/license.h", "src/gui/", "*license*"))
+        for candidate, allowed_dir, pattern in cases:
+            with self.subTest(path=candidate):
+                self.assertTrue(runner.permitted(candidate, [allowed_dir], []))
+                self.assertFalse(runner.permitted(candidate, [allowed_dir],
+                                                  [pattern]))
+        self.assertFalse(runner.permitted("scripts/.env", ["scripts/"], []))
+        self.assertFalse(runner.permitted("scripts/.git/config", ["scripts/"], []))
+
     @unittest.expectedFailure
     def test_sec05_symlink_escape_from_allowlisted_directory(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -108,10 +122,10 @@ class MockedRunOneProbes(unittest.TestCase):
             raise PermissionError("simulated push denied")
         return ""
 
-    def run_mock(self, issue=None):
+    def run_mock(self, issue=None, task_meta=None):
         with contextlib.redirect_stdout(io.StringIO()):
             runner.run_one("example/Knomira", "dummy-token", self.root,
-                           "kilo", CFG, issue or ISSUE, META)
+                           "kilo", CFG, issue or ISSUE, task_meta or META)
 
     def report(self):
         return self.comment.call_args.args[3]
@@ -200,18 +214,24 @@ class MockedRunOneProbes(unittest.TestCase):
         self.assertNotIn("push", [call[0] for call in self.git_history])
         self.api.assert_not_called()
 
-    def test_sec12_protected_change_is_not_pushed(self):
-        self.changed.return_value = [CHANGED, "src/gui/license.h"]
-        self.run_mock()
+    def test_sec12_protected_change_is_not_pushed_when_directory_is_allowed(self):
+        # scripts/ is in the task allowlist; only the protected glob can block.
+        self.assertTrue(runner.permitted("scripts/secret.key", ["scripts/"], []))
+        self.changed.return_value = [CHANGED, "scripts/secret.key"]
+        self.run_mock(task_meta=dict(META, paths=["scripts/"]))
         self.assertNotIn("push", [call[0] for call in self.git_history])
         self.api.assert_not_called()
         self.assertIn("Out-of-scope paths", self.report())
 
-    def test_sec14_missing_git_push_permissions_block(self):
-        self.deny_push = True
-        self.run_mock()
-        self.assertIn("simulated push denied", self.report())
-        self.assertIn("Local recovery worktree:", self.report())
+    def test_sec14_remote_fetch_permission_denial_stops_before_claim(self):
+        # Distinct from SEC-10 push failure. No durable checkpoint is proven.
+        with patch.object(runner, "git",
+                          side_effect=PermissionError("mock 403 remote fetch")):
+            with self.assertRaises(PermissionError):
+                self.run_mock()
+        self.add.assert_not_called()
+        self.proc.assert_not_called()
+        self.api.assert_not_called()
 
     @unittest.expectedFailure
     def test_sec14_failed_final_handoff_never_leaves_running_label(self):
