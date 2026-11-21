@@ -80,25 +80,38 @@ class QueueProbes(unittest.TestCase):
                 issue["labels"] = [{"name": "manual:kilo"}, {"name": "manual:ready"}]
                 self.assertFalse(queue.eligible(issue, "gemini", QUEUE_CFG))
 
-    @unittest.expectedFailure
-    def test_sec07_manual_ready_overrides_conflicting_auto_labels(self):
+    def test_sec07_automatic_label_baselines_are_eligible(self):
+        # Positive control MUST fail normally (not be swallowed by expectedFailure).
+        # Both numbered fixtures represent otherwise eligible automatic tasks.
         for number in (28, 29):
-            issue = queue_task()
-            issue["number"] = number
-            self.assertTrue(queue.eligible(issue, "gemini", QUEUE_CFG))
-            issue["labels"].append({"name": "manual:ready"})
             with self.subTest(issue=number):
-                self.assertFalse(queue.eligible(issue, "gemini", QUEUE_CFG))
+                issue = queue_task()
+                issue["number"] = number
+                self.assertTrue(queue.eligible(issue, "gemini", QUEUE_CFG))
+
+    def _assert_manual_label_blocks_auto_dispatch(self, number, manual_label):
+        # Expected-failure methods below contain ONLY the disputed policy
+        # assertion. Every fixture's automatic baseline is separately guarded.
+        issue = queue_task()
+        issue["number"] = number
+        issue["labels"].append({"name": manual_label})
+        self.assertFalse(queue.eligible(issue, "gemini", QUEUE_CFG))
 
     @unittest.expectedFailure
-    def test_sec07_manual_kilo_overrides_conflicting_auto_labels(self):
-        for number in (28, 29):
-            issue = queue_task()
-            issue["number"] = number
-            self.assertTrue(queue.eligible(issue, "gemini", QUEUE_CFG))
-            issue["labels"].append({"name": "manual:kilo"})
-            with self.subTest(issue=number):
-                self.assertFalse(queue.eligible(issue, "gemini", QUEUE_CFG))
+    def test_sec07_manual_ready_blocks_auto_dispatch_issue_28(self):
+        self._assert_manual_label_blocks_auto_dispatch(28, "manual:ready")
+
+    @unittest.expectedFailure
+    def test_sec07_manual_ready_blocks_auto_dispatch_issue_29(self):
+        self._assert_manual_label_blocks_auto_dispatch(29, "manual:ready")
+
+    @unittest.expectedFailure
+    def test_sec07_manual_kilo_blocks_auto_dispatch_issue_28(self):
+        self._assert_manual_label_blocks_auto_dispatch(28, "manual:kilo")
+
+    @unittest.expectedFailure
+    def test_sec07_manual_kilo_blocks_auto_dispatch_issue_29(self):
+        self._assert_manual_label_blocks_auto_dispatch(29, "manual:kilo")
 
     def test_sec08_queue_scan_is_get_only(self):
         calls = []
