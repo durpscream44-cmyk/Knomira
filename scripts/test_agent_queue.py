@@ -44,5 +44,97 @@ class Tests(unittest.TestCase):
         self.assertFalse(valid_paths([".env"]))
 
 
+# COORD-01A deterministic zero-network and manual-only dispatch probes.
+import contextlib
+import io
+import os
+from pathlib import Path
+import sys
+from unittest.mock import patch
+import agent_queue as queue
+
+QUEUE_CFG = {"agents": {"gemini": {"execution": "local_cli",
+              "allowed_kinds": ["docs", "tests"]},
+              "jules": {"execution": "disabled", "allowed_kinds": []}},
+             "auto_denied_kinds": ["engine-integration", "windows-runtime"],
+             "runtime_capabilities": ["git", "github", "windows", "cmake"]}
+
+
+def queue_task():
+    return {"number": 28, "state": "open",
+            "labels": [{"name": label} for label in
+                       ("agent:approved", "agent:ready", "agent:provider:gemini")],
+            "body": ("### Base branch\n\nmaster\n### Task kind\n\ntests\n"
+                     "### Required capabilities\n\ngit, github\n"
+                     "### Allowed paths\n\nscripts/\n### Risk\n\nlow\n")}
+
+
+
+class QueueProbes(unittest.TestCase):
+    def test_sec07_manual_only_28_and_29_are_not_currently_eligible(self):
+        for number in (28, 29):
+            with self.subTest(issue=number):
+                issue = queue_task()
+                issue["number"] = number
+                issue["labels"] = [{"name": "manual:kilo"}, {"name": "manual:ready"}]
+                self.assertFalse(queue.eligible(issue, "gemini", QUEUE_CFG))
+
+    @unittest.expectedFailure
+    def test_sec07_manual_ready_must_override_accidental_auto_labels(self):
+        issue = queue_task()
+        issue["labels"].append({"name": "manual:ready"})
+        self.assertFalse(queue.eligible(issue, "gemini", QUEUE_CFG))
+
+    @unittest.expectedFailure
+    def test_sec07_manual_kilo_must_override_accidental_auto_labels(self):
+        issue = queue_task()
+        issue["labels"].append({"name": "manual:kilo"})
+        self.assertFalse(queue.eligible(issue, "gemini", QUEUE_CFG))
+
+    def test_sec08_queue_scan_is_get_only(self):
+        calls = []
+        def fake_api(repo, token, path, method="GET", data=None):
+            calls.append((path, method, data))
+            if path.startswith("/issues?"):
+                return [queue_task()]
+            self.fail("Unexpected API path: " + path)
+        with patch.object(sys, "argv", ["agent_queue.py", "--mode", "scan"]), \
+             patch.dict(os.environ, {"GITHUB_REPOSITORY": "example/Knomira",
+                                     "GITHUB_TOKEN": "dummy-token"}), \
+             patch.object(queue, "api", side_effect=fake_api), \
+             patch.object(queue, "profiles", return_value=QUEUE_CFG), \
+             contextlib.redirect_stdout(io.StringIO()):
+            queue.main()
+        self.assertTrue(calls)
+        self.assertTrue(all(method == "GET" and data is None
+                            for _, method, data in calls))
+
+    @unittest.expectedFailure
+    def test_sec08_scheduled_scan_token_does_not_have_issue_write_permission(self):
+        workflow = (Path(__file__).resolve().parents[1] /
+                    ".github/workflows/agent-queue.yml").read_text(encoding="utf-8")
+        self.assertNotIn("issues: write", workflow)
+
+    def test_sec13_bad_issue_or_unknown_capability_is_ineligible(self):
+        cases = [("closed", lambda x: x.update(state="closed")),
+                 ("unknown capability", lambda x: x.update(
+                     body=x["body"].replace("git, github", "git, github, unknown-cap"))),
+                 ("path traversal", lambda x: x.update(
+                     body=x["body"].replace("scripts/", "../private/"))),
+                 ("high risk", lambda x: x.update(
+                     body=x["body"].replace("### Risk\n\nlow", "### Risk\n\nhigh"))),
+                 ("missing approval", lambda x: x.update(
+                     labels=[{"name": "agent:ready"}])),
+                 ("already running", lambda x: x["labels"].append(
+                     {"name": "agent:running"}))]
+        for name, mutate in cases:
+            with self.subTest(case=name):
+                issue = queue_task()
+                mutate(issue)
+                self.assertFalse(queue.eligible(issue, "gemini", QUEUE_CFG))
+
+
+
+
 if __name__ == "__main__":
     unittest.main()
