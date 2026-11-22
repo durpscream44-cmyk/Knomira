@@ -29,6 +29,7 @@
 #include <QApplication>
 #endif
 #ifdef KNOMIRA_SHELL_WORLD_RENDERER
+#include <QCloseEvent>
 // This is a separate, opt-in original-engine world-rendering proof target.
 // Do not add it to the shipping menu or the existing engine-only probe.
 #include "../../src/gui/mainwindowrenderer.h"
@@ -230,22 +231,32 @@ public:
         timer_.start();
     }
 
+#ifdef KNOMIRA_SHELL_WORLD_RENDERER
+    void ReleaseWorldRenderer() {
+        if (!worldRenderer_) return;
+        worldViewActive_ = false;
+        // Qt's native surface may already be gone in the destructor.
+        // The closeEvent path calls this while the window is still valid.
+        if (glContext_ && glContext_->makeCurrent(this)) {
+            worldRenderer_->cleanupWorld(); // releases current context
+            if (glContext_->makeCurrent(this)) {
+                worldRenderer_->cleanup(); // releases current context again
+            } else {
+                qWarning() << "Could not restore GL context for renderer cleanup";
+            }
+        } else {
+            qWarning() << "No GL context available for world renderer teardown";
+        }
+        // QObject disconnects from the original EventConnector before the
+        // marked QTemporaryDir / GameManager is destroyed.
+        worldRenderer_.reset();
+    }
+#endif
+
     ~QtMenuWindow() override {
         timer_.stop();
 #ifdef KNOMIRA_SHELL_WORLD_RENDERER
-        // Renderer QObject must die before the original GameManager and the
-        // RmlUi/Qt GL objects. Cleanup helpers release the current context,
-        // so make it current again for each subsequent cleanup stage.
-        if (worldRenderer_) {
-            if (glContext_ && glContext_->makeCurrent(this)) {
-                worldRenderer_->cleanupWorld();
-                if (glContext_->makeCurrent(this))
-                    worldRenderer_->cleanup();
-            } else {
-                qWarning() << "World renderer GL cleanup: Qt surface unavailable";
-            }
-            worldRenderer_.reset();
-        }
+        ReleaseWorldRenderer(); // fallback if closeEvent was not delivered
 #endif
         if (glContext_ && glContext_->makeCurrent(this)) {
             if (rmlInitialised_) Rml::Shutdown();
@@ -748,6 +759,13 @@ public:
 #endif
 
 protected:
+#ifdef KNOMIRA_SHELL_WORLD_RENDERER
+    void closeEvent(QCloseEvent* event) override {
+        // Release GPU objects before Qt disposes the QWindow surface.
+        ReleaseWorldRenderer();
+        QWindow::closeEvent(event);
+    }
+#endif
     void exposeEvent(QExposeEvent* event) override {
         QWindow::exposeEvent(event);
         if (isExposed()) requestUpdate();
