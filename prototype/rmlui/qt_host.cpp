@@ -33,6 +33,8 @@
 // This is a separate, opt-in original-engine world-rendering proof target.
 // Do not add it to the shipping menu or the existing engine-only probe.
 #include "../../src/gui/mainwindowrenderer.h"
+#include "../../src/gui/eventconnector.h"
+#include "../../src/base/global.h"
 #include "../../src/base/gamestate.h"
 #endif
 #ifdef KNOMIRA_GAME_SHELL
@@ -370,7 +372,30 @@ public:
 #ifdef KNOMIRA_SHELL_ENGINE_PROBE
     void StartIsolatedColony() {
         QString error;
+#ifdef KNOMIRA_SHELL_WORLD_RENDERER
+        // The original GameManager broadcasts its initial camera position
+        // DURING New Game and then clears GameState::initialCameraTarget.
+        // This renderer is constructed later (after the authorized dataPath
+        // is set), so retain only the initial center position for replay.
+        Position requestedCenter;
+        bool hasRequestedCenter = false;
+        QMetaObject::Connection centerCapture;
+        if (engineProbe_ && Global::eventConnector) {
+            centerCapture = QObject::connect(
+                Global::eventConnector->aggregatorRenderer(),
+                &AggregatorRenderer::signalCenterCamera, this,
+                [&](const Position& position) {
+                    requestedCenter = position;
+                    hasRequestedCenter = true;
+                });
+        }
+        const bool started = engineProbe_ && engineProbe_->startNewGame(&error);
+        if (centerCapture)
+            QObject::disconnect(centerCapture);
+        if (!started) {
+#else
         if (!engineProbe_ || !engineProbe_->startNewGame(&error)) {
+#endif
             SetStatusText(QStringLiteral("Test New Game unavailable: ") + error);
             return;
         }
@@ -396,6 +421,8 @@ public:
         // MainWindow::onInitViewAfterLoad() does after New Game/Load Game.
         worldRenderer_->setMove(GameState::moveX, GameState::moveY);
         worldRenderer_->setScale(GameState::scale);
+        if (hasRequestedCenter)
+            worldRenderer_->onCenterCameraPosition(requestedCenter);
         // GameManager signalled gameplay before the renderer existed.
         // First paint calls MainWindowRenderer::initWorld(), which already
         // emits fullDataRequired() after allocating the GPU tile buffer.
