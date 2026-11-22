@@ -888,6 +888,16 @@ protected:
     }
 
     void keyPressEvent(QKeyEvent* event) override {
+#ifdef KNOMIRA_SHELL_WORLD_RENDERER
+        // The only in-world UI is the test HUD. Do not navigate/activate
+        // controls belonging to the now-hidden main menu.
+        if (worldViewActive_) {
+            if (!event->isAutoRepeat() && event->key() == Qt::Key_Escape)
+                close();
+            event->accept();
+            return;
+        }
+#endif
 #ifdef KNOMIRA_GAME_SHELL
         if (captureAction_ >= 0) {
             if (!event->isAutoRepeat()) {
@@ -1107,6 +1117,15 @@ private:
             return;
         }
 
+#ifdef KNOMIRA_SHELL_WORLD_RENDERER
+        if (worldViewActive_) {
+            // B / Back exits this disposable world probe; the hidden menu
+            // must never receive gameplay-button clicks or navigation.
+            if (justPressed.contains("B") || justPressed.contains("Back"))
+                close();
+            return;
+        }
+#endif
         int direction = 0;
         if (controls_.padMatches("menu_prev", held)) direction = -1;
         else if (controls_.padMatches("menu_next", held)) direction = 1;
