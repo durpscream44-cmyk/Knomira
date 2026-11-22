@@ -148,18 +148,28 @@ class MockedRunOneProbes(unittest.TestCase):
         self.run_mock()
         self.assertIn("UNSUCCESSFUL", self.api.call_args.args[4]["body"])
 
-    @unittest.expectedFailure
     def test_sec04_child_env_is_explicitly_allowlisted(self):
         dummy = {"PATH": "dummy-path", "SYSTEMROOT": "dummy-system",
                  "GITHUB_TOKEN": "dummy-github", "GH_TOKEN": "dummy-gh",
                  "JULES_API_KEY": "dummy-jules", "OPENAI_API_KEY": "dummy-openai",
                  "ANTHROPIC_API_KEY": "dummy-anthropic",
                  "AWS_SECRET_ACCESS_KEY": "dummy-aws",
-                 "SSH_AUTH_SOCK": "dummy-socket", "SOME_SECRET": "dummy-secret"}
+                 "SSH_AUTH_SOCK": "dummy-socket", "SOME_SECRET": "dummy-secret",
+                 "HOME": "sensitive-home", "USERPROFILE": "sensitive-profile",
+                 "APPDATA": "sensitive-appdata", "GIT_CONFIG_GLOBAL": "secret-git"}
         with patch.dict(os.environ, dummy, clear=True):
             self.run_mock()
+            # Reading the parent's environment for the child must not mutate it.
+            self.assertEqual(os.environ["GITHUB_TOKEN"], "dummy-github")
         env = self.proc.call_args.kwargs["env"]
-        self.assertLessEqual(set(env), {"PATH", "SYSTEMROOT"})
+        self.assertEqual(env, {"PATH": "dummy-path", "SYSTEMROOT": "dummy-system"})
+        self.assertTrue(set(env).isdisjoint(set(dummy) - {"PATH", "SYSTEMROOT"}))
+
+    def test_sec04_child_env_absent_startup_vars_stays_empty(self):
+        dummy = {"GITHUB_TOKEN": "dummy-github",
+                 "OPENAI_API_KEY": "dummy-openai", "HOME": "sensitive-home"}
+        with patch.dict(os.environ, dummy, clear=True):
+            self.assertEqual(runner.child_environment(), {})
 
     @unittest.expectedFailure
     def test_sec06_preclaimed_issue_does_not_start_a_second_worker(self):
