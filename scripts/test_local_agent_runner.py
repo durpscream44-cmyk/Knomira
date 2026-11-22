@@ -25,6 +25,7 @@ ISSUE = {"number": 25, "title": "Mock-only safety checks", "body": "Fixture"}
 class GateAndPathProbes(unittest.TestCase):
     def test_sec01_execute_refused_before_credentials_github_or_subprocess(self):
         stderr = io.StringIO()
+        stdout = io.StringIO()
         with patch.object(sys, "argv", ["runner.py", "--agent", "kilo", "--execute"]), \
              patch.object(runner.os, "getenv", side_effect=AssertionError("credentials read")), \
              patch.object(runner, "git", side_effect=AssertionError("git invoked")), \
@@ -32,11 +33,15 @@ class GateAndPathProbes(unittest.TestCase):
              patch.object(runner, "api", side_effect=AssertionError("GitHub API invoked")), \
              patch.object(runner.subprocess, "run", side_effect=AssertionError("child invoked")), \
              patch.object(runner.subprocess, "check_output", side_effect=AssertionError("child invoked")), \
-             contextlib.redirect_stderr(stderr):
+             contextlib.redirect_stderr(stderr), \
+             contextlib.redirect_stdout(stdout):
             with self.assertRaises(SystemExit) as error:
                 runner.main()
         self.assertEqual(error.exception.code, 2)
         self.assertIn("--execute is disabled", stderr.getvalue())
+        self.assertIn('"event": "runner.gate"', stdout.getvalue())
+        self.assertIn('"reason": "security-gate"', stdout.getvalue())
+        self.assertNotIn("dummy-github", stdout.getvalue())
 
     def test_sec05_protected_and_exact_file_paths(self):
         self.assertTrue(runner.permitted(CHANGED, [CHANGED], CFG["protected_patterns"]))
