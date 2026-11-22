@@ -301,6 +301,55 @@ if(KNOMIRA_BUILD_GAME_SHELL)
     # PLAY-01D: link and execute the actual GameManager/EventConnector tree.
     include(engine_lifecycle.cmake)
 
+    # PLAY-01F: a separate, opt-in, disposable-root UI-to-engine probe.
+    # This is NOT the shipping executable. The lifecycle library exports the
+    # KNOMIRA_ISOLATED_TEST_DATA_ROOT guard and uses the original game objects.
+    add_executable(knomira_game_shell_engine_probe
+        qt_host.cpp shell_engine_probe.cpp shell_engine_probe.h
+        save_catalog.cpp save_catalog.h
+        input_bindings.cpp input_bindings.h
+        "${rmlui_SOURCE_DIR}/Backends/RmlUi_Renderer_GL3.cpp"
+    )
+    target_compile_definitions(knomira_game_shell_engine_probe PRIVATE
+        KNOMIRA_GAME_SHELL=1 KNOMIRA_SHELL_ENGINE_PROBE=1)
+    target_include_directories(knomira_game_shell_engine_probe PRIVATE
+        "${rmlui_SOURCE_DIR}/Backends")
+    target_link_libraries(knomira_game_shell_engine_probe PRIVATE
+        RmlUi::RmlUi Qt6::Core Qt6::Gui Qt6::Widgets
+        knomira_lifecycle_engine)
+    set_target_properties(knomira_game_shell_engine_probe PROPERTIES
+        CXX_STANDARD 23 CXX_STANDARD_REQUIRED ON)
+    if(MSVC)
+        target_compile_options(knomira_game_shell_engine_probe PRIVATE /W4)
+    endif()
+    add_custom_command(TARGET knomira_game_shell_engine_probe POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${CMAKE_CURRENT_SOURCE_DIR}/game_shell.rml"
+            "$<TARGET_FILE_DIR:knomira_game_shell_engine_probe>/game_shell.rml"
+        COMMAND ${CMAKE_COMMAND} -E make_directory
+            "$<TARGET_FILE_DIR:knomira_game_shell_engine_probe>/content/db"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${CMAKE_CURRENT_SOURCE_DIR}/../../content/db/ingnomia.db.sql"
+            "$<TARGET_FILE_DIR:knomira_game_shell_engine_probe>/content/db/ingnomia.db.sql"
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${CMAKE_CURRENT_SOURCE_DIR}/../../content/JSON"
+            "$<TARGET_FILE_DIR:knomira_game_shell_engine_probe>/content/JSON"
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${CMAKE_CURRENT_SOURCE_DIR}/../../content/ai"
+            "$<TARGET_FILE_DIR:knomira_game_shell_engine_probe>/content/ai"
+        VERBATIM)
+
+    # Asset-free startup proof: real Config/DB/GameManager/EventConnector,
+    # a marked temporary root, no New Game and no player-save modification.
+    add_executable(knomira_shell_engine_preflight_test
+        shell_engine_preflight_test.cpp shell_engine_probe.cpp shell_engine_probe.h)
+    target_link_libraries(knomira_shell_engine_preflight_test PRIVATE
+        knomira_lifecycle_engine Qt6::Widgets)
+    set_target_properties(knomira_shell_engine_preflight_test PROPERTIES
+        CXX_STANDARD 23 CXX_STANDARD_REQUIRED ON)
+    add_dependencies(knomira_shell_engine_preflight_test
+        knomira_game_shell_engine_probe)
+
     enable_testing()
     foreach(smoke_target IN ITEMS
         knomira_save_catalog_test knomira_input_bindings_test
@@ -314,6 +363,8 @@ if(KNOMIRA_BUILD_GAME_SHELL)
         "${CMAKE_CURRENT_SOURCE_DIR}/../../content/db/ingnomia.db.sql")
     add_test(NAME knomira_rmlui_layout_test COMMAND knomira_rmlui_layout_test
         "${CMAKE_CURRENT_SOURCE_DIR}/game_shell.rml")
+    add_test(NAME knomira_shell_engine_preflight_test COMMAND knomira_shell_engine_preflight_test)
+    set_tests_properties(knomira_shell_engine_preflight_test PROPERTIES TIMEOUT 60)
     add_test(NAME knomira_colony_lifecycle_test COMMAND knomira_colony_lifecycle_test)
     set_tests_properties(knomira_colony_lifecycle_test PROPERTIES
         TIMEOUT 180 SKIP_RETURN_CODE 77 LABELS "requires-authorized-tilesheets")
