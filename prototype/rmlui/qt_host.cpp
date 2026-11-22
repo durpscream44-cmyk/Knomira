@@ -370,20 +370,8 @@ public:
             SetStatus("Test colony started, but the Qt GL context is unavailable.");
             return;
         }
-        const auto gladLoader = [](const char* name) -> GLADapiproc {
-            return reinterpret_cast<GLADapiproc>(
-                QOpenGLContext::currentContext()->getProcAddress(name));
-        };
-        const int loadedGL = gladLoadGL(gladLoader);
-        if (!loadedGL || !GLAD_GL_VERSION_4_3) {
-            qCritical() << "Original world renderer needs OpenGL 4.3; detected:"
-                        << glContext_->format();
-            glContext_->doneCurrent();
-            SetStatus("Original world renderer unavailable: OpenGL 4.3 required.");
-            return;
-        }
-        qInfo() << "Original GLAD loader initialized on Qt context"
-                << glContext_->format();
+        // The one game GLAD loader was initialized before RmlUi, on this
+        // exact same QOpenGLContext. Never load or unload a second loader here.
         if (!worldRenderer_) {
             worldRenderer_ = std::make_unique<MainWindowRenderer>(this, glContext_.get());
             QObject::connect(worldRenderer_.get(), &MainWindowRenderer::redrawRequired,
@@ -1157,6 +1145,25 @@ private:
             qCritical() << "Cannot create a Qt OpenGL context.";
             return false;
         }
+#ifdef KNOMIRA_SHELL_WORLD_RENDERER
+        // RmlUi's GL3 backend uses RMLUI_GL3_CUSTOM_LOADER=<glad/gl.h>
+        // in this single opt-in target. Load original GLAD while the Qt GL
+        // context is current *before* constructing any RmlUi GL3 objects.
+        // Do not initialize a second loader when switching to the world.
+        const auto gladLoader = [](const char* name) -> GLADapiproc {
+            return reinterpret_cast<GLADapiproc>(
+                QOpenGLContext::currentContext()->getProcAddress(name));
+        };
+        const int loadedGL = gladLoadGL(gladLoader);
+        if (!loadedGL || !GLAD_GL_VERSION_4_3) {
+            qCritical() << "Original game renderer requires OpenGL 4.3:"
+                        << glContext_->format();
+            glContext_->doneCurrent();
+            return false;
+        }
+        qInfo() << "Original GLAD initialized for RmlUi and world renderer:"
+                << glContext_->format();
+#endif
         Rml::String glMessage;
         if (!RmlGL3::Initialize(&glMessage)) {
             qCritical() << "RmlUi OpenGL function loader failed.";
