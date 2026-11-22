@@ -33,7 +33,8 @@
 #include <glad/gl.h>
 
 struct Position;
-class MainWindow;
+class QWindow;
+class QOpenGLContext;
 
 /// @brief GLAD-based renderer for the world view. Owns all the GL objects (shaders, buffer
 ///        objects, array textures), applies incoming tile updates to a GPU-side buffer via
@@ -43,7 +44,8 @@ class MainWindowRenderer : public QObject
 	Q_OBJECT
 
 public:
-	MainWindowRenderer( MainWindow* parent = Q_NULLPTR );
+	// The host supplies the Qt window and GL context; no legacy GUI dependency.
+	MainWindowRenderer( QWindow* window, QOpenGLContext* context );
 	~MainWindowRenderer();
 
 	/// @brief Returns the current camera rotation index (0–3).
@@ -99,7 +101,8 @@ private:
 	int m_texesUsed         = 0;               ///< Number of array texture slices actually populated.
 	bool m_texesInitialized = false;            ///< True once the sprite atlas has been uploaded.
 
-	MainWindow* m_parent;                       ///< Owning MainWindow.
+	QWindow* m_window = nullptr;                ///< Qt host window (owns QObject lifetime).
+	QOpenGLContext* m_context = nullptr;         ///< Host-owned current GL context; never owned here.
 
 	QMatrix4x4 m_projectionMatrix;              ///< Current orthographic projection.
 
@@ -184,6 +187,8 @@ public slots:
 
 signals:
 	void redrawRequired();
+	/// Host rebroadcasts size/camera state to the selection/sound aggregators.
+	void renderParametersRequired();
 	void fullDataRequired();
 	void signalCameraPosition(float x, float y, float z, int r, float scale );
 };
