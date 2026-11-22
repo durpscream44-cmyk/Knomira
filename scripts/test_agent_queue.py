@@ -164,11 +164,24 @@ class QueueProbes(unittest.TestCase):
         self.assertTrue(all(method == "GET" and data is None
                             for _, method, data in calls))
 
-    @unittest.expectedFailure
     def test_sec08_scheduled_scan_token_does_not_have_issue_write_permission(self):
         workflow = (Path(__file__).resolve().parents[1] /
                     ".github/workflows/agent-queue.yml").read_text(encoding="utf-8")
+        self.assertIn("schedule:", workflow)
+        self.assertIn("issues: read", workflow)
         self.assertNotIn("issues: write", workflow)
+        self.assertIn("--mode scan", workflow)
+        self.assertNotIn("--mode bootstrap", workflow)
+
+    def test_sec08_bootstrap_is_manual_only_with_separate_write_scope(self):
+        workflow = (Path(__file__).resolve().parents[1] /
+                    ".github/workflows/agent-label-bootstrap.yml").read_text(
+                        encoding="utf-8")
+        self.assertRegex(workflow, r"(?m)^\s*workflow_dispatch:\s*$")
+        self.assertNotRegex(workflow, r"(?m)^\s*(schedule|pull_request):")
+        self.assertIn("issues: write", workflow)
+        self.assertIn("if: github.event_name == 'workflow_dispatch'", workflow)
+        self.assertIn("--mode bootstrap", workflow)
 
     def test_sec13_bad_issue_or_unknown_capability_is_ineligible(self):
         cases = [("closed", lambda x: x.update(state="closed")),
