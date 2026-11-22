@@ -649,7 +649,11 @@ public:
         if (auto* list = document_->GetElementById("save_list")) {
             std::string markup;
             if (saves_.isEmpty()) {
+#ifdef KNOMIRA_SHELL_ENGINE_PROBE
+                markup = "<p>No saves in the disposable test root.</p>";
+#else
                 markup = "<p>No Ingnomia saves found in Documents/My Games/Ingnomia/save.</p>";
+#endif
             }
             for (int i = 0; i < saves_.size(); ++i) {
                 const auto& entry = saves_[i];
@@ -1112,9 +1116,17 @@ private:
             if (Rml::Element* element = document_->GetElementById(id))
                 element->AddEventListener("click", &events_);
         }
+#ifdef KNOMIRA_SHELL_ENGINE_PROBE
+        if (auto* button = document_->GetElementById("new_game"))
+            button->SetInnerRML("Start isolated test colony");
+        if (auto* button = document_->GetElementById("load_game"))
+            button->SetInnerRML("Browse disposable test saves");
+#endif
         document_->Show();
         if (Rml::Element* footer = document_->GetElementById("footer"))
-#ifdef KNOMIRA_GAME_SHELL
+#ifdef KNOMIRA_SHELL_ENGINE_PROBE
+            footer->SetInnerRML("Engine test build only | Disposable saves | World rendering and gameplay controls not connected.");
+#elif defined(KNOMIRA_GAME_SHELL)
             footer->SetInnerRML("Noesis-free shell | Original game simulation not connected yet.");
 #else
             footer->SetInnerRML("Proof of concept: Qt 6 + RmlUi + OpenGL; no NoesisGUI.");
