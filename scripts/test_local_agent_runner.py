@@ -176,7 +176,6 @@ class MockedRunOneProbes(unittest.TestCase):
     def report(self):
         return self.comment.call_args.args[3]
 
-    @unittest.expectedFailure
     def test_sec02_timeout_requires_explicit_unsuccessful_draft(self):
         self.proc.side_effect = subprocess.TimeoutExpired(["fake-provider"], 900)
         self.run_mock()
