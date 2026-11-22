@@ -32,6 +32,7 @@
 // This is a separate, opt-in original-engine world-rendering proof target.
 // Do not add it to the shipping menu or the existing engine-only probe.
 #include "../../src/gui/mainwindowrenderer.h"
+#include "../../src/base/gamestate.h"
 #endif
 #ifdef KNOMIRA_GAME_SHELL
 #include "save_catalog.h"
@@ -206,7 +207,9 @@ public:
         format.setSwapInterval(1);
         setSurfaceType(QSurface::OpenGLSurface);
         setFormat(format);
-#ifdef KNOMIRA_GAME_SHELL
+#ifdef KNOMIRA_SHELL_WORLD_RENDERER
+        setTitle(QStringLiteral("Knomira | Original World Probe (TEST ONLY)"));
+#elif defined(KNOMIRA_GAME_SHELL)
         setTitle(QStringLiteral("Knomira | Noesis-Free Shell"));
 #else
         setTitle(QStringLiteral("Knomira | Qt + RmlUi Host"));
@@ -389,6 +392,11 @@ public:
         }
         const QSize pixels = size() * devicePixelRatio();
         worldRenderer_->resize(pixels.width(), pixels.height());
+        // GameManager already emitted signalInitView() before this renderer
+        // existed. Recover the real original camera state, as the legacy
+        // MainWindow::onInitViewAfterLoad() does after New Game/Load Game.
+        worldRenderer_->setMove(GameState::moveX, GameState::moveY);
+        worldRenderer_->setScale(GameState::scale);
         // The real game was started before this renderer existed; request the
         // original aggregators' complete initial tile/axle/thought data now.
         worldRenderer_->onSetInMenu(false);
