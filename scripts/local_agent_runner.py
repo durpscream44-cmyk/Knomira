@@ -13,6 +13,14 @@ import urllib.error
 from agent_queue import api, add_label, audit_event, comment, eligible, issues, metadata, profiles, remove_label
 
 TIME_BUDGET_SECONDS = 900
+# Startup-only values; model/provider authentication must never use inherited
+# controller credentials. This is NOT an OS sandbox or runtime authorization.
+CHILD_ENV_ALLOWLIST = ("PATH", "SYSTEMROOT")
+
+
+def child_environment():
+    """Construct a fresh child environment from a fixed startup allowlist."""
+    return {key: os.environ[key] for key in CHILD_ENV_ALLOWLIST if key in os.environ}
 
 
 def git(where, *args):
@@ -110,9 +118,9 @@ def run_one(repo, token, root, agent, cfg, issue, m):
     logdir = root.parent / "Knomira-agent-run-logs"
     logdir.mkdir(exist_ok=True)
     logpath = logdir / (agent + "-" + str(number) + "-" + stamp + ".log")
-    # Keep the controller's GitHub bearer token out of the model subprocess.
-    child_env = {k: v for k, v in os.environ.items()
-                 if k.upper() not in ("GITHUB_TOKEN", "GH_TOKEN", "JULES_API_KEY")}
+    # Do not inherit model/API/cloud/SSH credentials from the controller.
+    # OS account/profile files remain accessible unless independently sandboxed.
+    child_env = child_environment()
     returncode, note, prurl, paths, endsha = 1, "", "", [], baseline
     try:
         with logpath.open("w", encoding="utf-8", errors="replace") as output:
