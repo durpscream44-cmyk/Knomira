@@ -171,7 +171,7 @@ jobs:
       - name: Link original GameManager and every real aggregator without Noesis
         shell: pwsh
         run: |
-          cmake --build build/rmlui-prototype --config Debug --target knomira_engine_lifecycle_test knomira_colony_lifecycle_test knomira_game_shell_engine_probe knomira_shell_engine_preflight_test knomira_world_renderer_source_compile knomira_world_renderer_link_smoke_test --parallel 4
+          cmake --build build/rmlui-prototype --config Debug --target knomira_engine_lifecycle_test knomira_colony_lifecycle_test knomira_game_shell_engine_probe knomira_shell_engine_preflight_test knomira_world_renderer_source_compile knomira_world_renderer_link_smoke_test knomira_game_shell_world_probe --parallel 4
           if ($LASTEXITCODE -ne 0) { throw "Original GameManager lifecycle link failed." }
 
       - name: Execute isolated GameManager startup and cooperative shutdown
@@ -249,6 +249,12 @@ jobs:
           if (!(Test-Path $probeExe)) { throw "Original-engine test shell was not built." }
           & "$env:QT_ROOT_DIR/bin/windeployqt.exe" --debug --no-translations $probeExe
           if ($LASTEXITCODE -ne 0) { throw "Probe Qt runtime deployment failed." }
+          # Prepare opt-in original world renderer binary for supervised Windows
+          # testing; do NOT launch headlessly without a GPU/authorized assets.
+          $worldProbeExe = "$package/knomira_game_shell_world_probe.exe"
+          if (!(Test-Path $worldProbeExe)) { throw "Original world probe executable missing." }
+          & "$env:QT_ROOT_DIR/bin/windeployqt.exe" --debug --no-translations $worldProbeExe
+          if ($LASTEXITCODE -ne 0) { throw "World probe Qt runtime deployment failed." }
           $vcpkgBin = "$env:RUNNER_TEMP/vcpkg/installed/x64-windows/debug/bin"
           if (Test-Path $vcpkgBin) {
             Get-ChildItem $vcpkgBin -Filter "*.dll" | Copy-Item -Destination $package -Force
