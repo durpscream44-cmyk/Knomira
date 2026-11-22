@@ -301,6 +301,24 @@ if(KNOMIRA_BUILD_GAME_SHELL)
     # PLAY-01D: link and execute the actual GameManager/EventConnector tree.
     include(engine_lifecycle.cmake)
 
+    # PLAY-01G: compile the ACTUAL original world-renderer implementation
+    # without any legacy MainWindow or Noesis GUI headers. This is strictly a
+    # source compile gate; it neither links the renderer into the shell nor
+    # demonstrates actual OpenGL rendering, world visibility or input.
+    add_library(knomira_world_renderer_source_compile OBJECT
+        ../../src/gui/mainwindowrenderer.cpp
+        ../../src/gui/mainwindowrenderer.h)
+    set_target_properties(knomira_world_renderer_source_compile PROPERTIES
+        CXX_STANDARD 23 CXX_STANDARD_REQUIRED ON AUTOMOC ON)
+    target_precompile_headers(knomira_world_renderer_source_compile PRIVATE
+        <QtCore> <QWidget>)
+    target_include_directories(knomira_world_renderer_source_compile PRIVATE
+        "${CMAKE_CURRENT_SOURCE_DIR}/../../3rdparty/glad/include")
+    target_compile_definitions(knomira_world_renderer_source_compile PRIVATE
+        KNOMIRA_ISOLATED_TEST_DATA_ROOT=1)
+    target_link_libraries(knomira_world_renderer_source_compile PRIVATE
+        Qt6::Core Qt6::Gui Qt6::Xml Qt6::Widgets)
+
     # PLAY-01F: a separate, opt-in, disposable-root UI-to-engine probe.
     # This is NOT the shipping executable. The lifecycle library exports the
     # KNOMIRA_ISOLATED_TEST_DATA_ROOT guard and uses the original game objects.
