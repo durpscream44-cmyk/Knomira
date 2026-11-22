@@ -104,9 +104,14 @@ bool KnomiraShellEngineProbe::startNewGame(QString* error) {
     config_->set("dataPath", assetDir);
     config_->set("CurrentVersion", QStringLiteral("0.9.0.0"));
     auto* embark = Global::newGameSettings;
-    if (!embark->setKingdomName(QStringLiteral("RmlUi Probe Colony")) ||
-        !embark->setSeed(QStringLiteral("120531")))
-        return fail(error, QStringLiteral("Test embark setup rejected the requested name or seed."));
+    // NewGameSettings setters report *whether a value changed*, not whether
+    // the assignment succeeded. A repeated value is valid and must not block.
+    const QString colonyName = QStringLiteral("RmlUi Probe Colony");
+    const QString colonySeed = QStringLiteral("120531");
+    embark->setKingdomName(colonyName);
+    embark->setSeed(colonySeed);
+    if (embark->kingdomName() != colonyName || embark->seed() != colonySeed)
+        return fail(error, QStringLiteral("Test embark values could not be applied."));
     embark->setWorldSize(64);
     embark->setZLevels(130);
     embark->setGround(100);
