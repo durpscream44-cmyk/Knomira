@@ -12,7 +12,7 @@ class QTemporaryDir;
 
 class KnomiraShellEngineProbe final {
 public:
-    KnomiraShellEngineProbe() = default;
+    KnomiraShellEngineProbe();
     ~KnomiraShellEngineProbe();
     KnomiraShellEngineProbe(const KnomiraShellEngineProbe&) = delete;
     KnomiraShellEngineProbe& operator=(const KnomiraShellEngineProbe&) = delete;
