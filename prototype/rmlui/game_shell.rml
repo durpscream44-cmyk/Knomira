@@ -206,7 +206,7 @@
   </div>
   <div id="world_hud">
     <p class="eyebrow">ORIGINAL WORLD RENDERER · TEST ONLY</p>
-    <p>Disposable colony. No gameplay controls or saving connected.</p>
+    <p>Disposable colony. No gameplay controls or saving connected. Press Escape or Xbox B / Back to exit.</p>
     <button id="exit_world_probe">Exit Test</button>
   </div>
 </body>
