@@ -35,6 +35,12 @@ class Tests(unittest.TestCase):
         self.assertFalse(eligible(item, "gemini", CFG))
         self.assertFalse(eligible(task(), "jules", CFG))
 
+    def test_manual_only_labels_always_block_automation(self):
+        for name in ("manual:ready", "manual:kilo"):
+            item = task()
+            item["labels"].append({"name": name})
+            self.assertFalse(eligible(item, "gemini", CFG), name)
+
     def test_input_validation(self):
         self.assertFalse(valid_branch("../master"))
         self.assertFalse(valid_branch(".hidden"))

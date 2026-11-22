@@ -14,16 +14,19 @@ on:
 
 permissions:
   contents: read
-  issues: write
 
 concurrency:
   group: knomira-agent-queue
   cancel-in-progress: false
 
 jobs:
-  queue:
+  scan:
+    if: github.event_name == 'schedule' || inputs.mode == 'scan'
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: read
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -33,12 +36,26 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-          INPUT_MODE: ${{ inputs.mode }}
-        shell: bash
         run: |
           python -m unittest discover -s scripts -p 'test_agent_queue.py' -v
-          if [ "$INPUT_MODE" = "bootstrap" ]; then
-            python scripts/agent_queue.py --mode bootstrap
-          else
-            python scripts/agent_queue.py --mode scan
-          fi
+          python scripts/agent_queue.py --mode scan
+
+  bootstrap:
+    if: github.event_name == 'workflow_dispatch' && inputs.mode == 'bootstrap'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate and bootstrap labels
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          python -m unittest discover -s scripts -p 'test_agent_queue.py' -v
+          python scripts/agent_queue.py --mode bootstrap
