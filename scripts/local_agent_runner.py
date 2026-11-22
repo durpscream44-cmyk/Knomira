@@ -41,10 +41,16 @@ def available():
     return caps
 
 
-def permitted(path, allowed, protected):
+def permitted(path, allowed, protected, root=None):
+    """Conservative post-run path check, NOT a filesystem or process sandbox."""
     path = path.replace("\\", "/")
+    parts = path.split("/")
     low = path.lower()
-    if path.startswith(("/", "../")) or ".." in path.split("/"):
+    # Forbid Windows drive/ADS syntax, UNC paths, dot aliases, and empty parts.
+    # Deny rather than trying to canonicalize potentially ambiguous filenames.
+    if (not path or path.startswith("/") or ":" in path or "\x00" in path or
+            any(part in ("", ".", "..") or part.endswith((".", " "))
+                for part in parts)):
         return False
     if any(fnmatch.fnmatch(low, p.lower()) or
            (p.endswith("/") and low.startswith(p.lower()))
@@ -52,8 +58,23 @@ def permitted(path, allowed, protected):
         return False
     if any(x in (".env", ".ssh", ".git") for x in low.split("/")):
         return False
-    return any(path == x.rstrip("/") or
-               (x.endswith("/") and path.startswith(x)) for x in allowed)
+    if not any(path == x.rstrip("/") or
+               (x.endswith("/") and path.startswith(x)) for x in allowed):
+        return False
+    try:
+        checkout = Path(root if root is not None else Path.cwd()).resolve(strict=True)
+        candidate = checkout
+        for part in parts:
+            candidate = candidate / part
+            # Reject links even if their target currently stays inside the root.
+            # A later retargeting must not change the authorization decision.
+            if candidate.is_symlink() or (hasattr(candidate, "is_junction") and
+                                          candidate.is_junction()):
+                return False
+        resolved = candidate.resolve(strict=False)
+        return resolved.is_relative_to(checkout)
+    except (OSError, RuntimeError, ValueError):
+        return False
 
 
 def choose(repo, token, agent, cfg):
@@ -136,7 +157,8 @@ def run_one(repo, token, root, agent, cfg, issue, m):
         note = "Agent execution failed: " + type(err).__name__ + ": " + str(err)
     try:
         paths = changed_files(worktree, baseline)
-        bad = [p for p in paths if not permitted(p, m["paths"], cfg["protected_patterns"])]
+        bad = [p for p in paths if not permitted(
+            p, m["paths"], cfg["protected_patterns"], root=worktree)]
         if bad:
             raise RuntimeError("Out-of-scope paths; no push performed: " + ", ".join(bad))
         if not paths:
