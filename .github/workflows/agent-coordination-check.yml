@@ -6,6 +6,7 @@ on:
       - 'scripts/agent_queue.py'
       - 'scripts/test_agent_queue.py'
       - 'scripts/test_runner_execution_gate.py'
+      - 'scripts/test_local_agent_runner.py'
       - 'scripts/local_agent_runner.py'
       - '.github/workflows/agent-queue.yml'
       - '.github/workflows/agent-coordination-check.yml'

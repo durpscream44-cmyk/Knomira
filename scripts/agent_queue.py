@@ -15,6 +15,7 @@ LABELS = ["agent:approved", "agent:ready", "agent:running",
           "agent:provider:gemini", "agent:provider:kilo",
           "agent:provider:opencode", "priority:P0", "priority:P1", "priority:P2"]
 BLOCKED = {"agent:running", "agent:review", "agent:blocked", "agent:done"}
+MANUAL_ONLY = {"manual:ready", "manual:kilo"}
 
 
 def api(repo, token, path, method="GET", data=None):
@@ -66,7 +67,8 @@ def eligible(issue, agent, cfg):
     if issue.get("pull_request") or issue.get("state") != "open":
         return False
     ls = labels(issue)
-    if not {"agent:approved", "agent:ready"}.issubset(ls) or ls.intersection(BLOCKED):
+    if (not {"agent:approved", "agent:ready"}.issubset(ls) or
+            ls.intersection(BLOCKED | MANUAL_ONLY)):
         return False
     if "agent:provider:" + agent not in ls:
         return False

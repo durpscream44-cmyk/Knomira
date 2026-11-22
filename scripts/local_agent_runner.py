@@ -8,11 +8,15 @@ from pathlib import Path
 import platform
 import re
 import shutil
+import stat
 import subprocess
 import urllib.error
 from agent_queue import api, add_label, comment, eligible, issues, metadata, profiles, remove_label
 
 TIME_BUDGET_SECONDS = 900
+CHILD_ENV_ALLOWLIST = {
+    "comspec", "path", "pathext", "systemdrive", "systemroot", "temp", "tmp", "windir"
+}
 
 
 def git(where, *args):
@@ -33,22 +37,116 @@ def available():
     return caps
 
 
-def permitted(path, allowed, protected):
-    path = path.replace("\\", "/")
-    low = path.lower()
-    if path.startswith(("/", "../")) or ".." in path.split("/"):
+def _inside(path, parent):
+    try:
+        path.relative_to(parent)
+        return True
+    except ValueError:
         return False
-    if any(fnmatch.fnmatch(low, p.lower()) or
-           (p.endswith("/") and low.startswith(p.lower()))
-           for p in protected):
-        return False
-    if any(x in (".env", ".ssh", ".git") for x in low.split("/")):
-        return False
-    return any(path == x.rstrip("/") or
-               (x.endswith("/") and path.startswith(x)) for x in allowed)
 
 
-def choose(repo, token, agent, cfg):
+def _is_reparse_point(path):
+    try:
+        if path.is_symlink() or (hasattr(path, "is_junction") and path.is_junction()):
+            return True
+        attributes = getattr(path.lstat(), "st_file_attributes", 0)
+        reparse_flag = getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400)
+        return bool(attributes & reparse_flag)
+    except FileNotFoundError:
+        return False
+    except OSError:
+        # An unreadable path cannot be safely classified as an ordinary file.
+        return True
+
+
+def _reparse_in_path(root, parts):
+    current = root
+    for part in parts:
+        current = current / part
+        if _is_reparse_point(current):
+            return True
+    return False
+
+
+def _matches_protected(path, protected):
+    low = path.replace("\\", "/").casefold()
+    return any(fnmatch.fnmatch(low, pattern.casefold()) or
+               (pattern.endswith("/") and low.startswith(pattern.casefold()))
+               for pattern in protected)
+
+
+def permitted(path, allowed, protected, root=None):
+    """Check a relative path against the task allowlist and protected paths.
+
+    When root is supplied, also resolve existing symlinks/junctions and require
+    the resolved target to remain inside both the checkout and an allowed root.
+    Unknown/unreadable reparse paths fail closed.
+    """
+    raw = str(path).replace("\\", "/")
+    if (not raw or "\x00" in raw or raw.startswith("/") or
+            re.match(r"^[A-Za-z]:", raw) or "//" in raw):
+        return False
+    parts = raw.split("/")
+    if any(part in ("", ".", "..") or part.endswith((".", " ")) or ":" in part
+           for part in parts):
+        return False
+    if any(part.casefold() in {".env", ".ssh", ".git"} for part in parts):
+        return False
+    if _matches_protected(raw, protected):
+        return False
+
+    lexical_matches = []
+    for entry in allowed:
+        entry_raw = str(entry).replace("\\", "/")
+        if not entry_raw or entry_raw.startswith("/") or re.match(r"^[A-Za-z]:", entry_raw):
+            continue
+        entry_parts = entry_raw.rstrip("/").split("/")
+        if (not entry_parts or any(part in ("", ".", "..") or ":" in part
+                                   for part in entry_parts)):
+            continue
+        if raw == "/".join(entry_parts):
+            lexical_matches.append((entry_parts, False))
+        elif entry_raw.endswith("/") and parts[:len(entry_parts)] == entry_parts:
+            lexical_matches.append((entry_parts, True))
+    if not lexical_matches:
+        return False
+    if root is None:
+        return True
+
+    try:
+        root_path = Path(root).resolve(strict=True)
+        target = root_path.joinpath(*parts)
+        if _reparse_in_path(root_path, parts):
+            return False
+        resolved_target = target.resolve(strict=False)
+        if not _inside(resolved_target, root_path):
+            return False
+        resolved_relative = resolved_target.relative_to(root_path).as_posix()
+        if _matches_protected(resolved_relative, protected):
+            return False
+        for entry_parts, is_directory in lexical_matches:
+            allowed_root = root_path.joinpath(*entry_parts)
+            if _reparse_in_path(root_path, entry_parts):
+                continue
+            resolved_allowed = allowed_root.resolve(strict=False)
+            if not _inside(resolved_allowed, root_path):
+                continue
+            if ((is_directory and _inside(resolved_target, resolved_allowed)) or
+                    (not is_directory and resolved_target == resolved_allowed)):
+                return True
+    except (OSError, RuntimeError, ValueError):
+        return False
+    return False
+
+
+def child_environment(source=None):
+    """Return only process variables needed to locate native tools on Windows."""
+    source = os.environ if source is None else source
+    return {key: value for key, value in source.items()
+            if key.casefold() in CHILD_ENV_ALLOWLIST}
+
+
+def choose(repo, token, agent, cfg, root=None):
     for issue in sorted(issues(repo, token, "agent:ready"), key=lambda x: x["number"]):
         if not eligible(issue, agent, cfg):
             continue
@@ -58,7 +156,7 @@ def choose(repo, token, agent, cfg):
                   sorted(set(m["caps"]) - available()))
             continue
         if any(not permitted(x.rstrip("/") + ("/placeholder" if x.endswith("/") else ""),
-                             [x], cfg["protected_patterns"]) for x in m["paths"]):
+                             [x], cfg["protected_patterns"], root=root) for x in m["paths"]):
             print("Skipped issue", issue["number"], "unsafe allowed path")
             continue
         try:
@@ -71,10 +169,20 @@ def choose(repo, token, agent, cfg):
 
 
 def changed_files(where, start_sha):
-    subprocess.run(["git", "add", "-A"], cwd=where, check=True)
-    data = subprocess.check_output(["git", "diff", "--name-only", "--no-renames",
-                                    "-z", start_sha], cwd=where)
-    return [x.decode("utf-8") for x in data.split(b"\x00") if x]
+    tracked = subprocess.check_output(["git", "diff", "--name-only", "--no-renames",
+                                       "-z", start_sha], cwd=where)
+    untracked = subprocess.check_output(["git", "ls-files", "--others",
+                                         "--exclude-standard", "-z"], cwd=where)
+    paths = [x.decode("utf-8") for x in tracked.split(b"\x00") if x]
+    paths.extend(x.decode("utf-8") for x in untracked.split(b"\x00") if x)
+    return list(dict.fromkeys(paths))
+
+
+def quota_failure(output):
+    text = output.casefold()
+    return any(marker in text for marker in (
+        "quota exceeded", "resource_exhausted", "rate limit exceeded",
+        "too many requests", "http 429", "status code 429"))
 
 
 def run_one(repo, token, root, agent, cfg, issue, m):
@@ -82,90 +190,162 @@ def run_one(repo, token, root, agent, cfg, issue, m):
     stamp = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%d%H%M%S")
     branch = "agent/" + agent + "/issue-" + str(number) + "-" + stamp
     worktree = root.parent / ("Knomira-agent-" + agent + "-" + str(number) + "-" + stamp)
-    git(root, "fetch", "origin", m["base"])
-    baseline = git(root, "rev-parse", "FETCH_HEAD")
-    git(root, "worktree", "add", "-b", branch, str(worktree), baseline)
-    add_label(repo, token, number, "agent:running")
-    remove_label(repo, token, number, "agent:ready")
-    comment(repo, token, number,
-            "Claimed by local " + agent + " runner; WIP branch " + branch +
-            "; base " + m["base"] + " at " + baseline +
-            ". Tests and result not yet verified.")
-    prompt = (
-        "Read AGENTS.md, docs/agent-coordination/profiles.json, "
-        "AGENT_ROLES.md, CODEX_DELEGATION.md and the current branch checkpoint. "
-        "Check current GitHub draft PRs and issue history; do not duplicate work. "
-        "You must not push, merge, create PRs, or change branches yourself: "
-        "the controller will validate and push allowed paths after you exit. "
-        "Do not edit unapproved paths, real game saves, proprietary assets, or secrets. "
-        "Keep work small and create a local WIP commit early if possible. "
-        "At 50-70% of budget, leave a concise RESULT_TEMPLATE.md-style report; "
-        "stop on uncertainty or quota warnings. "
-        "Report commands actually run and do not claim a gameplay pass from compilation. "
-        "Your time budget is 15 minutes. "
-        "Base " + m["base"] + " at " + baseline + "; allowed paths: " +
-        ", ".join(m["paths"]) + ". Issue #" + str(number) + ": " +
-        issue["title"] + "\n" + (issue.get("body") or "")[:12000])
-    cmd = cfg["agents"][agent]["command"] + [prompt]
     logdir = root.parent / "Knomira-agent-run-logs"
     logdir.mkdir(exist_ok=True)
     logpath = logdir / (agent + "-" + str(number) + "-" + stamp + ".log")
-    # Keep the controller's GitHub bearer token out of the model subprocess.
-    child_env = {k: v for k, v in os.environ.items()
-                 if k.upper() not in ("GITHUB_TOKEN", "GH_TOKEN", "JULES_API_KEY")}
-    returncode, note, prurl, paths, endsha = 1, "", "", [], baseline
+    baseline = ""
+    endsha = ""
+    returncode = "NOT STARTED"
+    paths = []
+    prurl = ""
+    pushed = False
+    claim_started = False
+    status = "BLOCKED"
+    note = ""
+
     try:
-        with logpath.open("w", encoding="utf-8", errors="replace") as output:
-            try:
-                proc = subprocess.run(cmd, cwd=worktree, env=child_env, stdout=output,
-                                      stderr=subprocess.STDOUT, timeout=TIME_BUDGET_SECONDS)
-                returncode = proc.returncode
-                note = "Agent process exited " + str(returncode)
-            except subprocess.TimeoutExpired:
-                returncode = 124
-                note = "Agent process exceeded 15-minute budget"
-    except Exception as err:
-        note = "Agent execution failed: " + type(err).__name__ + ": " + str(err)
-    try:
+        # Complete all Git reads/worktree setup before claiming the live issue.
+        git(root, "fetch", "origin", m["base"])
+        baseline = git(root, "rev-parse", "FETCH_HEAD")
+        latest_issue = api(repo, token, "/issues/" + str(number))
+        if not eligible(latest_issue, agent, cfg):
+            raise RuntimeError("Issue is no longer eligible; no claim or worker started")
+        git(root, "worktree", "add", "-b", branch, str(worktree), baseline)
+
+        # A claim can be uncertain if the HTTP request fails after GitHub applies it.
+        claim_started = True
+        add_label(repo, token, number, "agent:running")
+        remove_label(repo, token, number, "agent:ready")
+        comment(repo, token, number,
+                "Claimed by local " + agent + " runner; WIP branch " + branch +
+                "; base " + m["base"] + " at " + baseline +
+                ". Tests and result not yet verified.")
+
+        prompt = (
+            "Read AGENTS.md, docs/agent-coordination/profiles.json, "
+            "AGENT_ROLES.md, CODEX_DELEGATION.md and the current branch checkpoint. "
+            "Check current GitHub draft PRs and issue history; do not duplicate work. "
+            "You must not push, merge, create PRs, or change branches yourself: "
+            "the controller will validate and push allowed paths after you exit. "
+            "Do not edit unapproved paths, real game saves, proprietary assets, or secrets. "
+            "Keep work small and create a local WIP commit early if possible. "
+            "At 50-70% of budget, leave a concise RESULT_TEMPLATE.md-style report; "
+            "stop on uncertainty or quota warnings. "
+            "Report commands actually run and do not claim a gameplay pass from compilation. "
+            "Your time budget is 15 minutes. "
+            "Base " + m["base"] + " at " + baseline + "; allowed paths: " +
+            ", ".join(m["paths"]) + ". Issue #" + str(number) + ": " +
+            issue["title"] + "\n" + (issue.get("body") or "")[:12000])
+        cmd = cfg["agents"][agent]["command"] + [prompt]
+        returncode = 1
+        try:
+            with logpath.open("w", encoding="utf-8", errors="replace") as output:
+                try:
+                    proc = subprocess.run(cmd, cwd=worktree, env=child_environment(),
+                                          stdout=output, stderr=subprocess.STDOUT,
+                                          timeout=TIME_BUDGET_SECONDS)
+                    returncode = proc.returncode
+                except subprocess.TimeoutExpired:
+                    returncode = 124
+                    note = "Provider timed out after 15 minutes"
+                except FileNotFoundError as err:
+                    returncode = 127
+                    note = "Provider executable missing: " + str(err)
+        except OSError as err:
+            note = "Could not start or record provider process: " + str(err)
+
+        log_text = logpath.read_text(encoding="utf-8", errors="replace") if logpath.exists() else ""
+        if quota_failure(log_text):
+            note = "Provider quota/rate limit detected in local log"
+            raise RuntimeError(note)
+        if returncode != 0:
+            if not note:
+                note = "Provider process exited " + str(returncode)
+            raise RuntimeError(note)
+
         paths = changed_files(worktree, baseline)
-        bad = [p for p in paths if not permitted(p, m["paths"], cfg["protected_patterns"])]
+        bad = [path for path in paths if not permitted(
+            path, m["paths"], cfg["protected_patterns"], root=worktree)]
         if bad:
             raise RuntimeError("Out-of-scope paths; no push performed: " + ", ".join(bad))
         if not paths:
-            raise RuntimeError("No changed files; no PR")
-        if git(worktree, "diff", "--cached", "--name-only"):
-            git(worktree, "commit", "-m", "WIP: issue " + str(number) + " " + agent)
+            raise RuntimeError("No changed files; no push or PR created")
+
+        # Stage only the files already checked against the task allowlist.
+        git(worktree, "add", "--", *paths)
+        staged = git(worktree, "diff", "--cached", "--name-only").splitlines()
+        if set(staged) != set(paths):
+            raise RuntimeError("Staged file set changed after allowlist validation")
+        git(worktree, "commit", "-m", "WIP: issue " + str(number) + " " + agent)
         endsha = git(worktree, "rev-parse", "HEAD")
         git(worktree, "push", "-u", "origin", branch)
-        pr = api(repo, token, "/pulls", "POST", {
-            "title": "WIP issue #" + str(number) + ": " + issue["title"],
-            "head": branch, "base": m["base"], "draft": True,
-            "body": ("Agent task: #" + str(number) + "\nProvider: " + agent +
-                     "\nBase SHA: " + baseline + "\nHead SHA: " + endsha +
-                     "\nCLI exit code: " + str(returncode) +
-                     "\nTests NOT independently verified; Codex/human review required.")})
-        prurl = pr.get("html_url", "")
+        pushed = True
+        try:
+            pr = api(repo, token, "/pulls", "POST", {
+                "title": "WIP issue #" + str(number) + ": " + issue["title"],
+                "head": branch, "base": m["base"], "draft": True,
+                "body": ("Agent task: #" + str(number) + "\nProvider: " + agent +
+                         "\nBase SHA: " + baseline + "\nHead SHA: " + endsha +
+                         "\nCLI exit code: 0\nTests NOT independently verified; "
+                         "Codex/human review required.")})
+            prurl = pr.get("html_url", "")
+            if not prurl:
+                raise RuntimeError("GitHub did not return a draft PR URL")
+            status = "PARTIAL; awaiting review"
+        except Exception as err:
+            note = "Branch PUSHED at " + endsha + "; draft PR creation failed: " + str(err)
+            status = "PUSHED; NO PR"
     except Exception as err:
-        note += "; checkpoint/PR failure: " + type(err).__name__ + ": " + str(err)
-    body = ("\n".join([
-        "Automated task report: " + ("PARTIAL; awaiting review" if prurl else "BLOCKED"),
-        "Provider: " + agent, "Issue: #" + str(number),
-        "Base: " + m["base"] + " at " + baseline,
-        "Working branch: " + branch, "Last local commit SHA: " + endsha,
-        "Draft PR (pushed): " + (prurl or "NONE; NOT CONFIRMED PUSHED"),
-        "Changed files: " + (", ".join(paths) if paths else "none"),
-        "CLI exit code: " + str(returncode),
-        "Tests: NOT independently verified by runner; review local log and CI.",
-        "Local recovery worktree: " + str(worktree),
-        "Local log: " + str(logpath),
-        "Reason/blockers: " + note,
-        "Next: inspect branch/diff, verify actual tests/Windows CI, update checkpoint.",
-        "Do not redo changes already present at the reported Git SHA.",
-        "No merge, gameplay completion or save-integrity claim is implied."]))
-    comment(repo, token, number, body)
-    add_label(repo, token, number, "agent:review" if prurl else "agent:blocked")
-    remove_label(repo, token, number, "agent:running")
-    print("Issue", number, "PR:", prurl or "none", "local recovery:", worktree)
+        if not note:
+            note = type(err).__name__ + ": " + str(err)
+        status = "PUSHED; NO PR" if pushed else "BLOCKED; NOT PUSHED"
+        if baseline and worktree.exists():
+            try:
+                paths = changed_files(worktree, baseline)
+            except Exception as inspect_err:
+                note += "; local diff inspection failed: " + str(inspect_err)
+    finally:
+        if claim_started:
+            try:
+                add_label(repo, token, number, "agent:review" if prurl else "agent:blocked")
+            except Exception as err:
+                note += "; final label failed: " + str(err)
+            try:
+                remove_label(repo, token, number, "agent:running")
+            except Exception as err:
+                note += "; running-label cleanup failed: " + str(err)
+
+            pushed_text = "YES" if pushed else "NO"
+            body = "\n".join([
+                "Automated task report: " + status,
+                "Provider: " + agent, "Issue: #" + str(number),
+                "Base: " + m["base"] + (" at " + baseline if baseline else " (unavailable)"),
+                "Working branch: " + branch,
+                "Last local commit SHA: " + (endsha or "none"),
+                "Branch pushed: " + pushed_text,
+                "Draft PR: " + (prurl or "NONE"),
+                "Changed files: " + (", ".join(paths) if paths else "none"),
+                "CLI exit code: " + str(returncode),
+                "Tests: NOT independently verified by runner; review local log and CI.",
+                "Local recovery worktree: " + str(worktree),
+                "Local log: " + str(logpath),
+                "Reason/blockers: " + (note or "none"),
+                "Next: inspect branch/diff, verify tests/Windows CI, update checkpoint.",
+                "No merge, gameplay completion or save-integrity claim is implied."])
+            try:
+                comment(repo, token, number, body)
+            except Exception as err:
+                # If the handoff itself failed, leave a blocking state for recovery.
+                try:
+                    add_label(repo, token, number, "agent:blocked")
+                    if prurl:
+                        remove_label(repo, token, number, "agent:review")
+                except Exception:
+                    pass
+                note += "; final handoff comment failed: " + str(err)
+
+    print("Issue", number, "status:", status, "PR:", prurl or "none",
+          "branch pushed:", pushed, "local recovery:", worktree)
 
 
 def main():
