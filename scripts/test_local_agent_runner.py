@@ -67,7 +67,6 @@ class GateAndPathProbes(unittest.TestCase):
         self.assertFalse(runner.permitted("scripts/.env", ["scripts/"], []))
         self.assertFalse(runner.permitted("scripts/.git/config", ["scripts/"], []))
 
-    @unittest.expectedFailure
     def test_sec05_symlink_escape_from_allowlisted_directory(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp) / "checkout"
@@ -85,6 +84,48 @@ class GateAndPathProbes(unittest.TestCase):
                 self.assertFalse(runner.permitted("scripts/link/x.py", ["scripts/"], []))
             finally:
                 os.chdir(original)
+
+
+    def test_sec05_symlink_to_internal_directory_is_also_rejected(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp) / "checkout"
+            (root / "scripts").mkdir(parents=True)
+            (root / "safe").mkdir()
+            try:
+                (root / "scripts" / "link").symlink_to(
+                    root / "safe", target_is_directory=True)
+            except (OSError, NotImplementedError) as error:
+                self.skipTest("Symlinks unavailable: " + str(error))
+            self.assertTrue(runner.permitted(
+                "scripts/normal.py", ["scripts/"], [], root=root))
+            self.assertFalse(runner.permitted(
+                "scripts/link/normal.py", ["scripts/"], [], root=root))
+
+    def test_sec05_reject_drive_unc_ads_and_dot_aliases(self):
+        with tempfile.TemporaryDirectory() as temp:
+            for candidate in ("C:/Windows/system.ini", "//server/share/config",
+                              "scripts/notes.txt:payload", "scripts//file.py",
+                              "scripts/./file.py", "scripts/dot./file.py",
+                              "scripts/ending ", "scripts/ending."):
+                with self.subTest(path=candidate):
+                    self.assertFalse(runner.permitted(
+                        candidate, [candidate, "scripts/"], [], root=temp))
+
+    def test_sec05_explicit_root_rejects_external_link_without_chdir(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp) / "checkout"
+            outside = Path(temp) / "outside"
+            (root / "scripts").mkdir(parents=True)
+            outside.mkdir()
+            try:
+                (root / "scripts" / "escape").symlink_to(
+                    outside, target_is_directory=True)
+            except (OSError, NotImplementedError) as error:
+                self.skipTest("Symlinks unavailable: " + str(error))
+            self.assertFalse(runner.permitted(
+                "scripts/escape/unapproved.py", ["scripts/"], [], root=root))
+            self.assertTrue(runner.permitted(
+                "scripts/approved.py", ["scripts/"], [], root=root))
 
 
 class MockedRunOneProbes(unittest.TestCase):
