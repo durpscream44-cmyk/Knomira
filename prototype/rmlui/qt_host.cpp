@@ -1,6 +1,12 @@
 // Copyright (C) 2026 Knomira contributors.
 // Qt/OpenGL-hosted RmlUi proof of concept. No game state or Noesis dependency.
 // The final game adapter should reuse the existing MainWindow QOpenGLContext.
+#ifdef KNOMIRA_SHELL_WORLD_RENDERER
+// MSVC/Qt may include system GL/gl.h from QOpenGLContext. Our original
+// renderer uses GLAD 4.3, so its API header MUST come first (CI C1189).
+// This guard keeps the regular RmlUi-only menus on their existing loader.
+#include <glad/gl.h>
+#endif
 #include <RmlUi/Core.h>
 #include <RmlUi/Core/Context.h>
 #include <RmlUi/Core/ElementDocument.h>
