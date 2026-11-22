@@ -403,9 +403,13 @@ if(KNOMIRA_BUILD_GAME_SHELL)
         $<TARGET_OBJECTS:knomira_world_renderer_source_compile>
         "../../3rdparty/glad/src/gl.c"
         "${rmlui_SOURCE_DIR}/Backends/RmlUi_Renderer_GL3.cpp")
+    # Share the ORIGINAL engine's 4.3 GLAD C loader across the world and
+    # RmlUi GL3 backend; never link two separate GLAD implementations into
+    # the same QOpenGLContext-bound executable.
     target_compile_definitions(knomira_game_shell_world_probe PRIVATE
         KNOMIRA_GAME_SHELL=1 KNOMIRA_SHELL_ENGINE_PROBE=1
-        KNOMIRA_SHELL_WORLD_RENDERER=1)
+        KNOMIRA_SHELL_WORLD_RENDERER=1
+        "RMLUI_GL3_CUSTOM_LOADER=<glad/gl.h>")
     target_include_directories(knomira_game_shell_world_probe PRIVATE
         "${rmlui_SOURCE_DIR}/Backends"
         "${CMAKE_CURRENT_SOURCE_DIR}/../../3rdparty/glad/include")
