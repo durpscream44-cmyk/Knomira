@@ -99,6 +99,22 @@ def choose(repo, token, agent, cfg):
     return None, None
 
 
+def recheck_task_authority(repo, token, agent, cfg, issue, expected):
+    """Refuse a stale queue snapshot before creating a worktree or claiming.
+
+    This read-only preflight narrows stale-task risk, but is not an atomic
+    cross-host claim. The execution gate remains disabled pending #25.
+    """
+    latest = api(repo, token, "/issues/" + str(issue["number"]))
+    if latest.get("number") != issue["number"]:
+        raise RuntimeError("Issue identity changed before claim")
+    if not eligible(latest, agent, cfg):
+        raise RuntimeError("Issue is no longer eligible before claim")
+    if metadata(latest) != expected:
+        raise RuntimeError("Task authority (base, paths, risk or capabilities) changed before claim")
+    return latest
+
+
 def changed_files(where, start_sha):
     subprocess.run(["git", "add", "-A"], cwd=where, check=True)
     data = subprocess.check_output(["git", "diff", "--name-only", "--no-renames",
@@ -113,6 +129,7 @@ def run_one(repo, token, root, agent, cfg, issue, m):
     worktree = root.parent / ("Knomira-agent-" + agent + "-" + str(number) + "-" + stamp)
     git(root, "fetch", "origin", m["base"])
     baseline = git(root, "rev-parse", "FETCH_HEAD")
+    issue = recheck_task_authority(repo, token, agent, cfg, issue, m)
     git(root, "worktree", "add", "-b", branch, str(worktree), baseline)
     add_label(repo, token, number, "agent:running")
     remove_label(repo, token, number, "agent:ready")
