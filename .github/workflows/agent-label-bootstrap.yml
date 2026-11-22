@@ -1,0 +1,33 @@
+name: Agent labels bootstrap (manual only)
+
+# Write permissions are available only on an explicit operator-triggered run.
+# Never put schedule: or pull_request: triggers on this workflow.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: knomira-agent-label-bootstrap
+  cancel-in-progress: false
+
+jobs:
+  bootstrap:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate and initialize issue labels (manual only)
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        shell: bash
+        run: |
+          python -m unittest discover -s scripts -p 'test_agent_queue.py' -v
+          python scripts/agent_queue.py --mode bootstrap
