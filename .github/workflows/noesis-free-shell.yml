@@ -171,7 +171,7 @@ jobs:
       - name: Link original GameManager and every real aggregator without Noesis
         shell: pwsh
         run: |
-          cmake --build build/rmlui-prototype --config Debug --target knomira_engine_lifecycle_test knomira_colony_lifecycle_test knomira_game_shell_engine_probe knomira_shell_engine_preflight_test --parallel 4
+          cmake --build build/rmlui-prototype --config Debug --target knomira_engine_lifecycle_test knomira_colony_lifecycle_test knomira_game_shell_engine_probe knomira_shell_engine_preflight_test knomira_world_renderer_source_compile --parallel 4
           if ($LASTEXITCODE -ne 0) { throw "Original GameManager lifecycle link failed." }
 
       - name: Execute isolated GameManager startup and cooperative shutdown
