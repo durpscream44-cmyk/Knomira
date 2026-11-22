@@ -128,6 +128,61 @@ class GateAndPathProbes(unittest.TestCase):
                 "scripts/approved.py", ["scripts/"], [], root=root))
 
 
+
+class PreclaimAuthorityProbes(unittest.TestCase):
+    """Offline stale-issue checks; never contact GitHub or execute a provider."""
+
+    CFG = {
+        "agents": {"kilo": {"execution": "local_cli", "allowed_kinds": ["tests"]}},
+        "runtime_capabilities": ["git", "github"],
+        "auto_denied_kinds": ["windows-runtime"],
+    }
+
+    def task(self):
+        return {
+            "number": 25, "title": "Original authorized task", "state": "open",
+            "labels": [{"name": name} for name in
+                       ("agent:approved", "agent:ready", "agent:provider:kilo")],
+            "body": ("### Base branch\\n\\nfeature/universal-agent-onboarding\\n"
+                     "### Task kind\\n\\ntests\\n"
+                     "### Required capabilities\\n\\ngit, github\\n"
+                     "### Allowed paths\\n\\nscripts/test_local_agent_runner.py\\n"
+                     "### Risk\\n\\nlow\\n"),
+        }
+
+    def test_sec15_unchanged_authority_passes_read_only(self):
+        original = self.task()
+        fresh = dict(original, title="Updated issue title")
+        with patch.object(runner, "api", return_value=fresh) as api:
+            selected = runner.recheck_task_authority(
+                "example/Knomira", "fixture-token", "kilo", self.CFG,
+                original, runner.metadata(original))
+        self.assertIs(selected, fresh)
+        api.assert_called_once_with("example/Knomira", "fixture-token",
+                                    "/issues/25")
+
+    def test_sec15_changed_scope_or_identity_fails_closed(self):
+        original = self.task()
+        for name, mutate in (
+            ("path", lambda i: i.update(body=i["body"].replace(
+                "scripts/test_local_agent_runner.py", "scripts/"))),
+            ("branch", lambda i: i.update(body=i["body"].replace(
+                "feature/universal-agent-onboarding", "master"))),
+            ("capability", lambda i: i.update(body=i["body"].replace(
+                "git, github", "git, github, windows"))),
+            ("identity", lambda i: i.update(number=26)),
+            ("manual label", lambda i: i["labels"].append({"name": "manual:ready"})),
+            ("approval removed", lambda i: i.update(labels=[])),
+        ):
+            with self.subTest(case=name):
+                latest = dict(original, labels=list(original["labels"]))
+                mutate(latest)
+                with patch.object(runner, "api", return_value=latest):
+                    with self.assertRaises(RuntimeError):
+                        runner.recheck_task_authority(
+                            "example/Knomira", "fixture-token", "kilo",
+                            self.CFG, original, runner.metadata(original))
+
 class MockedRunOneProbes(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -148,8 +203,9 @@ class MockedRunOneProbes(unittest.TestCase):
             patch.object(runner, "add_label"),
             patch.object(runner, "remove_label"),
             patch.object(runner, "comment"),
+            patch.object(runner, "recheck_task_authority", return_value=ISSUE),
         ]
-        self.git, self.changed, self.proc, self.api, self.add, self.remove, self.comment = [
+        self.git, self.changed, self.proc, self.api, self.add, self.remove, self.comment, self.auth = [
             p.start() for p in patches]
         for p in patches:
             self.addCleanup(p.stop)
@@ -280,6 +336,16 @@ class MockedRunOneProbes(unittest.TestCase):
         self.assertNotIn("push", [call[0] for call in self.git_history])
         self.api.assert_not_called()
         self.assertIn("Out-of-scope paths", self.report())
+
+    def test_sec15_stale_authority_stops_before_claim_and_provider(self):
+        self.auth.side_effect = RuntimeError("Task authority changed before claim")
+        with self.assertRaises(RuntimeError):
+            self.run_mock()
+        self.add.assert_not_called()
+        self.remove.assert_not_called()
+        self.comment.assert_not_called()
+        self.proc.assert_not_called()
+        self.api.assert_not_called()
 
     def test_sec14_remote_fetch_permission_denial_stops_before_claim(self):
         # Distinct from SEC-10 push failure. No durable checkpoint is proven.
