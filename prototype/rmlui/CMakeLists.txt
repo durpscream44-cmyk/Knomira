@@ -342,7 +342,10 @@ if(KNOMIRA_BUILD_GAME_SHELL)
     # Asset-free startup proof: real Config/DB/GameManager/EventConnector,
     # a marked temporary root, no New Game and no player-save modification.
     add_executable(knomira_shell_engine_preflight_test
-        shell_engine_preflight_test.cpp shell_engine_probe.cpp shell_engine_probe.h)
+        shell_engine_preflight_test.cpp shell_engine_probe.cpp shell_engine_probe.h
+        input_bindings.cpp input_bindings.h)
+    target_compile_definitions(knomira_shell_engine_preflight_test PRIVATE
+        KNOMIRA_SHELL_ENGINE_PROBE=1)
     target_link_libraries(knomira_shell_engine_preflight_test PRIVATE
         knomira_lifecycle_engine Qt6::Widgets)
     set_target_properties(knomira_shell_engine_preflight_test PROPERTIES
