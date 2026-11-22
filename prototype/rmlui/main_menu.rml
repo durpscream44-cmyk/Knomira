@@ -1,0 +1,68 @@
+<rml>
+<head>
+  <title>Knomira | Main Menu</title>
+  <style>
+    body {
+      margin: 0;
+      background-color: #151f24;
+      color: #e6dfca;
+      font-family: "Segoe UI";
+      font-size: 18px;
+    }
+    #screen {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+    }
+    #panel {
+      width: 540px;
+      padding: 48px;
+      background-color: #28343a;
+      border: 3px solid #b5935b;
+    }
+    .eyebrow { color: #d0aa72; font-size: 17px; letter-spacing: 2px; }
+    h1 { font-size: 65px; margin: 12px 0px 10px 0px; color: #f2e4c4; }
+    .subtitle { color: #adbbb7; margin-bottom: 30px; font-size: 18px; }
+    button {
+      display: block;
+      width: 100%;
+      height: 55px;
+      margin-bottom: 12px;
+      border: 2px solid #92794f;
+      background-color: #384a4b;
+      color: #f4e8cd;
+      font-family: "Segoe UI";
+      font-size: 21px;
+      text-align: center;
+    }
+    button:hover { background-color: #526462; border-color: #dcc084; }
+    button:active { background-color: #6d785e; }
+    #status {
+      margin-top: 22px;
+      padding: 14px;
+      background-color: #192629;
+      color: #b5c6c4;
+      font-size: 16px;
+    }
+    #footer { margin-top: 18px; color: #899b98; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div id="screen">
+    <div id="panel">
+      <p class="eyebrow">A NEW SETTLEMENT AWAITS</p>
+      <h1>KNOMIRA</h1>
+      <p class="subtitle">A retro world. A modern beginning.</p>
+      <button id="new_game">New Game</button>
+      <button id="load_game">Load Game</button>
+      <button id="settings">Settings</button>
+      <button id="quit">Exit</button>
+      <div id="status">Independent RmlUi prototype — game logic not connected.</div>
+      <p id="footer">Proof of concept: RmlUi + GLFW/OpenGL 3; no NoesisGUI.</p>
+    </div>
+  </div>
+</body>
+</rml>
