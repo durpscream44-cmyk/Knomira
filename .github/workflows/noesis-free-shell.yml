@@ -171,7 +171,7 @@ jobs:
       - name: Link original GameManager and every real aggregator without Noesis
         shell: pwsh
         run: |
-          cmake --build build/rmlui-prototype --config Debug --target knomira_engine_lifecycle_test knomira_colony_lifecycle_test knomira_game_shell_engine_probe knomira_shell_engine_preflight_test knomira_world_renderer_source_compile --parallel 4
+          cmake --build build/rmlui-prototype --config Debug --target knomira_engine_lifecycle_test knomira_colony_lifecycle_test knomira_game_shell_engine_probe knomira_shell_engine_preflight_test knomira_world_renderer_source_compile knomira_world_renderer_link_smoke_test --parallel 4
           if ($LASTEXITCODE -ne 0) { throw "Original GameManager lifecycle link failed." }
 
       - name: Execute isolated GameManager startup and cooperative shutdown
@@ -190,6 +190,15 @@ jobs:
           Remove-Item Env:KNOMIRA_TEST_CONTENT_DIR -ErrorAction SilentlyContinue
           & "build/rmlui-prototype/Debug/knomira_shell_engine_preflight_test.exe"
           if ($LASTEXITCODE -ne 0) { throw "Original-engine RmlUi test-session preflight failed." }
+
+      - name: Link real renderer and verify Qt menu signal bridge without GPU
+        shell: pwsh
+        timeout-minutes: 2
+        run: |
+          $env:PATH = "$env:RUNNER_TEMP/vcpkg/installed/x64-windows/debug/bin;$env:PATH"
+          Remove-Item Env:KNOMIRA_TEST_CONTENT_DIR -ErrorAction SilentlyContinue
+          & "build/rmlui-prototype/Debug/knomira_world_renderer_link_smoke_test.exe"
+          if ($LASTEXITCODE -ne 0) { throw "Real renderer link/signal smoke or disposable-root teardown failed." }
 
       - name: Verify colony regression requires explicitly supplied authorized assets
         shell: pwsh
