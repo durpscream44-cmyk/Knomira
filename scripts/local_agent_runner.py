@@ -10,7 +10,7 @@ import re
 import shutil
 import subprocess
 import urllib.error
-from agent_queue import api, add_label, comment, eligible, issues, metadata, profiles, remove_label
+from agent_queue import api, add_label, audit_event, comment, eligible, issues, metadata, profiles, remove_label
 
 TIME_BUDGET_SECONDS = 900
 
@@ -175,6 +175,8 @@ def main():
     parser.add_argument("--execute", action="store_true", help="Allow actual CLI and Git writes")
     args = parser.parse_args()
     if args.execute:
+        # Record the refused attempt without fetching credentials or starting a CLI.
+        audit_event("runner.gate", args.agent, None, "deny", "security-gate")
         parser.error("--execute is disabled pending issue #25 security acceptance and explicit maintainer approval")
     root = Path.cwd().resolve()
     repo, token = os.getenv("GITHUB_REPOSITORY", ""), os.getenv("GITHUB_TOKEN", "")
@@ -189,9 +191,11 @@ def main():
         parser.error("Git remote origin does not match selected repository")
     issue, m = choose(repo, token, args.agent, cfg)
     if not issue:
+        audit_event("runner.dry_run", args.agent, None, "deny", "no-task")
         print("No safe, approved, available task found for this agent")
         return
-    print("Selected issue", issue["number"], issue["title"], "base", m["base"])
+    audit_event("runner.dry_run", args.agent, issue["number"], "allow", "selected")
+    print("Selected issue", issue["number"], "base", m["base"])
     if not args.execute:
         print("DRY RUN. Nothing claimed, run, committed or pushed.")
         return
