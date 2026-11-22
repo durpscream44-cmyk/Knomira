@@ -36,7 +36,7 @@
 #include "../gfx/sprite.h"
 #include "../gfx/spritefactory.h"
 #include "eventconnector.h"
-#include "mainwindow.h"
+#include <QWindow>
 #include "aggregatorselection.h"
 
 #include <QCoreApplication>
@@ -75,10 +75,12 @@ public:
 /// @brief Constructs the renderer and wires up the signal chain with AggregatorRenderer,
 ///        EventConnector, and AggregatorSelection. initializeGL() must be called after the
 ///        parent's GL context is current.
-/// @param parent Owning MainWindow.
-MainWindowRenderer::MainWindowRenderer( MainWindow* parent ) :
-	QObject( parent ),
-	m_parent( parent )
+/// @param window Qt rendering window (owns this QObject).
+/// @param context Host-owned OpenGL context; must be current for GL operations.
+MainWindowRenderer::MainWindowRenderer( QWindow* window, QOpenGLContext* context ) :
+	QObject( window ),
+	m_window( window ),
+	m_context( context )
 {
 	connect( Global::eventConnector->aggregatorRenderer(), &AggregatorRenderer::signalWorldParametersChanged, this, &MainWindowRenderer::cleanupWorld );
 
@@ -98,8 +100,10 @@ MainWindowRenderer::MainWindowRenderer( MainWindow* parent ) :
 	connect( this, &MainWindowRenderer::signalCameraPosition, Global::eventConnector, &EventConnector::onCameraPosition );
 
 	qDebug() << "initialize GL ...";
-	connect( m_parent->context(), &QOpenGLContext::aboutToBeDestroyed, this, &MainWindowRenderer::cleanup );
-	connect( this, &MainWindowRenderer::redrawRequired, m_parent, &MainWindow::redraw );
+	if ( m_context )
+		connect( m_context, &QOpenGLContext::aboutToBeDestroyed, this, &MainWindowRenderer::cleanup );
+	// The Qt host owns redraw scheduling and render-parameter rebroadcast.
+	// Legacy MainWindow connects its coalescing redraw slot externally.
 }
 
 /// @brief Destructor.
@@ -116,7 +120,7 @@ void MainWindowRenderer::initializeGL()
 	qDebug() << "[OpenGL]" << reinterpret_cast<char const*>( glGetString( GL_VERSION ) );
 	qDebug() << "[OpenGL]" << reinterpret_cast<char const*>( glGetString( GL_RENDERER ) );
 
-	qDebug() << m_parent->context()->format();
+	if ( m_context ) qDebug() << m_context->format();
 
 	GLDEBUGPROC logHandler = []( GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam ) -> void
 	{
@@ -223,7 +227,7 @@ void MainWindowRenderer::reloadShaders()
 ///        context is about to be destroyed.
 void MainWindowRenderer::cleanup()
 {
-	m_parent->makeCurrent();
+	if ( !m_context || !m_window || !m_context->makeCurrent( m_window ) ) return;
 
 	if ( m_worldShader ) { glDeleteProgram( m_worldShader ); m_worldShader = 0; }
 	if ( m_worldUpdateShader ) { glDeleteProgram( m_worldUpdateShader ); m_worldUpdateShader = 0; }
@@ -235,7 +239,7 @@ void MainWindowRenderer::cleanup()
 	glDeleteBuffers( 1, &m_vibo );
 	if ( m_vao ) { glDeleteVertexArrays( 1, &m_vao ); m_vao = 0; }
 
-	m_parent->doneCurrent();
+	m_context->doneCurrent();
 
 	m_reloadShaders = true;
 }
@@ -244,7 +248,7 @@ void MainWindowRenderer::cleanup()
 ///        loaded without leaking GPU memory. Triggered by signalWorldParametersChanged.
 void MainWindowRenderer::cleanupWorld()
 {
-	m_parent->makeCurrent();
+	if ( !m_context || !m_window || !m_context->makeCurrent( m_window ) ) return;
 	glDeleteTextures( 32, m_textures );
 	memset( m_textures, 0, sizeof( m_textures ) );
 	glDeleteBuffers( 1, &m_tileBo );
@@ -253,7 +257,7 @@ void MainWindowRenderer::cleanupWorld()
 	m_tileUpdateBo     = 0;
 	m_texesInitialized = false;
 
-	m_parent->doneCurrent();
+	m_context->doneCurrent();
 
 	m_pendingUpdates.clear();
 	m_selectionData.clear();
@@ -1069,10 +1073,7 @@ void MainWindowRenderer::onCenterCameraPosition( const Position& target )
 	// Notify aggregators (selection, sound, …) that the camera moved — otherwise
 	// the cursor-tile mapping in AggregatorSelection stays at its zero defaults
 	// until the player nudges the wheel or resizes the window.
-	if ( m_parent )
-	{
-		m_parent->pushRenderParams();
-	}
+	emit renderParametersRequired();
 }
 
 /// @brief Helper used by rotate() to adjust camera offsets after a 90° clockwise rotation
