@@ -24,6 +24,10 @@
 #include <QTimer>
 #include <QWheelEvent>
 #include <QWindow>
+#ifdef KNOMIRA_SHELL_ENGINE_PROBE
+#include "shell_engine_probe.h"
+#include <QApplication>
+#endif
 #ifdef KNOMIRA_GAME_SHELL
 #include "save_catalog.h"
 #include "input_bindings.h"
@@ -181,7 +185,12 @@ private:
 // No GLFW window is constructed; RmlUi draws directly to the Qt swap chain.
 class QtMenuWindow final : public QWindow {
 public:
+#ifdef KNOMIRA_SHELL_ENGINE_PROBE
+    explicit QtMenuWindow(KnomiraShellEngineProbe* engineProbe)
+        : events_(this), engineProbe_(engineProbe) {
+#else
     QtMenuWindow() : events_(this) {
+#endif
         QSurfaceFormat format;
         format.setRenderableType(QSurfaceFormat::OpenGL);
         format.setProfile(QSurfaceFormat::CoreProfile);
@@ -324,6 +333,17 @@ public:
     }
 
 #ifdef KNOMIRA_GAME_SHELL
+#ifdef KNOMIRA_SHELL_ENGINE_PROBE
+    void StartIsolatedColony() {
+        QString error;
+        if (!engineProbe_ || !engineProbe_->startNewGame(&error)) {
+            SetStatusText(QStringLiteral("Test New Game unavailable: ") + error);
+            return;
+        }
+        SetStatus("Original test colony created and paused in a disposable root. World rendering is NOT connected.");
+    }
+#endif
+
     void SetStatusText(const QString& plain) {
         const QByteArray utf8 = plain.toHtmlEscaped().toUtf8();
         SetStatus(utf8.constData());
@@ -611,7 +631,14 @@ public:
     }
 
     void ShowSaveBrowser() {
+#ifdef KNOMIRA_SHELL_ENGINE_PROBE
+        // The probe must not even browse the player's real save directories.
+        saves_ = engineProbe_ && !engineProbe_->saveRoot().isEmpty()
+            ? findIngnomiaSavesInRoot(engineProbe_->saveRoot())
+            : QVector<KnomiraSaveEntry>();
+#else
         saves_ = findIngnomiaSaves();
+#endif
         showingSaves_ = true;
         confirmingExit_ = false;
         showingSettings_ = false;
@@ -1169,6 +1196,9 @@ private:
     qint64 nextRepeatMs_ = 0;
     qint64 nextScanMs_ = 0;
 #endif
+#ifdef KNOMIRA_SHELL_ENGINE_PROBE
+    KnomiraShellEngineProbe* engineProbe_ = nullptr; // outlives QtMenuWindow
+#endif
     std::unique_ptr<QOpenGLContext> glContext_;
     std::unique_ptr<RenderInterface_GL3> renderer_;
     Rml::Context* context_ = nullptr;
@@ -1205,7 +1235,11 @@ void MenuEvents::ProcessEvent(Rml::Event& event) {
         window_->close();
 #endif
     } else if (id == "new_game") {
+#ifdef KNOMIRA_SHELL_ENGINE_PROBE
+        window_->StartIsolatedColony();
+#else
         window_->SetStatus("New Game: world generation will be wired after simulation bootstrap.");
+#endif
     } else if (id == "load_game") {
 #ifdef KNOMIRA_GAME_SHELL
         window_->ShowSaveBrowser();
@@ -1245,12 +1279,26 @@ void MenuEvents::ProcessEvent(Rml::Event& event) {
 } // namespace
 
 int main(int argc, char** argv) {
+#ifdef KNOMIRA_SHELL_ENGINE_PROBE
+    QApplication application(argc, argv);
+#else
     QGuiApplication application(argc, argv);
+#endif
 #ifdef KNOMIRA_GAME_SHELL
     QCoreApplication::setOrganizationName(QStringLiteral("Knomira"));
     QCoreApplication::setApplicationName(QStringLiteral("Knomira"));
 #endif
+#ifdef KNOMIRA_SHELL_ENGINE_PROBE
+    KnomiraShellEngineProbe probe;
+    QString engineError;
+    if (!probe.prepare(&engineError)) {
+        qCritical() << "Isolated original-engine bootstrap failed:" << engineError;
+        return 2;
+    }
+    QtMenuWindow window(&probe);
+#else
     QtMenuWindow window;
+#endif
     window.show();
     return application.exec();
 }
