@@ -397,10 +397,11 @@ public:
         // MainWindow::onInitViewAfterLoad() does after New Game/Load Game.
         worldRenderer_->setMove(GameState::moveX, GameState::moveY);
         worldRenderer_->setScale(GameState::scale);
-        // The real game was started before this renderer existed; request the
-        // original aggregators' complete initial tile/axle/thought data now.
+        // GameManager signalled gameplay before the renderer existed.
+        // First paint calls MainWindowRenderer::initWorld(), which already
+        // emits fullDataRequired() after allocating the GPU tile buffer.
+        // Do not request the entire map twice (expensive for large colonies).
         worldRenderer_->onSetInMenu(false);
-        worldRenderer_->fullDataRequired();
         if (document_) {
             if (auto* menu = document_->GetElementById("screen"))
                 menu->SetProperty("display", "none");
