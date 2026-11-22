@@ -1,6 +1,7 @@
 // PLAY-01F: real-engine bootstrap test with zero external tilesheets or saves.
 // No frontend renderer; verifies a disposable, empty GameManager session.
 #include "shell_engine_probe.h"
+#include "input_bindings.h"
 #include "../../src/base/global.h"
 #include "../../src/base/io.h"
 #include "../../src/game/gamemanager.h"
@@ -38,6 +39,21 @@ int main(int argc, char** argv) {
             "test-only data root marker missing");
         require(!probe.hasGame() && !probe.saveRoot().isEmpty(),
                 "preflight generated a world or lacks isolated saves");
+        qunsetenv("KNOMIRA_TEST_CONTENT_DIR");
+        QString refused;
+        require(!probe.startNewGame(&refused) &&
+                    refused.contains(QStringLiteral("KNOMIRA_TEST_CONTENT_DIR")) &&
+                    !probe.hasGame(),
+                "New Game did not refuse missing authorized tilesheets");
+
+        // The exact input profile used by the probe must NEVER access the
+        // user's AppConfigLocation. Save and reload only beneath test root.
+        const QString controlFile = KnomiraInput::Profile::configPath();
+        require(controlFile.startsWith(tempRoot + QStringLiteral("/")),
+                "probe controls path escaped the disposable root");
+        KnomiraInput::Profile controls;
+        require(controls.save(&error) && QFileInfo::exists(controlFile),
+                "probe did not persist its controls inside disposable root");
         require(Global::eventConnector && Global::newGameSettings,
                 "original engine/embark tree was not initialized");
         require(QDir(probe.saveRoot()).entryList(
