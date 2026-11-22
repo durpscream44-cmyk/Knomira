@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Knomira queue scanning and label bootstrap; never launches a model."""
 import argparse
+import datetime as dt
 import json
 import os
 from pathlib import Path
@@ -15,6 +16,33 @@ LABELS = ["agent:approved", "agent:ready", "agent:running",
           "agent:provider:gemini", "agent:provider:kilo",
           "agent:provider:opencode", "priority:P0", "priority:P1", "priority:P2"]
 BLOCKED = {"agent:running", "agent:review", "agent:blocked", "agent:done"}
+MANUAL_ONLY_PREFIX = "manual:"
+
+
+def audit_event(event, agent, issue_number, outcome, reason):
+    """Emit a metadata-only JSON audit record; never log issue text or secrets."""
+    allowed = {
+        ("queue.eligibility", "allow", "eligible"),
+        ("queue.eligibility", "deny", "manual-label"),
+        ("queue.eligibility", "deny", "policy"),
+        ("runner.gate", "deny", "security-gate"),
+        ("runner.dry_run", "allow", "selected"),
+        ("runner.dry_run", "deny", "no-task"),
+    }
+    if (event, outcome, reason) not in allowed:
+        raise ValueError("Unsupported audit event")
+    if not isinstance(agent, str) or not re.fullmatch(r"[a-z][a-z0-9_-]{0,31}", agent):
+        raise ValueError("Invalid agent for audit event")
+    if issue_number is not None and (
+        type(issue_number) is not int or issue_number <= 0
+    ):
+        raise ValueError("Invalid issue number for audit event")
+    record = {
+        "utc": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
+        "event": event, "agent": agent, "issue": issue_number,
+        "outcome": outcome, "reason": reason,
+    }
+    print("KNOMIRA_AUDIT " + json.dumps(record, sort_keys=True))
 
 
 def api(repo, token, path, method="GET", data=None):
@@ -66,6 +94,10 @@ def eligible(issue, agent, cfg):
     if issue.get("pull_request") or issue.get("state") != "open":
         return False
     ls = labels(issue)
+    # An explicit manual assignment wins even if auto-approval labels coexist.
+    # Deny the whole manual:* namespace, including future/manual case variants.
+    if any(name.casefold().startswith(MANUAL_ONLY_PREFIX) for name in ls):
+        return False
     if not {"agent:approved", "agent:ready"}.issubset(ls) or ls.intersection(BLOCKED):
         return False
     if "agent:provider:" + agent not in ls:
@@ -153,10 +185,20 @@ def main():
     for agent, spec in cfg["agents"].items():
         if spec["execution"] != "local_cli":
             continue
-        matching = [x for x in queue if eligible(x, agent, cfg)]
+        matching = []
+        for item in queue:
+            allowed = eligible(item, agent, cfg)
+            reason = ("eligible" if allowed else
+                      "manual-label" if any(name.casefold().startswith(MANUAL_ONLY_PREFIX)
+                                             for name in labels(item)) else "policy")
+            audit_event("queue.eligibility", agent, item["number"],
+                        "allow" if allowed else "deny", reason)
+            if allowed:
+                matching.append(item)
         print(agent, "eligible:", len(matching))
         for item in matching[:10]:
-            print("  issue", item["number"], item["title"])
+            # Issue titles/bodies are untrusted; keep them out of workflow logs.
+            print("  issue", item["number"])
 
 
 if __name__ == "__main__":
