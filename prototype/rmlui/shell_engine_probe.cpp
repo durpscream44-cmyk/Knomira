@@ -29,6 +29,8 @@ bool fail(QString* error, const QString& detail) {
 }
 }
 
+KnomiraShellEngineProbe::KnomiraShellEngineProbe() = default;
+
 KnomiraShellEngineProbe::~KnomiraShellEngineProbe() {
     // Manager owns EventConnector and all original aggregator QObjects.
     manager_.reset();
