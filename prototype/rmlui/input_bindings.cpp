@@ -11,6 +11,9 @@
 #include <QKeySequence>
 #include <QSaveFile>
 #include <QStandardPaths>
+#ifdef KNOMIRA_SHELL_ENGINE_PROBE
+#include "../../src/base/io.h"
+#endif
 
 #include <utility>
 
@@ -183,8 +186,14 @@ bool Profile::bindPad(int index, int slot, const QString& token, QString* reason
 }
 
 QString Profile::configPath() {
+#ifdef KNOMIRA_SHELL_ENGINE_PROBE
+    // The opt-in original-engine probe must not read or write user controls.
+    // IO::getDataFolder fails closed unless a marked disposable root exists.
+    return IO::getDataFolder() + QStringLiteral("/settings/rmlui-controls.json");
+#else
     return QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation)
         + QStringLiteral("/controls.json");
+#endif
 }
 
 bool Profile::save(QString* error) const { return saveToFile(configPath(), error); }
