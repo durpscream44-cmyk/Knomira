@@ -980,7 +980,11 @@ void MainWindow::initializeGL()
 		return;
 	}
 
-	m_renderer = new MainWindowRenderer( this );
+	m_renderer = new MainWindowRenderer( this, m_context );
+	// Preserve the legacy window's coalesced redraw scheduler and camera
+	// parameter broadcast. The renderer itself no longer includes Noesis.
+	connect( m_renderer, &MainWindowRenderer::redrawRequired, this, &MainWindow::redraw );
+	connect( m_renderer, &MainWindowRenderer::renderParametersRequired, this, &MainWindow::pushRenderParams );
 	m_renderer->initializeGL();
 
 	noesisInit();
