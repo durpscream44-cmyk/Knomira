@@ -317,7 +317,7 @@ if(KNOMIRA_BUILD_GAME_SHELL)
     target_compile_definitions(knomira_world_renderer_source_compile PRIVATE
         KNOMIRA_ISOLATED_TEST_DATA_ROOT=1)
     target_link_libraries(knomira_world_renderer_source_compile PRIVATE
-        Qt6::Core Qt6::Gui Qt6::Xml Qt6::Widgets)
+        Qt6::Core Qt6::Gui Qt6::Xml Qt6::Widgets Qt6::Sql)
 
     # PLAY-01F: a separate, opt-in, disposable-root UI-to-engine probe.
     # This is NOT the shipping executable. The lifecycle library exports the
