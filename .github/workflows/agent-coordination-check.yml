@@ -8,6 +8,7 @@ on:
       - 'scripts/test_runner_execution_gate.py'
       - 'scripts/local_agent_runner.py'
       - '.github/workflows/agent-queue.yml'
+      - '.github/workflows/agent-label-bootstrap.yml'
       - '.github/workflows/agent-coordination-check.yml'
       - 'docs/agent-coordination/profiles.json'
   workflow_dispatch:
