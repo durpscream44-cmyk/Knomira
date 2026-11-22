@@ -166,6 +166,9 @@ if(KNOMIRA_BUILD_GAME_SHELL)
     # independently from Noesis and the legacy game's forced PCH. This does
     # not link GameManager or run a colony yet.
     find_package(Qt6 6.5 REQUIRED COMPONENTS Widgets Sql)
+    # The real renderer's checked-in GLAD implementation is C, not C++.
+    # Enable C only for this opt-in game-shell test configuration.
+    enable_language(C)
     add_library(knomira_simulation_source_compile OBJECT
         "../../src/game/game.cpp"
         "../../src/base/config.cpp"
@@ -371,7 +374,30 @@ if(KNOMIRA_BUILD_GAME_SHELL)
     add_dependencies(knomira_shell_engine_preflight_test
         knomira_game_shell_engine_probe)
 
+    # PLAY-01H-00: force a real executable link of the original renderer,
+    # its AUTOMOC objects and checked-in C GLAD implementation against the
+    # original isolated engine. Constructor/signal smoke only: NO GL context,
+    # sprite sheets, production save access, or world generation.
+    add_executable(knomira_world_renderer_link_smoke_test
+        world_renderer_link_smoke_test.cpp
+        shell_engine_probe.cpp shell_engine_probe.h
+        $<TARGET_OBJECTS:knomira_world_renderer_source_compile>
+        "../../3rdparty/glad/src/gl.c")
+    target_include_directories(knomira_world_renderer_link_smoke_test PRIVATE
+        "${CMAKE_CURRENT_SOURCE_DIR}/../../3rdparty/glad/include")
+    target_link_libraries(knomira_world_renderer_link_smoke_test PRIVATE
+        knomira_lifecycle_engine Qt6::Widgets)
+    set_target_properties(knomira_world_renderer_link_smoke_test PROPERTIES
+        CXX_STANDARD 23 CXX_STANDARD_REQUIRED ON)
+    # Existing preflight stage copies read-only DB/AI/JSON to the output path.
+    add_dependencies(knomira_world_renderer_link_smoke_test
+        knomira_shell_engine_preflight_test)
+
     enable_testing()
+    add_test(NAME knomira_world_renderer_link_smoke_test
+        COMMAND knomira_world_renderer_link_smoke_test)
+    set_tests_properties(knomira_world_renderer_link_smoke_test PROPERTIES
+        TIMEOUT 60)
     foreach(smoke_target IN ITEMS
         knomira_save_catalog_test knomira_input_bindings_test
         knomira_engine_config_bootstrap_test knomira_engine_services_bootstrap_test
