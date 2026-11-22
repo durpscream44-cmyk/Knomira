@@ -176,12 +176,14 @@ class MockedRunOneProbes(unittest.TestCase):
     def report(self):
         return self.comment.call_args.args[3]
 
-    @unittest.expectedFailure
     def test_sec02_timeout_requires_explicit_unsuccessful_draft(self):
         self.proc.side_effect = subprocess.TimeoutExpired(["fake-provider"], 900)
         self.run_mock()
-        self.assertIn("TIMED_OUT", self.api.call_args.args[4]["body"])
+        pr_payload = self.api.call_args.args[4]
+        self.assertIn("UNSUCCESSFUL (TIMED_OUT)", pr_payload["title"])
+        self.assertIn("Outcome: TIMED_OUT", pr_payload["body"])
         self.assertIn("Local recovery worktree:", self.report())
+        self.assertIn("Agent process exceeded 15-minute budget", self.report())
 
     @unittest.expectedFailure
     def test_sec03_nonzero_exit_must_identify_unsuccessful_draft(self):

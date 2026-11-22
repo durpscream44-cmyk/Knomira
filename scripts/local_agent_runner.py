@@ -143,6 +143,7 @@ def run_one(repo, token, root, agent, cfg, issue, m):
     # OS account/profile files remain accessible unless independently sandboxed.
     child_env = child_environment()
     returncode, note, prurl, paths, endsha = 1, "", "", [], baseline
+    timed_out = False
     try:
         with logpath.open("w", encoding="utf-8", errors="replace") as output:
             try:
@@ -151,6 +152,7 @@ def run_one(repo, token, root, agent, cfg, issue, m):
                 returncode = proc.returncode
                 note = "Agent process exited " + str(returncode)
             except subprocess.TimeoutExpired:
+                timed_out = True
                 returncode = 124
                 note = "Agent process exceeded 15-minute budget"
     except Exception as err:
@@ -168,11 +170,13 @@ def run_one(repo, token, root, agent, cfg, issue, m):
         endsha = git(worktree, "rev-parse", "HEAD")
         git(worktree, "push", "-u", "origin", branch)
         pr = api(repo, token, "/pulls", "POST", {
-            "title": "WIP issue #" + str(number) + ": " + issue["title"],
+            "title": (("UNSUCCESSFUL (TIMED_OUT) " if timed_out else "WIP issue #") +
+                      str(number) + ": " + issue["title"]),
             "head": branch, "base": m["base"], "draft": True,
             "body": ("Agent task: #" + str(number) + "\nProvider: " + agent +
                      "\nBase SHA: " + baseline + "\nHead SHA: " + endsha +
                      "\nCLI exit code: " + str(returncode) +
+                     ("\nOutcome: TIMED_OUT; unsuccessful partial-work checkpoint for recovery." if timed_out else "") +
                      "\nTests NOT independently verified; Codex/human review required.")})
         prurl = pr.get("html_url", "")
     except Exception as err:
