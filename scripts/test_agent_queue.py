@@ -1,3 +1,4 @@
+import json
 import unittest
 from agent_queue import field, metadata, valid_branch, valid_paths, eligible
 
@@ -97,21 +98,53 @@ class QueueProbes(unittest.TestCase):
         issue["labels"].append({"name": manual_label})
         self.assertFalse(queue.eligible(issue, "gemini", QUEUE_CFG))
 
-    @unittest.expectedFailure
     def test_sec07_manual_ready_blocks_auto_dispatch_issue_28(self):
         self._assert_manual_label_blocks_auto_dispatch(28, "manual:ready")
 
-    @unittest.expectedFailure
     def test_sec07_manual_ready_blocks_auto_dispatch_issue_29(self):
         self._assert_manual_label_blocks_auto_dispatch(29, "manual:ready")
 
-    @unittest.expectedFailure
     def test_sec07_manual_kilo_blocks_auto_dispatch_issue_28(self):
         self._assert_manual_label_blocks_auto_dispatch(28, "manual:kilo")
 
-    @unittest.expectedFailure
     def test_sec07_manual_kilo_blocks_auto_dispatch_issue_29(self):
         self._assert_manual_label_blocks_auto_dispatch(29, "manual:kilo")
+
+    def test_sec07_any_manual_namespace_label_denies_dispatch(self):
+        for label in ("manual:kilo", "manual:ready", "manual:codex",
+                      "manual:Ready", "MANUAL:human"):
+            with self.subTest(label=label):
+                issue = queue_task()
+                issue["labels"].append({"name": label})
+                self.assertFalse(queue.eligible(issue, "gemini", QUEUE_CFG))
+        # Automatic-only baseline is still eligible.
+        self.assertTrue(queue.eligible(queue_task(), "gemini", QUEUE_CFG))
+
+    def test_sec07_scan_audit_omits_untrusted_text_and_tokens(self):
+        issue = queue_task()
+        issue["title"] = "PRIVATE-TITLE-MUST-NOT-APPEAR"
+        issue["body"] += "\nPRIVATE-BODY-MUST-NOT-APPEAR"
+        output = io.StringIO()
+        with patch.object(sys, "argv", ["agent_queue.py", "--mode", "scan"]), \
+             patch.dict(os.environ, {"GITHUB_REPOSITORY": "example/Knomira",
+                                     "GITHUB_TOKEN": "PRIVATE-TOKEN-MUST-NOT-APPEAR"}), \
+             patch.object(queue, "api", return_value=[issue]), \
+             patch.object(queue, "profiles", return_value=QUEUE_CFG), \
+             contextlib.redirect_stdout(output):
+            queue.main()
+        log = output.getvalue()
+        self.assertNotIn("PRIVATE-TITLE-MUST-NOT-APPEAR", log)
+        self.assertNotIn("PRIVATE-BODY-MUST-NOT-APPEAR", log)
+        self.assertNotIn("PRIVATE-TOKEN-MUST-NOT-APPEAR", log)
+        audit_lines = [line for line in log.splitlines()
+                       if line.startswith("KNOMIRA_AUDIT ")]
+        self.assertEqual(len(audit_lines), 1)
+        record = json.loads(audit_lines[0].split(" ", 1)[1])
+        self.assertEqual((record["event"], record["issue"], record["outcome"],
+                          record["reason"]),
+                         ("queue.eligibility", 28, "allow", "eligible"))
+        self.assertEqual(set(record), {"utc", "event", "agent", "issue",
+                                       "outcome", "reason"})
 
     def test_sec08_queue_scan_is_get_only(self):
         calls = []
