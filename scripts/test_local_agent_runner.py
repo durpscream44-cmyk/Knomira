@@ -143,11 +143,11 @@ class PreclaimAuthorityProbes(unittest.TestCase):
             "number": 25, "title": "Original authorized task", "state": "open",
             "labels": [{"name": name} for name in
                        ("agent:approved", "agent:ready", "agent:provider:kilo")],
-            "body": ("### Base branch\\n\\nfeature/universal-agent-onboarding\\n"
-                     "### Task kind\\n\\ntests\\n"
-                     "### Required capabilities\\n\\ngit, github\\n"
-                     "### Allowed paths\\n\\nscripts/test_local_agent_runner.py\\n"
-                     "### Risk\\n\\nlow\\n"),
+            "body": ("### Base branch\n\nfeature/universal-agent-onboarding\n"
+                     "### Task kind\n\ntests\n"
+                     "### Required capabilities\n\ngit, github\n"
+                     "### Allowed paths\n\nscripts/test_local_agent_runner.py\n"
+                     "### Risk\n\nlow\n"),
         }
 
     def test_sec15_unchanged_authority_passes_read_only(self):
