@@ -224,7 +224,8 @@ jobs:
             "controls_device_keyboard", "controls_device_xbox",
             "bindings_list", "capture_action_name", "capture_prompt",
             "capture_current", "capture_error", "capture_clear",
-            "capture_cancel", "controls_reset", "controls_back"
+            "capture_cancel", "controls_reset", "controls_back",
+            "world_hud", "exit_world_probe"
           )
           foreach ($id in $required) {
             if ($ids -notcontains $id) { throw "Missing control-menu element: $id" }
