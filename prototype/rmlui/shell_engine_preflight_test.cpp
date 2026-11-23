@@ -9,7 +9,9 @@
 
 #include <QApplication>
 #include <QDir>
+#include <QFile>
 #include <QFileInfo>
+#include <QTemporaryDir>
 #include <QDebug>
 #include <cstdlib>
 
@@ -45,6 +47,31 @@ int main(int argc, char** argv) {
                     refused.contains(QStringLiteral("KNOMIRA_TEST_CONTENT_DIR")) &&
                     !probe.hasGame(),
                 "New Game did not refuse missing authorized tilesheets");
+
+        // Isolated negative proof: a placeholder (NOT a real/third-party
+        // tilesheet) gets past only the initial filename existence check;
+        // missing public GLSL must refuse before any sprite DB reads or
+        // world generation. No real player data is involved.
+        {
+            QTemporaryDir fakeContent;
+            require(fakeContent.isValid() &&
+                        QDir().mkpath(fakeContent.filePath(QStringLiteral("tilesheet"))),
+                    "Could not prepare isolated fake test-content directory");
+            QFile placeholder(fakeContent.filePath(QStringLiteral("tilesheet/default.png")));
+            require(placeholder.open(QIODevice::WriteOnly) &&
+                        placeholder.write("placeholder, not licensed art") > 0,
+                    "Could not write harmless fake tilesheet filename");
+            placeholder.close();
+            require(qputenv("KNOMIRA_TEST_CONTENT_DIR",
+                            QDir(fakeContent.path()).canonicalPath().toLocal8Bit()),
+                    "Could not set isolated fake test-content path");
+            QString shaderError;
+            require(!probe.startNewGame(&shaderError) &&
+                        shaderError.contains(QStringLiteral("shaders/world_v.glsl")) &&
+                        !probe.hasGame(),
+                    "New Game did not refuse missing required world shader");
+            qunsetenv("KNOMIRA_TEST_CONTENT_DIR");
+        }
 
         // The exact input profile used by the probe must NEVER access the
         // user's AppConfigLocation. Save and reload only beneath test root.
