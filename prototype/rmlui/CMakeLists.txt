@@ -393,6 +393,39 @@ if(KNOMIRA_BUILD_GAME_SHELL)
     add_dependencies(knomira_world_renderer_link_smoke_test
         knomira_shell_engine_preflight_test)
 
+    # PLAY-01H-01: opt-in original colony world in the existing Qt/RmlUi
+    # window. This is a compile/link proof only on CI; live GPU and authorized
+    # tilesheet testing is separately required and must never use player saves.
+    add_executable(knomira_game_shell_world_probe
+        qt_host.cpp shell_engine_probe.cpp shell_engine_probe.h
+        save_catalog.cpp save_catalog.h
+        input_bindings.cpp input_bindings.h
+        $<TARGET_OBJECTS:knomira_world_renderer_source_compile>
+        "../../3rdparty/glad/src/gl.c"
+        "${rmlui_SOURCE_DIR}/Backends/RmlUi_Renderer_GL3.cpp")
+    # Share the ORIGINAL engine's 4.3 GLAD C loader across the world and
+    # RmlUi GL3 backend; never link two separate GLAD implementations into
+    # the same QOpenGLContext-bound executable.
+    target_compile_definitions(knomira_game_shell_world_probe PRIVATE
+        KNOMIRA_GAME_SHELL=1 KNOMIRA_SHELL_ENGINE_PROBE=1
+        KNOMIRA_SHELL_WORLD_RENDERER=1
+        "RMLUI_GL3_CUSTOM_LOADER=<glad/gl.h>")
+    target_include_directories(knomira_game_shell_world_probe PRIVATE
+        "${rmlui_SOURCE_DIR}/Backends"
+        "${CMAKE_CURRENT_SOURCE_DIR}/../../3rdparty/glad/include")
+    target_link_libraries(knomira_game_shell_world_probe PRIVATE
+        RmlUi::RmlUi Qt6::Core Qt6::Gui Qt6::Widgets
+        knomira_lifecycle_engine)
+    set_target_properties(knomira_game_shell_world_probe PROPERTIES
+        CXX_STANDARD 23 CXX_STANDARD_REQUIRED ON)
+    if(MSVC)
+        target_compile_options(knomira_game_shell_world_probe PRIVATE /W4)
+    endif()
+    # The test-engine probe already stages the original read-only DB/AI/JSON
+    # and the Rml document beside the executable, with no licensed tilesheets.
+    add_dependencies(knomira_game_shell_world_probe
+        knomira_game_shell_engine_probe)
+
     enable_testing()
     add_test(NAME knomira_world_renderer_link_smoke_test
         COMMAND knomira_world_renderer_link_smoke_test)

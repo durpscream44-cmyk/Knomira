@@ -1,6 +1,12 @@
 // Copyright (C) 2026 Knomira contributors.
 // Qt/OpenGL-hosted RmlUi proof of concept. No game state or Noesis dependency.
 // The final game adapter should reuse the existing MainWindow QOpenGLContext.
+#ifdef KNOMIRA_SHELL_WORLD_RENDERER
+// MSVC/Qt may include system GL/gl.h from QOpenGLContext. Our original
+// renderer uses GLAD 4.3, so its API header MUST come first (CI C1189).
+// This guard keeps the regular RmlUi-only menus on their existing loader.
+#include <glad/gl.h>
+#endif
 #include <RmlUi/Core.h>
 #include <RmlUi/Core/Context.h>
 #include <RmlUi/Core/ElementDocument.h>
@@ -27,6 +33,15 @@
 #ifdef KNOMIRA_SHELL_ENGINE_PROBE
 #include "shell_engine_probe.h"
 #include <QApplication>
+#endif
+#ifdef KNOMIRA_SHELL_WORLD_RENDERER
+#include <QCloseEvent>
+// This is a separate, opt-in original-engine world-rendering proof target.
+// Do not add it to the shipping menu or the existing engine-only probe.
+#include "../../src/gui/mainwindowrenderer.h"
+#include "../../src/gui/eventconnector.h"
+#include "../../src/base/global.h"
+#include "../../src/base/gamestate.h"
 #endif
 #ifdef KNOMIRA_GAME_SHELL
 #include "save_catalog.h"
@@ -201,7 +216,9 @@ public:
         format.setSwapInterval(1);
         setSurfaceType(QSurface::OpenGLSurface);
         setFormat(format);
-#ifdef KNOMIRA_GAME_SHELL
+#ifdef KNOMIRA_SHELL_WORLD_RENDERER
+        setTitle(QStringLiteral("Knomira | Original World Probe (TEST ONLY)"));
+#elif defined(KNOMIRA_GAME_SHELL)
         setTitle(QStringLiteral("Knomira | Noesis-Free Shell"));
 #else
         setTitle(QStringLiteral("Knomira | Qt + RmlUi Host"));
@@ -222,8 +239,33 @@ public:
         timer_.start();
     }
 
+#ifdef KNOMIRA_SHELL_WORLD_RENDERER
+    void ReleaseWorldRenderer() {
+        if (!worldRenderer_) return;
+        worldViewActive_ = false;
+        // Qt's native surface may already be gone in the destructor.
+        // The closeEvent path calls this while the window is still valid.
+        if (glContext_ && glContext_->makeCurrent(this)) {
+            worldRenderer_->cleanupWorld(); // releases current context
+            if (glContext_->makeCurrent(this)) {
+                worldRenderer_->cleanup(); // releases current context again
+            } else {
+                qWarning() << "Could not restore GL context for renderer cleanup";
+            }
+        } else {
+            qWarning() << "No GL context available for world renderer teardown";
+        }
+        // QObject disconnects from the original EventConnector before the
+        // marked QTemporaryDir / GameManager is destroyed.
+        worldRenderer_.reset();
+    }
+#endif
+
     ~QtMenuWindow() override {
         timer_.stop();
+#ifdef KNOMIRA_SHELL_WORLD_RENDERER
+        ReleaseWorldRenderer(); // fallback if closeEvent was not delivered
+#endif
         if (glContext_ && glContext_->makeCurrent(this)) {
             if (rmlInitialised_) Rml::Shutdown();
             renderer_.reset();
@@ -336,11 +378,75 @@ public:
 #ifdef KNOMIRA_SHELL_ENGINE_PROBE
     void StartIsolatedColony() {
         QString error;
+#ifdef KNOMIRA_SHELL_WORLD_RENDERER
+        // The original GameManager broadcasts its initial camera position
+        // DURING New Game and then clears GameState::initialCameraTarget.
+        // This renderer is constructed later (after the authorized dataPath
+        // is set), so retain only the initial center position for replay.
+        Position requestedCenter;
+        bool hasRequestedCenter = false;
+        QMetaObject::Connection centerCapture;
+        if (engineProbe_ && Global::eventConnector) {
+            centerCapture = QObject::connect(
+                Global::eventConnector->aggregatorRenderer(),
+                &AggregatorRenderer::signalCenterCamera, this,
+                [&](const Position& position) {
+                    requestedCenter = position;
+                    hasRequestedCenter = true;
+                });
+        }
+        const bool started = engineProbe_ && engineProbe_->startNewGame(&error);
+        if (centerCapture)
+            QObject::disconnect(centerCapture);
+        if (!started) {
+#else
         if (!engineProbe_ || !engineProbe_->startNewGame(&error)) {
+#endif
             SetStatusText(QStringLiteral("Test New Game unavailable: ") + error);
             return;
         }
+#ifdef KNOMIRA_SHELL_WORLD_RENDERER
+        // Only this opt-in Windows probe uses the original GL renderer.
+        // GameManager is already attached to the marked disposable data root.
+        if (!glContext_ || !glContext_->makeCurrent(this)) {
+            SetStatus("Test colony started, but the Qt GL context is unavailable.");
+            return;
+        }
+        // The one game GLAD loader was initialized before RmlUi, on this
+        // exact same QOpenGLContext. Never load or unload a second loader here.
+        if (!worldRenderer_) {
+            worldRenderer_ = std::make_unique<MainWindowRenderer>(this, glContext_.get());
+            QObject::connect(worldRenderer_.get(), &MainWindowRenderer::redrawRequired,
+                             this, [this] { requestUpdate(); });
+            worldRenderer_->initializeGL();
+        }
+        const QSize pixels = size() * devicePixelRatio();
+        worldRenderer_->resize(pixels.width(), pixels.height());
+        // GameManager already emitted signalInitView() before this renderer
+        // existed. Recover the real original camera state, as the legacy
+        // MainWindow::onInitViewAfterLoad() does after New Game/Load Game.
+        worldRenderer_->setMove(GameState::moveX, GameState::moveY);
+        worldRenderer_->setScale(GameState::scale);
+        if (hasRequestedCenter)
+            worldRenderer_->onCenterCameraPosition(requestedCenter);
+        // GameManager signalled gameplay before the renderer existed.
+        // First paint calls MainWindowRenderer::initWorld(), which already
+        // emits fullDataRequired() after allocating the GPU tile buffer.
+        // Do not request the entire map twice (expensive for large colonies).
+        worldRenderer_->onSetInMenu(false);
+        if (document_) {
+            if (auto* menu = document_->GetElementById("screen"))
+                menu->SetProperty("display", "none");
+            if (auto* hud = document_->GetElementById("world_hud"))
+                hud->SetProperty("display", "block");
+        }
+        worldViewActive_ = true;
+        glContext_->doneCurrent();
+        requestUpdate();
+        qInfo() << "Experimental original world render bridge enabled; GPU output NOT yet verified";
+#else
         SetStatus("Original test colony created and paused in a disposable root. World rendering is NOT connected.");
+#endif
     }
 #endif
 
@@ -686,6 +792,13 @@ public:
 #endif
 
 protected:
+#ifdef KNOMIRA_SHELL_WORLD_RENDERER
+    void closeEvent(QCloseEvent* event) override {
+        // Release GPU objects before Qt disposes the QWindow surface.
+        ReleaseWorldRenderer();
+        QWindow::closeEvent(event);
+    }
+#endif
     void exposeEvent(QExposeEvent* event) override {
         QWindow::exposeEvent(event);
         if (isExposed()) requestUpdate();
@@ -694,6 +807,13 @@ protected:
     void resizeEvent(QResizeEvent* event) override {
         QWindow::resizeEvent(event);
         ResizeUi();
+#ifdef KNOMIRA_SHELL_WORLD_RENDERER
+        if (worldRenderer_) {
+            const QSize pixels = size() * devicePixelRatio();
+            if (pixels.width() > 0 && pixels.height() > 0)
+                worldRenderer_->resize(pixels.width(), pixels.height());
+        }
+#endif
         requestUpdate();
     }
 
@@ -801,6 +921,16 @@ protected:
     }
 
     void keyPressEvent(QKeyEvent* event) override {
+#ifdef KNOMIRA_SHELL_WORLD_RENDERER
+        // The only in-world UI is the test HUD. Do not navigate/activate
+        // controls belonging to the now-hidden main menu.
+        if (worldViewActive_) {
+            if (!event->isAutoRepeat() && event->key() == Qt::Key_Escape)
+                close();
+            event->accept();
+            return;
+        }
+#endif
 #ifdef KNOMIRA_GAME_SHELL
         if (captureAction_ >= 0) {
             if (!event->isAutoRepeat()) {
@@ -1020,6 +1150,15 @@ private:
             return;
         }
 
+#ifdef KNOMIRA_SHELL_WORLD_RENDERER
+        if (worldViewActive_) {
+            // B / Back exits this disposable world probe; the hidden menu
+            // must never receive gameplay-button clicks or navigation.
+            if (justPressed.contains("B") || justPressed.contains("Back"))
+                close();
+            return;
+        }
+#endif
         int direction = 0;
         if (controls_.padMatches("menu_prev", held)) direction = -1;
         else if (controls_.padMatches("menu_next", held)) direction = 1;
@@ -1076,6 +1215,25 @@ private:
             qCritical() << "Cannot create a Qt OpenGL context.";
             return false;
         }
+#ifdef KNOMIRA_SHELL_WORLD_RENDERER
+        // RmlUi's GL3 backend uses RMLUI_GL3_CUSTOM_LOADER=<glad/gl.h>
+        // in this single opt-in target. Load original GLAD while the Qt GL
+        // context is current *before* constructing any RmlUi GL3 objects.
+        // Do not initialize a second loader when switching to the world.
+        const auto gladLoader = [](const char* name) -> GLADapiproc {
+            return reinterpret_cast<GLADapiproc>(
+                QOpenGLContext::currentContext()->getProcAddress(name));
+        };
+        const int loadedGL = gladLoadGL(gladLoader);
+        if (!loadedGL || !GLAD_GL_VERSION_4_3) {
+            qCritical() << "Original game renderer requires OpenGL 4.3:"
+                        << glContext_->format();
+            glContext_->doneCurrent();
+            return false;
+        }
+        qInfo() << "Original GLAD initialized for RmlUi and world renderer:"
+                << glContext_->format();
+#endif
         Rml::String glMessage;
         if (!RmlGL3::Initialize(&glMessage)) {
             qCritical() << "RmlUi OpenGL function loader failed.";
@@ -1135,6 +1293,9 @@ private:
         if (auto* back = document_->GetElementById("save_back"))
             back->AddEventListener("click", &events_);
         for (const char* id : {"exit_cancel", "exit_yes",
+#ifdef KNOMIRA_SHELL_WORLD_RENDERER
+                               "exit_world_probe",
+#endif
                                "controls_reset", "controls_back",
                                "controls_tab_menu", "controls_tab_world",
                                "controls_tab_panels", "controls_tab_system",
@@ -1172,7 +1333,19 @@ private:
             pendingScrollToFocus_ = false;
         }
 #endif
+#ifdef KNOMIRA_SHELL_WORLD_RENDERER
+        if (worldViewActive_ && worldRenderer_) {
+            // Same OpenGL context and framebuffer: world first, transparent
+            // RmlUi HUD second. Do not call the RmlUi Clear() in this path.
+            const QSize pixels = size() * devicePixelRatio();
+            glViewport(0, 0, pixels.width(), pixels.height());
+            worldRenderer_->paintWorld();
+        } else {
+            renderer_->Clear();
+        }
+#else
         renderer_->Clear();
+#endif
         renderer_->BeginFrame();
         context_->Render();
         renderer_->EndFrame();
@@ -1211,6 +1384,10 @@ private:
 #ifdef KNOMIRA_SHELL_ENGINE_PROBE
     KnomiraShellEngineProbe* engineProbe_ = nullptr; // outlives QtMenuWindow
 #endif
+#ifdef KNOMIRA_SHELL_WORLD_RENDERER
+    std::unique_ptr<MainWindowRenderer> worldRenderer_;
+    bool worldViewActive_ = false;
+#endif
     std::unique_ptr<QOpenGLContext> glContext_;
     std::unique_ptr<RenderInterface_GL3> renderer_;
     Rml::Context* context_ = nullptr;
@@ -1245,6 +1422,10 @@ void MenuEvents::ProcessEvent(Rml::Event& event) {
         window_->OpenExitConfirm();
 #else
         window_->close();
+#endif
+    } else if (id == "exit_world_probe") {
+#ifdef KNOMIRA_SHELL_WORLD_RENDERER
+        window_->close(); // No saving: all data resides in a marked QTemporaryDir.
 #endif
     } else if (id == "new_game") {
 #ifdef KNOMIRA_SHELL_ENGINE_PROBE

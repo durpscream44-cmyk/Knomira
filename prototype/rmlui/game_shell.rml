@@ -2,9 +2,9 @@
 <head>
   <title>Knomira | Noesis-Free Shell</title>
   <style>
-    body { margin: 0; background-color: #121c24; color: #e6e3d6; font-family: "Segoe UI"; font-size: 17px; }
+    body { margin: 0; color: #e6e3d6; font-family: "Segoe UI"; font-size: 17px; }
     #screen { width: 100%; height: 100%; display: flex; flex-direction: column;
-              align-items: center; justify-content: center; }
+              background-color: #121c24; align-items: center; justify-content: center; }
     .panel { display: block; width: 640px; padding: 32px; background-color: #26343e;
              border: 2px solid #bc9760; }
     .eyebrow { display: block; color: #d5b178; font-size: 14px; letter-spacing: 2px; margin: 0px 0px 6px 0px; }
@@ -124,6 +124,12 @@
               background-color: #17262c; border: 1px solid #61756f;
               color: #d4e1de; font-size: 14px; }
     #footer { margin-top: 10px; color: #a7b8b6; font-size: 13px; }
+    /* Only the opt-in world-renderer probe shows this transparent HUD.
+       Ordinary menus keep their original opaque screen background. */
+    #world_hud { display: none; position: absolute; top: 16px; left: 16px;
+                 width: 410px; padding: 18px; border: 2px solid #bc9760;
+                 background-color: #17262ce6; }
+    #world_hud button { width: 215px; min-height: 42px; margin-top: 12px; }
   </style>
 </head>
 <body>
@@ -197,6 +203,11 @@
     </div>
     <div id="status">Use mouse, keyboard or Xbox controller to navigate.</div>
     <p id="footer">Test shell — original game saves are never modified.</p>
+  </div>
+  <div id="world_hud">
+    <p class="eyebrow">ORIGINAL WORLD RENDERER · TEST ONLY</p>
+    <p>Disposable colony. No gameplay controls or saving connected. Press Escape or Xbox B / Back to exit.</p>
+    <button id="exit_world_probe">Exit Test</button>
   </div>
 </body>
 </rml>
