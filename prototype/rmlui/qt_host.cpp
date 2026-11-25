@@ -379,6 +379,10 @@ public:
     void StartIsolatedColony() {
         QString error;
 #ifdef KNOMIRA_SHELL_WORLD_RENDERER
+        if (engineProbe_ && engineProbe_->hasGame() && !worldViewActive_) {
+            SetStatus("Test colony already started. Exit and restart; see log.");
+            return;
+        }
         // The original GameManager broadcasts its initial camera position
         // DURING New Game and then clears GameState::initialCameraTarget.
         // This renderer is constructed later (after the authorized dataPath
@@ -418,7 +422,14 @@ public:
             worldRenderer_ = std::make_unique<MainWindowRenderer>(this, glContext_.get());
             QObject::connect(worldRenderer_.get(), &MainWindowRenderer::redrawRequired,
                              this, [this] { requestUpdate(); });
-            worldRenderer_->initializeGL();
+            if (!worldRenderer_->initializeGL()) {
+                // Failed initialization deleted its candidates before creating
+                // any geometry. Disconnect the incomplete renderer immediately.
+                worldRenderer_.reset();
+                glContext_->doneCurrent();
+                SetStatus("World shaders failed. Test colony remains paused. Exit and restart; see log.");
+                return;
+            }
         }
         const QSize pixels = size() * devicePixelRatio();
         worldRenderer_->resize(pixels.width(), pixels.height());

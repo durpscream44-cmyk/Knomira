@@ -144,6 +144,7 @@ private:
 	bool m_pause     = false;                   ///< True when the simulation is paused.
 	float m_lightMin = 0.3f;                    ///< Minimum ambient light level.
 
+	bool m_glReady = false;                     ///< True after successful renderer initialization.
 	bool m_reloadShaders = false;               ///< Flag set by the debug hotkey to reload shaders next frame.
 
 	QMap<unsigned int, SelectionData> m_selectionData; ///< Current placement-cursor preview tiles.
@@ -160,7 +161,7 @@ private:
 	void setUniformMatrix4fv( GLuint shader, const char* name, const QMatrix4x4& matrix );
 
 public slots:
-	void initializeGL();
+	bool initializeGL();
 	void reloadShaders();
 	void resize( int w, int h );
 	void rotate( int direction );

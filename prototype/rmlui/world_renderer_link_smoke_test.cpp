@@ -39,10 +39,15 @@ int main(int argc, char** argv) {
         }
 
         // Null host pointers are safe here because the constructor only
-        // installs QObject signal connections. Never call initializeGL,
-        // resize, cleanupWorld, paintWorld, or any GPU-facing method.
+        // installs QObject signal connections. The no-context initialization
+        // and not-ready paint guards below must return without GL calls.
         {
             MainWindowRenderer renderer(nullptr, nullptr);
+            if (renderer.initializeGL()) {
+                qCritical() << "Renderer accepted missing GL context";
+                return 8;
+            }
+            renderer.paintWorld(); // Must return before any GL call.
             if (!renderer.isInMenu()) {
                 qCritical() << "Renderer did not start in menu mode";
                 return 3;
