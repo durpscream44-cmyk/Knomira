@@ -94,6 +94,23 @@ bool KnomiraShellEngineProbe::startNewGame(QString* error) {
     const QString assetDir = QDir(content).canonicalPath();
     if (assetDir.isEmpty())
         return fail(error, QStringLiteral("Test asset directory could not be resolved."));
+
+    // The original world renderer reads these GLSL files from cfg->dataPath.
+    // Fail before creating a test colony: tilesheets alone are not sufficient
+    // to initialize the real OpenGL renderer. Names are fixed repo assets.
+    for (const char* shaderName : {
+             "world_v.glsl", "world_f.glsl", "worldupdate_c.glsl",
+             "thoughtbubble_v.glsl", "thoughtbubble_f.glsl",
+             "selection_v.glsl", "selection_f.glsl",
+             "axle_v.glsl", "axle_f.glsl" }) {
+        const QString relativePath =
+            QStringLiteral("shaders/") + QString::fromLatin1(shaderName);
+        QFile shader(assetDir + QStringLiteral("/") + relativePath);
+        if (!shader.open(QIODevice::ReadOnly) || shader.size() <= 0)
+            return fail(error, QStringLiteral("Required renderer shader missing, unreadable or empty: ")
+                               + relativePath);
+    }
+
     for (const auto& row : DB::selectRows("BaseSprites")) {
         const QString tilesheet = row.value("Tilesheet").toString();
         if (tilesheet.isEmpty() || QFileInfo(tilesheet).fileName() != tilesheet ||
