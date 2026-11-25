@@ -114,8 +114,10 @@ MainWindowRenderer ::~MainWindowRenderer()
 /// @brief One-time GL resource setup: installs a debug log handler, builds the shared
 ///        vertex/index buffers for the tile quad, compiles shaders, and creates the sprite
 ///        atlas array textures.
-void MainWindowRenderer::initializeGL()
+bool MainWindowRenderer::initializeGL()
 {
+	if ( m_glReady ) return true;
+	if ( !m_context || QOpenGLContext::currentContext() != m_context ) return false;
 	qDebug() << "[OpenGL]" << reinterpret_cast<char const*>( glGetString( GL_VENDOR ) );
 	qDebug() << "[OpenGL]" << reinterpret_cast<char const*>( glGetString( GL_VERSION ) );
 	qDebug() << "[OpenGL]" << reinterpret_cast<char const*>( glGetString( GL_RENDERER ) );
@@ -193,7 +195,7 @@ void MainWindowRenderer::initializeGL()
 
 	if ( !initShaders() )
 	{
-		//qCritical() << "failed to init shaders - exiting";
+		return false;
 	}
 
 	glGenVertexArrays( 1, &m_vao );
@@ -214,7 +216,9 @@ void MainWindowRenderer::initializeGL()
 
 	updateRenderParams();
 
+	m_glReady = true;
 	qDebug() << "initialize GL - done";
+	return true;
 }
 
 /// @brief Queues a shader reload for the next paintWorld() call (debug hotkey entry point).
@@ -227,6 +231,7 @@ void MainWindowRenderer::reloadShaders()
 ///        context is about to be destroyed.
 void MainWindowRenderer::cleanup()
 {
+	m_glReady = false;
 	if ( !m_context || !m_window || !m_context->makeCurrent( m_window ) ) return;
 
 	if ( m_worldShader ) { glDeleteProgram( m_worldShader ); m_worldShader = 0; }
@@ -236,7 +241,9 @@ void MainWindowRenderer::cleanup()
 	if ( m_axleShader ) { glDeleteProgram( m_axleShader ); m_axleShader = 0; }
 
 	glDeleteBuffers( 1, &m_vbo );
+	m_vbo = 0;
 	glDeleteBuffers( 1, &m_vibo );
+	m_vibo = 0;
 	if ( m_vao ) { glDeleteVertexArrays( 1, &m_vao ); m_vao = 0; }
 
 	m_context->doneCurrent();
@@ -429,21 +436,34 @@ GLuint MainWindowRenderer::initComputeShader( QString name )
 /// @return true if every shader compiled successfully.
 bool MainWindowRenderer::initShaders()
 {
-	m_worldShader = initShader( "world" );
-	m_worldUpdateShader = initComputeShader( "worldupdate" );
-	m_thoughtBubbleShader = initShader( "thoughtbubble" );
-	m_selectionShader = initShader( "selection" );
-	m_axleShader = initShader( "axle" );
-
-	if ( !m_worldShader || !m_worldUpdateShader || !m_thoughtBubbleShader || !m_selectionShader || !m_axleShader )
-	{
-		// Can't proceed, and need to know what happened!
-		abort();
-		return false;
-	}
-
+	// Stage a complete replacement. A failed reload must leave the last
+	// successful set of programs intact and release only new candidates.
+	GLuint candidates[] = {
+		initShader( "world" ),
+		initComputeShader( "worldupdate" ),
+		initShader( "thoughtbubble" ),
+		initShader( "selection" ),
+		initShader( "axle" )
+	};
+	GLuint* active[] = {
+		&m_worldShader, &m_worldUpdateShader, &m_thoughtBubbleShader,
+		&m_selectionShader, &m_axleShader
+	};
 	m_reloadShaders = false;
-
+	for ( GLuint program : candidates )
+	{
+		if ( !program )
+		{
+			for ( GLuint candidate : candidates )
+				if ( candidate ) glDeleteProgram( candidate );
+			return false;
+		}
+	}
+	for ( int i = 0; i < 5; ++i )
+	{
+		if ( *active[i] ) glDeleteProgram( *active[i] );
+		*active[i] = candidates[i];
+	}
 	return true;
 }
 
@@ -605,6 +625,7 @@ void MainWindowRenderer::setUniformMatrix4fv( GLuint shader, const char* name, c
 ///        selection preview, thought bubbles, and axles in order.
 void MainWindowRenderer::paintWorld()
 {
+	if ( !m_glReady ) return;
 	DebugScope s( "paint world" );
 	QElapsedTimer timer;
 	//timer.start();
@@ -639,9 +660,7 @@ void MainWindowRenderer::paintWorld()
 	{
 		DebugScope s( "init shaders" );
 		if ( !initShaders() )
-		{
-			return;
-		}
+			qWarning() << "Shader reload rejected; retaining previous programs";
 	}
 
 	if ( !m_texesInitialized )

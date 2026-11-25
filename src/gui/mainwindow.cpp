@@ -985,7 +985,8 @@ void MainWindow::initializeGL()
 	// parameter broadcast. The renderer itself no longer includes Noesis.
 	connect( m_renderer, &MainWindowRenderer::redrawRequired, this, &MainWindow::redraw );
 	connect( m_renderer, &MainWindowRenderer::renderParametersRequired, this, &MainWindow::pushRenderParams );
-	m_renderer->initializeGL();
+	if ( !m_renderer->initializeGL() )
+		qFatal( "Original renderer shader initialization failed" );
 
 	noesisInit();
 
