@@ -261,6 +261,27 @@ jobs:
             Get-ChildItem $vcpkgBin -Filter "*.dll" | Copy-Item -Destination $package -Force
           }
 
+      - name: Verify desktop artifact runtime
+        shell: pwsh
+        run: |
+          $package = "build/rmlui-prototype/Debug"
+          Copy-Item "$env:QT_ROOT_DIR/plugins/platforms/qoffscreend.dll" "$package/platforms/"
+          foreach ($plugin in @("sqldrivers/qsqlited.dll", "platforms/qoffscreend.dll")) {
+            if (!(Test-Path "$package/$plugin")) { throw "Required runtime plugin missing: $plugin" }
+          }
+          $staged = Join-Path $env:RUNNER_TEMP "knomira-artifact-check"
+          New-Item -ItemType Directory -Path $staged | Out-Null
+          Get-ChildItem $package -File | Where-Object Extension -in ".exe", ".dll", ".rml" | Copy-Item -Destination $staged
+          foreach ($dir in @("content", "platforms", "styles", "generic", "iconengines", "tls", "sqldrivers", "imageformats", "networkinformation")) {
+            if (Test-Path "$package/$dir") { Copy-Item "$package/$dir" $staged -Recurse }
+          }
+          $env:QT_PLUGIN_PATH = $staged
+          $env:QT_QPA_PLATFORM_PLUGIN_PATH = "$staged/platforms"
+          $env:PATH = "$staged;$env:SystemRoot/system32;$env:SystemRoot"
+          $process = Start-Process "$staged/knomira_world_renderer_link_smoke_test.exe" -WorkingDirectory $staged -PassThru -WindowStyle Hidden
+          if (!$process.WaitForExit(60000)) { $process.Kill(); throw "Packaged renderer smoke timed out" }
+          if ($process.ExitCode -ne 0) { throw "Packaged renderer smoke failed: $($process.ExitCode)" }
+
       - name: Upload Qt prototype desktop-test files
         uses: actions/upload-artifact@v4
         with:
@@ -277,4 +298,7 @@ jobs:
             build/rmlui-prototype/Debug/generic/**
             build/rmlui-prototype/Debug/iconengines/**
             build/rmlui-prototype/Debug/tls/**
+            build/rmlui-prototype/Debug/sqldrivers/**
+            build/rmlui-prototype/Debug/imageformats/**
+            build/rmlui-prototype/Debug/networkinformation/**
           if-no-files-found: error
